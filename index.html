@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Susi</title>
+  <link rel="icon" href="/src/mark.svg">
+</head>
+<body>
+  <div class="window">
+    <div class="drag" data-tauri-drag-region></div>
+    <main id="workspace">
+      <section id="editor" aria-label="Prompt editor"></section>
+      <button id="previous" class="edge" aria-label="Previous version" title="Previous version (⌘←)" hidden><i data-icon="left"></i></button>
+      <button id="next" class="edge" aria-label="Next version" title="Next version (⌘→)" hidden><i data-icon="right"></i></button>
+      <div id="hint" role="status" aria-live="polite"></div>
+      <footer class="bar" data-tauri-drag-region>
+        <button id="action" title="Rewrite with a local model (⌘K)"></button>
+        <button id="library" title="Templates, prompts and dictionary (⌘L)"><i data-icon="library"></i><span class="label">Library</span><span class="keys" aria-hidden="true"><kbd>⌘</kbd><kbd>L</kbd></span></button>
+        <button id="copy" title="Copy the prompt and hide (⌘↵); copy and clear (⇧⌘↵)"><i data-icon="copy"></i><span class="label">Copy</span><span class="keys" aria-hidden="true"><kbd>⌘</kbd><kbd>↵</kbd></span></button>
+      </footer>
+    </main>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

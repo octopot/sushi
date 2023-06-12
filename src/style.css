@@ -1,0 +1,336 @@
+:root {
+  color-scheme: dark;
+  --font: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+  --stage: linear-gradient(180deg, #2c2c31, #222226);
+  --rim: rgba(255, 255, 255, 0.08);
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.55);
+  --faint: rgba(255, 255, 255, 0.34);
+  --placeholder: rgba(255, 255, 255, 0.45);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --hover: rgba(255, 255, 255, 0.07);
+  --selected: rgba(255, 255, 255, 0.12);
+  --key: rgba(255, 255, 255, 0.1);
+  --key-text: rgba(255, 255, 255, 0.7);
+  --accent: #ff8266;
+  --ins: rgba(48, 209, 88, 0.22);
+  --del-tone: #ff6b5e;
+  --error: #ff8f80;
+  --popover: rgba(44, 44, 48, 0.94);
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --stage: linear-gradient(180deg, #f7f7f8, #ececee);
+    --rim: rgba(0, 0, 0, 0.08);
+    --text: rgba(0, 0, 0, 0.86);
+    --muted: rgba(0, 0, 0, 0.5);
+    --faint: rgba(0, 0, 0, 0.3);
+    --placeholder: rgba(0, 0, 0, 0.45);
+    --hairline: rgba(0, 0, 0, 0.09);
+    --hover: rgba(0, 0, 0, 0.05);
+    --selected: rgba(0, 0, 0, 0.08);
+    --key: rgba(0, 0, 0, 0.07);
+    --key-text: rgba(0, 0, 0, 0.6);
+    --accent: #e8573a;
+      --ins: rgba(52, 199, 89, 0.22);
+    --del-tone: #e0483c;
+    --error: #c4372a;
+    --popover: rgba(255, 255, 255, 0.94);
+    --shadow: 0 16px 48px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+body {
+  font: 15px/1.4 var(--font);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+button, input { font: inherit; color: inherit; }
+button {
+  border: 0;
+  background: none;
+  cursor: default;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button:focus-visible, .scope:focus-visible { outline: 2px solid Highlight; outline-offset: 1px; }
+
+/* In the app the native Liquid Glass is the only window shape and carries the tint.
+   The page paints nothing window-shaped there; browsers get an opaque stand-in. */
+.window {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.stage .window {
+  border-radius: 26px;
+  background: var(--stage);
+  box-shadow: inset 0 0 0 1px var(--rim);
+}
+.drag { position: absolute; inset: 0 0 auto; height: 14px; z-index: 3; }
+#workspace { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.library-open #workspace { visibility: hidden; }
+
+/* ——— Icons and keycaps ——— */
+
+.icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.keys { display: inline-flex; gap: 3px; flex: none; }
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: var(--key);
+  color: var(--key-text);
+  font: 500 12px/1 var(--font);
+}
+kbd.wide { padding: 0 6px; font-size: 11.5px; letter-spacing: 0.01em; }
+
+/* ——— Editor ——— */
+
+#editor { position: relative; flex: 1; min-height: 0; }
+.cm-editor { height: 100%; }
+.cm-editor.cm-focused { outline: none; }
+.cm-editor .cm-scroller {
+  font: 17px/1.6 var(--font);
+  padding: 26px 38px 0;
+  overflow-x: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 40px), transparent);
+}
+.cm-editor .cm-content { padding: 0 0 48px; caret-color: var(--accent); user-select: text; cursor: text; }
+.cm-editor .cm-line { padding: 0; }
+.cm-editor .cm-placeholder { color: var(--placeholder); }
+.cm-editor .cm-cursor { border-left: 2px solid var(--accent); margin-left: -1px; }
+.cm-editor .cm-selectionLayer .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionLayer .cm-selectionBackground { background: Highlight !important; border-radius: 2px; }
+.cm-diff-ins { background: var(--ins); border-radius: 3px; }
+.cm-diff-del {
+  margin-right: 3px;
+  color: color-mix(in srgb, var(--muted) 80%, var(--del-tone));
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--del-tone) 55%, transparent);
+  white-space: pre-wrap;
+  user-select: none;
+}
+.cm-diff-ins, .cm-diff-del { animation: appear 120ms ease-out; }
+.cm-pending {
+  opacity: 0.6;
+  border-radius: 3px;
+  background: var(--hover);
+  animation: pending 1.2s ease-in-out infinite alternate;
+}
+@keyframes pending { from { opacity: 1; } to { opacity: 0.45; } }
+
+/* ——— Edge arrows ——— */
+
+.edge {
+  position: absolute;
+  top: calc(50% - 37px);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  animation: appear 120ms ease-out;
+}
+.edge:hover { background: var(--hover); color: var(--text); }
+.edge:active { background: var(--selected); }
+#previous { left: 7px; }
+#next { right: 7px; }
+
+/* ——— Hint and bar ——— */
+
+#hint {
+  position: absolute;
+  inset: auto 60px 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
+#hint:not(:empty) { animation: appear 120ms ease-out; }
+#hint.error { color: var(--error); }
+#hint kbd { min-width: 18px; height: 18px; border-radius: 5px; font-size: 11px; }
+
+.bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 50px;
+  padding: 0 9px 4px;
+  flex: none;
+}
+.bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 9px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.bar button .icon { color: var(--muted); }
+.bar button .keys { margin-left: 3px; }
+.bar button:hover:not(:disabled) { background: var(--hover); }
+.bar button:active:not(:disabled) { background: var(--selected); }
+.bar button:disabled { opacity: 0.38; }
+#action { justify-self: start; }
+#library { justify-self: center; }
+#copy { justify-self: end; }
+#action.busy .label { color: var(--muted); }
+.icon-spinner { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(1turn); } }
+
+/* ——— Palettes ——— */
+
+.palette { position: absolute; z-index: 4; display: flex; flex-direction: column; animation: rise 120ms ease-out; }
+.palette .field { display: flex; align-items: center; gap: 12px; flex: none; }
+.palette input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  background: none;
+  caret-color: var(--accent);
+}
+.palette input::placeholder { color: var(--placeholder); }
+.palette input::selection { background: Highlight; }
+.palette .list { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.palette .row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+.palette .row:hover { background: color-mix(in srgb, var(--hover) 55%, transparent); }
+.palette .row[aria-selected='true'] { background: var(--selected); }
+.library .row[aria-selected='true'] kbd { color: var(--accent); }
+.palette .row .icon { color: var(--muted); }
+.palette .name { overflow: hidden; text-overflow: ellipsis; }
+.palette .detail { color: var(--muted); overflow: hidden; text-overflow: ellipsis; flex-shrink: 2; }
+.palette .spacer { flex: 1; }
+.palette .hint { color: var(--muted); font-size: 13.5px; }
+.palette .empty { padding: 10px 12px; color: var(--muted); }
+.palette .footer:empty { display: none; }
+.palette .footer .error { margin-right: auto; color: var(--error); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette .footer .open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  margin-right: -8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.palette .footer .open:hover { background: var(--hover); }
+.actions-open #library, .actions-open #copy { opacity: 0.38; }
+
+.actions {
+  left: 12px;
+  bottom: 54px;
+  width: min(440px, 100% - 24px);
+  border-radius: 14px;
+  background: var(--popover);
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--hairline);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+.actions .field { order: 2; height: 46px; padding: 0 14px; border-top: 1px solid var(--hairline); }
+.actions input { font-size: 19px; }
+.actions .list { max-height: calc(6 * 36px + 12px); padding: 6px; }
+.actions .list:empty { display: none; }
+.actions .row { height: 36px; padding: 0 10px; font-size: 15px; }
+.actions .hint { font-size: 13px; }
+
+.library { inset: 0; }
+.library .field { height: 64px; padding: 0 16px 0 24px; border-bottom: 1px solid var(--hairline); }
+.library .field > .icon { width: 19px; height: 19px; color: var(--muted); }
+.library input { font-size: 20px; }
+.library .list { flex: 1; padding: 4px 10px 8px; }
+.library .row { height: 40px; padding: 0 12px; font-size: 15px; }
+.library .section {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 12px 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.library .section kbd { min-width: 16px; height: 16px; border-radius: 4px; font-size: 10px; }
+.library .footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 18px;
+  flex: none;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+  font-weight: 500;
+}
+.scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 34px;
+  padding: 0 7px 0 12px;
+  border-radius: 10px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.scope span { color: var(--text); }
+.scope.active span { color: var(--accent); }
+.scope:hover { background: var(--selected); }
+
+@keyframes appear { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#hint .label { max-width: 40ch; overflow: hidden; text-overflow: ellipsis; }
