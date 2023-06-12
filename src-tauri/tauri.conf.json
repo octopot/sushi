@@ -1,0 +1,22 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Susi",
+  "version": "0.1.0",
+  "identifier": "me.octopot.susi",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main", "title": "Susi", "width": 750, "height": 470,
+      "minWidth": 520, "minHeight": 260, "resizable": true, "center": true, "visible": false,
+      "decorations": false, "transparent": true, "shadow": true,
+      "windowEffects": { "effects": ["liquidGlassRegular", "hudWindow"], "state": "active", "radius": 26 }
+    }],
+    "security": { "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" }
+  },
+  "bundle": { "active": true, "targets": ["app"], "icon": ["icons/icon.png", "icons/icon.icns"], "category": "Productivity", "macOS": { "signingIdentity": "-", "minimumSystemVersion": "26.0" } }
+}

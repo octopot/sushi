@@ -1,0 +1,21 @@
+[package]
+name = "susi"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+cc = "1"
+
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+tempfile = "3"
+libc = "0.2"
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
+tokio = { version = "1", features = ["macros", "time", "sync"] }
