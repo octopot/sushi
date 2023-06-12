@@ -1,0 +1,28 @@
+# agents
+.agents
+.claude
+.codex
+.mcp.json
+
+# dependencies
+node_modules/
+
+# frontend build (Vite) and the docs site build
+/dist/
+/docs/dist/
+/docs/.next/
+
+# Tauri builds
+src-tauri/target/
+src-tauri/gen/
+
+# release archives, checksums and the cask from `make dist`
+/artifacts/
+
+# macOS
+.DS_Store
+
+# sensitive data
+*.env
+*.p12
+*.p8

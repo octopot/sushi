@@ -1,0 +1,17 @@
+.gitattributes  export-ignore
+.gitignore      export-ignore
+
+/.github/       export-ignore
+/docs/          export-ignore
+/tests/         export-ignore
+
+Makefile        export-ignore
+AGENTS.md       export-ignore
+
+package-lock.json     linguist-generated
+src-tauri/Cargo.lock  linguist-generated
+
+*.rs   text eol=lf
+*.ts   text eol=lf
+*.mjs  text eol=lf
+*.m    text eol=lf
