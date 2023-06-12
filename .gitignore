@@ -4,6 +4,9 @@
 .codex
 .mcp.json
 
+# sparkle
+.github/notes
+
 # dependencies
 node_modules/
 
