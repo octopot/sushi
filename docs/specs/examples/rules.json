@@ -1,0 +1,10 @@
+{
+  "rules": [
+    {"id": "goal", "name": "Turn into goal", "prefix": "/goal ", "aliases": ["goal", "to goal", "make it a goal", "в цель", "цель", "преврати в цель", "сделай целью", "сделай цель"]},
+    {"id": "grammar", "name": "Fix grammar", "instruction": "Correct spelling, grammar, and punctuation. Preserve meaning and voice.", "aliases": ["fix grammar", "грамматика", "исправь ошибки"]},
+    {"id": "specific", "name": "Make specific", "instruction": "Replace vague phrases with concrete wording. Preserve the facts and constraints.", "aliases": ["be specific", "конкретнее", "конкретизируй"]},
+    {"id": "clarify", "name": "Clarify", "instruction": "Make the wording clearer while preserving meaning and details.", "aliases": ["make clearer", "яснее", "уточни", "сделай яснее"]},
+    {"id": "shorten", "name": "Shorten", "instruction": "Make the text concise. Keep all essential conditions.", "aliases": ["make shorter", "короче", "сократи", "сделай короче"]},
+    {"id": "structure", "name": "Structure", "instruction": "Organize the text into logical sections and order its requirements.", "aliases": ["organize", "по пунктам", "разложи по пунктам", "структурируй"]}
+  ]
+}
