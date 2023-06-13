@@ -25,7 +25,7 @@
     "SLACK_WEBHOOK": { "scope": "organization", "optional": true }
   },
   "pages": {
-    "cname": "susi.octolab.org",
+    "cname": "sushi.octolab.org",
     "https_enforced": true,
     "build_type": "workflow"
   }

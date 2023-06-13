@@ -10,7 +10,7 @@ cask "susi" do
   url "https://github.com/octopot/susi/releases/download/v#{version}/susi_#{version}_darwin-arm64.zip"
   name "Susi"
   desc "Prompt composer with local model rewrites"
-  homepage "https://susi.octolab.org/"
+  homepage "https://sushi.octolab.org/"
 
   livecheck do
     url :url

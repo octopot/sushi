@@ -18,7 +18,7 @@ Susi is a local prompt composer for macOS with an icon in the menu bar. ⌘⇧Sp
 | Reading Markdown, template titles, choosing the Tuna folder | [src-tauri/src/library.rs](src-tauri/src/library.rs). For a separate library set `SUSI_LIBRARY_DIR`. |
 | Action and dictionary files | [src-tauri/src/settings.rs](src-tauri/src/settings.rs), [examples and CUE schemas](docs/specs/local-files.md). |
 | Glass, the icon menu, the global hotkey, showing the window, the active Space, returning focus, copying, capture mode | [src-tauri/src/main.rs](src-tauri/src/main.rs) registers the commands and manages the window. [src-tauri/src/macos.m](src-tauri/src/macos.m) calls AppKit. Window parameters and Liquid Glass are in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json). |
-| The site, the release notes and the specifications | [docs/](docs/README.md): the Nextra site published at susi.octolab.org, `docs/content/changelog/` and `docs/specs/`. |
+| The site, the release notes and the specifications | [docs/](docs/README.md): the Nextra site published at sushi.octolab.org, `docs/content/changelog/` and `docs/specs/`. |
 | Release pipeline, the cask, the hooks | [.github/workflows/README.md](.github/workflows/README.md), [.github/scripts/release.mjs](.github/scripts/release.mjs), the cask template [.github/homebrew/susi.rb](.github/homebrew/susi.rb), and [Releasing](#releasing) below. |
 
 The window is frameless and transparent: macOS draws Liquid Glass with radius 26 under the page, and the page adds the translucent `--tint`. Outside the app there is no glass, so the `stage` class on `<html>` paints the panel with an opaque substitute. `main.ts` sets it in an ordinary browser, and the test sets it in headless Chrome.
@@ -200,8 +200,8 @@ preview image needs regenerating is described in [docs/README.md](docs/README.md
 ```sh
 grep -rn 'X\.Y\.W' README.md docs --exclude-dir=node_modules --exclude-dir=dist  # only old notes and "since" facts may remain
 node .github/scripts/release.mjs version                                         # X.Y.Z, or the files disagree
-node .github/scripts/release.mjs render vX.Y.Z --site-url https://susi.octolab.org/ --out "$(mktemp -d)/notes.md"
-(cd docs && npm ci && TARGET=static SITE_URL=https://susi.octolab.org/ npm run build)
+node .github/scripts/release.mjs render vX.Y.Z --site-url https://sushi.octolab.org/ --out "$(mktemp -d)/notes.md"
+(cd docs && npm ci && TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build)
 ```
 
 ### 2. Tag annotation

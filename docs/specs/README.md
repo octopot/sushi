@@ -16,5 +16,5 @@ Each specification opens with a status line naming the version it describes, the
 ## Specifications, tests and the user guide
 
 - **Tests prove the rules.** `tests/history.test.mjs` checks the chain model, `tests/composer.test.mjs` drives the real page in headless Chrome or WebKit with the model and system calls replaced, and the Rust tests in `src-tauri/src/` check file reading and validation. Run `npm test` and `cargo test --manifest-path src-tauri/Cargo.toml --release`.
-- **The user guide explains, the specification decides.** The [site](https://susi.octolab.org/) shows how to use Susi and links here for the exact rules. These files are plain Markdown read on GitHub; they are not published on the site.
+- **The user guide explains, the specification decides.** The [site](https://sushi.octolab.org/) shows how to use Susi and links here for the exact rules. These files are plain Markdown read on GitHub; they are not published on the site.
 - **A change of behaviour changes its specification in the same change.** Update the rule, its example and its row in Verification together with the code and the test. A rule that drifted from the code is a defect of one of the two: decide which, and fix that one.

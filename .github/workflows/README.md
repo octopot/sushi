@@ -71,7 +71,7 @@ them it stops before building.
 Nothing here is stored in the repository, so a fresh repository or a fork needs it once:
 
 1. Settings → Pages → Source: **GitHub Actions**; the `github-pages` environment
-   must allow deployments from main. Custom domain: `susi.octolab.org`,
+   must allow deployments from main. Custom domain: `sushi.octolab.org`,
    declared as `pages.cname` in `.github/settings.json`, with Enforce HTTPS on.
 2. `OCTOLAB_RELEASER_CLIENT_ID` and `OCTOLAB_RELEASER_KEY`: the Client ID and a
    private key of the GitHub App "OctoLab Releaser", owned by `octolab`, with

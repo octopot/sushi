@@ -19,10 +19,10 @@ For GitHub Pages, from `docs/`:
 
 ```sh
 npm ci
-TARGET=static SITE_URL=https://susi.octolab.org/ npm run build
+TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build
 ```
 
-This is everything CI needs: no install in the repository root. Static output is written to `docs/dist/`. `SITE_URL` is required; add `BASE_PATH=/susi` only when hosting under a path, as on the default `octopot.github.io/susi/`. The build also reads the app's `../index.html`, `../src/`, `../tsconfig.json` and `../package.json`, and `specs/examples/`; `.github/workflows/cd.docs.yml` runs when any of them changes.
+This is everything CI needs: no install in the repository root. Static output is written to `docs/dist/`. `SITE_URL` is required; add `BASE_PATH=/susi` only when hosting under a path, as on the default `octopot.github.io/sushi/`. The build also reads the app's `../index.html`, `../src/`, `../tsconfig.json` and `../package.json`, and `specs/examples/`; `.github/workflows/cd.docs.yml` runs when any of them changes.
 
 For a production server: `npm run build`, then `npm start`.
 
@@ -70,7 +70,7 @@ When the app's frontend changes, check the tour: `components/stage.jsx` relies o
 
 ## Change the domain
 
-The site is served from the custom domain `susi.octolab.org`, recorded as `pages.cname` in [`.github/settings.json`](../.github/settings.json); `octopot.github.io/susi/` redirects to it, keeping the path. The build bakes the domain into asset paths and metadata, and changing it in Settings → Pages triggers no rebuild. To change it:
+The site is served from the custom domain `sushi.octolab.org`, recorded as `pages.cname` in [`.github/settings.json`](../.github/settings.json); `octopot.github.io/sushi/` redirects to it, keeping the path. The build bakes the domain into asset paths and metadata, and changing it in Settings → Pages triggers no rebuild. To change it:
 
 1. Change Settings → Pages → Custom domain.
 2. Update `pages.cname` to match (remove it for the default domain), and the places that spell the domain out: the cask's `homepage` in [`.github/homebrew/susi.rb`](../.github/homebrew/susi.rb), the build commands here and in `AGENTS.md`, `scripts/og.html` (then `npm run og`) and the site links in `specs/`. Push to main: a change to `.github/settings.json` runs [`cd.docs.yml`](../.github/workflows/cd.docs.yml), which rebuilds and deploys the site; otherwise run `gh workflow run cd.docs.yml -f reason="domain change"`.
@@ -89,7 +89,7 @@ The app is the source of truth: check every claim against `src/`, `src-tauri/src
 
 ```sh
 grep -rn '0\.1\.0' content release.mjs README.md  # only old notes and cards may keep the old version
-TARGET=static SITE_URL=https://susi.octolab.org/ npm run build
+TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build
 ```
 
 Lead installation with Homebrew. The manual download is not notarized in v0.1.1, and the quick start says how to open it; change that paragraph once a notarized build ships.

@@ -2,7 +2,7 @@
 
 **Status:** describes Susi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
-Susi keeps every edit of the prompt in one linear chain of versions. The user walks the chain one step at a time, sees each edit as an inline diff before accepting it, and copies the whole prompt from any point. This document fixes how the chain changes, what ⌘↵ copies at each position, and how the draft survives a restart. How to use these keys is explained on the [site](https://susi.octolab.org/); this document is the contract the code and the tests keep.
+Susi keeps every edit of the prompt in one linear chain of versions. The user walks the chain one step at a time, sees each edit as an inline diff before accepting it, and copies the whole prompt from any point. This document fixes how the chain changes, what ⌘↵ copies at each position, and how the draft survives a restart. How to use these keys is explained on the [site](https://sushi.octolab.org/); this document is the contract the code and the tests keep.
 
 ## Terms
 
