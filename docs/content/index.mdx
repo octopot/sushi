@@ -1,6 +1,6 @@
 ---
 title: The prompt deserves an editor.
-description: Susi is a local prompt composer for macOS. Press ⌘⇧Space, write or dictate, select a phrase and press ⌘K, and a local model rewrites it as an inline diff. ⌘↵ sends the prompt back to your coding agent. Documentation for Susi v0.1.0.
+description: Susi is a local prompt composer for macOS. Press ⌘⇧Space, write or dictate, select a phrase and press ⌘K, and a local model rewrites it as an inline diff. ⌘↵ sends the prompt back to your coding agent. Documentation for Susi v0.1.1.
 ---
 
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import { release } from '../release.mjs'
 <div className="susi-home">
   <section className="susi-hero">
     <div className="susi-hero-copy">
-      <Link className="release-pill" href="/changelog/v0.1.0/">First release · v{release.version} <span aria-hidden="true">↗</span></Link>
+      <Link className="release-pill" href="/changelog/v0.1.1/">Latest release · v{release.version} <span aria-hidden="true">↗</span></Link>
       <h1>The prompt deserves <em>an&nbsp;editor.</em></h1>
       <p className="susi-lead">What you ask a coding agent decides what you get back. Susi is a glass panel one keystroke away: write or dictate, select what needs work, press <Keys keys={['⌘', 'K']} />, and a model on your Mac rewrites it right in your text. <Keys keys={['⌘', '↵']} /> sends the prompt back to your agent.</p>
       <div className="susi-hero-actions">
@@ -150,6 +150,6 @@ import { release } from '../release.mjs'
       <p>Install Susi with Homebrew, then download the model once with <a href="https://ollama.com/download">Ollama</a>.</p>
     </div>
     <Install full />
-    <p className="susi-install-note">Prefer a download? Get <code>{release.archive}</code> from the <a href={release.download}>v{release.version} release</a>. This first build is not notarized yet, so macOS asks you to confirm opening it: the <Link href="/quick-start/#download-instead">quick start</Link> shows how.</p>
+    <p className="susi-install-note">Prefer a download? Get <code>{release.archive}</code> from the <a href={release.download}>v{release.version} release</a>. This build is not notarized yet, so macOS asks you to confirm opening it: the <Link href="/quick-start/#download-instead">quick start</Link> shows how.</p>
   </section>
 </div>

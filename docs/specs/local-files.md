@@ -1,6 +1,6 @@
 # Local files
 
-**Status:** describes Susi v0.1.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Susi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 Everything Susi knows besides the current draft lives in plain files on the Mac: the actions, the dictation dictionary, saved prompts and templates. Susi has no screen for editing them; the user edits the files in any text editor, and Susi reads them again the next time it needs them. This document fixes where the files live, their formats, how they are validated and what Susi does on first run. The formats are also given as [CUE definitions](files.cue), and the [examples](examples/) are the files Susi ships and seeds.
 
@@ -82,7 +82,7 @@ Replace the example paths with the files in your settings folder or library. The
 
 ## Not supported or switched off
 
-These are deliberate limits of v0.1.0, not defects. Changing any of them is a change of this specification.
+These are deliberate limits of v0.1.1, not defects. Changing any of them is a change of this specification.
 
 - **Dictionary replacement is switched off.** When on, Susi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
 - **No editing inside Susi.** Rules, terms, prompts and templates are edited as files. Susi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3 and LF-16 and the marker `.initialized-v1`, besides creating missing directories.

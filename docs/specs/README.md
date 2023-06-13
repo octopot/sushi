@@ -4,8 +4,8 @@ The specifications fix how Susi behaves where a casual reading of the code or th
 
 | Specification | Covers | Status |
 | --- | --- | --- |
-| [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.1.0, as implemented |
-| [Local files](local-files.md) | `rules.json`, `dictionary.json`, the Library directory, prompts, templates, first-run seeding | v0.1.0, as implemented |
+| [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.1.1, as implemented |
+| [Local files](local-files.md) | `rules.json`, `dictionary.json`, the Library directory, prompts, templates, first-run seeding | v0.1.1, as implemented |
 
 [`files.cue`](files.cue) gives the file formats as CUE definitions, and [`examples/`](examples/) holds the files Susi ships: the app embeds them at build time to seed a new settings folder and library, and the tests read them. Editing an example therefore changes what new users get.
 

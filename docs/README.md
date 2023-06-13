@@ -1,6 +1,6 @@
 # Susi documentation
 
-An English site for Susi v0.1.0: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
+An English site for Susi v0.1.1: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
 
 ## Run locally
 
@@ -38,7 +38,8 @@ For a production server: `npm run build`, then `npm start`.
 | `content/quick-start.mdx` | Install, first prompt, first edit, sending it |
 | `content/guide/` | Editing and versions, actions, voice, `/goal`, library and files, the model, keys, troubleshooting |
 | `content/changelog/index.mdx` | Release overview |
-| `content/changelog/v0.1.0.md` | First release notes, also the GitHub release body |
+| `content/changelog/v0.1.1.md` | The latest release notes, also the GitHub release body |
+| `content/changelog/v0.1.0.md` | First release notes |
 | `content/**/_meta.js` | Navigation order and labels |
 | `navigation.mjs` | Release groups in the sidebar; keeps published release URLs unchanged |
 | `app/globals.css` | Shared styles, byte-identical to octopot/indexit |
@@ -91,7 +92,7 @@ grep -rn '0\.1\.0' content release.mjs README.md  # only old notes and cards may
 TARGET=static SITE_URL=https://susi.octolab.org/ npm run build
 ```
 
-Lead installation with Homebrew. The manual download is not notarized in v0.1.0, and the quick start says how to open it; change that paragraph once a notarized build ships.
+Lead installation with Homebrew. The manual download is not notarized in v0.1.1, and the quick start says how to open it; change that paragraph once a notarized build ships.
 
 `package.json` pins Zod to `4.1.12` under `nextra-theme-docs` and overrides `@xmldom/xmldom` for `speech-rule-engine`, as in the indexit docs; see its README for the reasons and when to drop them.
 
