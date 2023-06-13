@@ -8,40 +8,27 @@ is proven or moved into an issue; a release adds the checks it leaves open
 
 ## Watch
 
-### The first release, v0.1.0
+### After v0.1.1
 
-The delivery path was dry-run locally only: build, archive, signature after
-unpacking, checksums, cask rendering, `ruby -c` and `brew style`. Nothing below
-has run on GitHub yet.
+v0.1.0 and v0.1.1 were released on 2026-11-18: `cd` published both releases,
+the tap commits are verified, the cask installs without the quarantine
+attribute, and `brew upgrade` from 0.1.0 to 0.1.1 quit Susi, replaced it and
+opened it again with the signature intact.
 
-- [ ] **Before tagging**: the workflows are pushed and active, `ci` and
-  `cd.docs` are green on `main`, and a manual `cd` run on `main` (a snapshot)
-  is green and its artifact holds `susi_0.1.0_darwin-arm64.zip`,
-  `checksums.txt` and `susi.rb`. If `macos-26` fails to build, compare its
-  Xcode with the one in the runner image README before anything else.
-- [ ] **Before tagging**: `make workflow-doctor` is green, which proves the
-  OctoLab Releaser App can write to `octolab/homebrew-tap`, and Pages has
-  Enforce HTTPS on (`make doctor` reports it off until then).
-- [ ] **On the v0.1.0 tag**: the release is published, not a draft; the tap
-  commit `Brew cask update for susi version v0.1.0` exists and
-  `gh api repos/octolab/homebrew-tap/commits/main -q .commit.verification.verified`
-  is `true`. If it is not verified, compare with the Formula commits that
-  GoReleaser makes with the same App: the contents API call must send no
-  author or committer.
-- [ ] **On the v0.1.0 tag, on this Mac**: `brew install --cask octolab/tap/susi`
-  leaves `/Applications/Susi.app` without `com.apple.quarantine`, and the app
-  opens without a Gatekeeper dialog. If Homebrew refuses the `run` step of
-  `preflight_steps` or its sandbox blocks `xattr`, the cask is broken for
-  everyone: fix the template and ship v0.1.1, or tell users to clear the
-  attribute by hand until then.
-- [ ] **On the v0.1.0 tag, owner**: in the cask-installed app, the menu bar
-  icon, ⌘⇧Space, a ⌘K edit with Ollama running, ⌘↵ into the previous app and
-  ⌘L with his own prompts work as in the hand-built copy, and only one Susi
-  is installed.
-- [ ] **On the first `brew upgrade` (v0.1.1 or later)**: Homebrew quits Susi,
-  replaces it and opens it again, and the new app is not quarantined either.
-  Every ad-hoc build has a new signature, so Homebrew warns that the signer
-  changed; that warning is expected until Developer ID.
+- [ ] **On a Mac without Ollama**: v0.1.1 was verified by tests with replaced
+  search locations only. On a clean Mac an edit must answer at once with
+  "Ollama is not installed on this Mac. Download Ollama", the link must open
+  the download page, and ⌘K must show the same note. With only the
+  command-line tool, the first edit must start `ollama serve`, and the server
+  must outlive Susi. If any of these fails, fix it in the next patch.
+- [ ] **On the next `brew upgrade`**: Homebrew reopens Susi without
+  `--hidden` (seen in the process arguments after 0.1.0 → 0.1.1), so the
+  panel is expected to show after an upgrade. Confirm it on screen and decide
+  whether Susi should start hidden when Homebrew relaunches it.
+- [ ] **On every upgrade until Developer ID**: Homebrew warns that "susi's
+  signer changed so macOS may prompt at next launch": every ad-hoc build has a
+  new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
+  right away; whether macOS showed a prompt was not observed.
 
 ### Homebrew and Gatekeeper
 
