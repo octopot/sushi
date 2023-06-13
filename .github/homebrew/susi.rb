@@ -7,8 +7,7 @@ cask "susi" do
   version "@VERSION@"
   sha256 "@SHA256@"
 
-  url "https://github.com/octopot/susi/releases/download/v#{version}/susi_#{version}_darwin-arm64.zip",
-      verified: "github.com/octopot/susi/"
+  url "https://github.com/octopot/susi/releases/download/v#{version}/susi_#{version}_darwin-arm64.zip"
   name "Susi"
   desc "Prompt composer with local model rewrites"
   homepage "https://susi.octolab.org/"
