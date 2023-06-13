@@ -1,0 +1,49 @@
+name: Workflow caches cleanup
+
+on:
+  schedule:
+    - cron: 0 6 1 * * # at 06:00 on day-of-month 1, UTC
+
+  workflow_call:
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: The reason for dispatching it manually.
+        type: string
+        default: manual healthcheck
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  delete:
+    name: Deleting
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Cleanup caches
+        run: gh cache delete --all --succeed-on-no-caches -R "$GITHUB_REPOSITORY"
+
+  notify:
+    name: Notifying
+    needs: [ delete ]
+    runs-on: ubuntu-24.04
+    if: failure() || success()
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+
+      - name: Send notification
+        uses: ./.github/actions/notify
+        with:
+          emoji: 🧹
+          channel: ${{ secrets.SLACK_WEBHOOK }}
+          success: ${{ ! contains(needs.*.result, 'failure') }}

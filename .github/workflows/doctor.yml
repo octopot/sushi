@@ -1,0 +1,66 @@
+name: Repository doctor
+
+on:
+  # a Pages domain change triggers nothing: catch the drift daily
+  schedule:
+    - cron: 0 6 * * * # at 06:00 every day, UTC
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: The reason for dispatching it manually.
+        type: string
+        default: manual healthcheck
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  doctor:
+    name: Diagnosing
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+      # a scheduled run has no repository in its payload, so no default branch:
+      # take it from the remote, as a local clone would
+      - name: Resolve the default branch
+        run: git remote set-head origin --auto
+
+      # the workflow token cannot list secrets: they are reported as unverified,
+      # the preflight below checks the ones that matter for a release
+      - name: Compare the repository with GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: node .github/scripts/release.mjs doctor
+      # as for a stable tag: the App credentials, and the Apple secrets all or
+      # none
+      - name: Check release secrets
+        if: success() || failure()
+        id: preflight
+        env:
+          OCTOLAB_RELEASER_CLIENT_ID: ${{ secrets.OCTOLAB_RELEASER_CLIENT_ID }}
+          OCTOLAB_RELEASER_KEY: ${{ secrets.OCTOLAB_RELEASER_KEY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+        run: node .github/scripts/release.mjs preflight v0.0.0
+      # proves the App is still installed on the tap with write access
+      - name: Mint the tap token
+        if: (success() || failure()) && steps.preflight.outcome == 'success'
+        uses: actions/create-github-app-token@v3.4.0
+        with:
+          client-id: ${{ secrets.OCTOLAB_RELEASER_CLIENT_ID }}
+          private-key: ${{ secrets.OCTOLAB_RELEASER_KEY }}
+          owner: ${{ steps.preflight.outputs.tap-owner }}
+          repositories: ${{ steps.preflight.outputs.tap-name }}
+          permission-contents: write

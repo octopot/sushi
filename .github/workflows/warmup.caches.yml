@@ -1,0 +1,138 @@
+name: Workflow caches warmup
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: The reason for dispatching it manually.
+        type: string
+        default: manual healthcheck
+        required: true
+
+  workflow_run:
+    workflows: [ Workflow caches cleanup ]
+    types: [ completed ]
+
+  # a tag restores only caches of its own ref and of main, so the Cargo
+  # cache has to be made on main, and GitHub evicts it after 7 idle days
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/warmup.caches.yml'
+      - 'src-tauri/Cargo.lock'
+
+  schedule:
+    # twice a week: a run lags behind its cron, and 7 idle days evict a cache
+    - cron: 0 7 * * 1,4 # at 07:00 on Monday and Thursday, UTC
+
+permissions:
+  contents: read
+
+jobs:
+  deps:
+    name: Caching npm deps
+    runs-on: ubuntu-24.04
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          check-latest: true
+      - name: Install dependencies
+        run: npm ci
+
+  docs:
+    name: Caching docs deps
+    runs-on: ubuntu-24.04
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+          check-latest: true
+      - name: Install dependencies
+        run: npm --prefix docs ci
+
+  # setup-node saves the npm cache of the macOS runner on main as well, for
+  # the native job of ci and the release job of cd
+  cargo:
+    name: Caching release builds
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          check-latest: true
+      - name: Resolve the Rust toolchain
+        id: rust
+        run: echo "version=$(rustc --version | cut -d' ' -f2)" >> "${GITHUB_OUTPUT}"
+      # the same key as ci (native) and cd (release)
+      - name: Restore the Cargo cache
+        id: cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            src-tauri/target
+          key: cargo-${{ runner.os }}-rust${{ steps.rust.outputs.version }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-rust${{ steps.rust.outputs.version }}-
+      # what ci and cd compile: clippy, the tests and the bundle, all in the
+      # release profile
+      - name: Build the release targets
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          npm ci
+          npm run build
+          cargo clippy --manifest-path src-tauri/Cargo.toml --release --all-targets
+          cargo test --manifest-path src-tauri/Cargo.toml --release --no-run
+          npm run bundle
+          rm -rf src-tauri/target/release/bundle
+      - name: Save the Cargo cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            src-tauri/target
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+  notify:
+    name: Notifying
+    needs: [ deps, docs, cargo ]
+    runs-on: ubuntu-24.04
+    # success() is false when the other jobs are skipped, on a push or a
+    # schedule
+    if: ${{ !cancelled() }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+
+      - name: Send notification
+        uses: ./.github/actions/notify
+        with:
+          emoji: ♻️
+          channel: ${{ secrets.SLACK_WEBHOOK }}
+          success: ${{ ! contains(needs.*.result, 'failure') }}

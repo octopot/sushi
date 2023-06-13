@@ -1,0 +1,307 @@
+name: Continuous delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: The reason for dispatching it manually.
+        type: string
+        default: manual healthcheck
+        required: true
+
+  push:
+    tags: [ 'v*' ]
+
+# one run per ref: a second push of the same tag waits instead of racing
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Releasing
+    # Xcode 26 and the macOS 26 SDK, Rust, Node.js and Google Chrome:
+    # the oldest image that builds the Liquid Glass window
+    runs-on: macos-26
+    permissions:
+      contents: write
+      pages: read
+    env:
+      # only a tag push publishes; a manual run, even on a tag, is a snapshot
+      PUBLISH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    outputs:
+      cask: ${{ steps.preflight.outputs.cask }}
+      tap-owner: ${{ steps.preflight.outputs.tap-owner }}
+      tap-name: ${{ steps.preflight.outputs.tap-name }}
+      asset: ${{ steps.package.outputs.asset }}
+      version: ${{ steps.package.outputs.version }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+
+      # seconds-level safety net for bypassed local hooks, before any build
+      - name: Check the release tag
+        if: env.PUBLISH == 'true'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: node .github/scripts/release.mjs check "${GITHUB_REF_NAME}"
+      # a release comes only from a tag GitHub verifies; checked before
+      # anything is published, a bad tag can still be replaced
+      - name: Check the tag signature
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/release.mjs signature "${GITHUB_REF_NAME}"
+      # a stable tag needs the Releaser App for the cask; the Apple secrets
+      # are all or nothing and choose the signing mode, on snapshots too
+      - name: Check release secrets
+        id: preflight
+        env:
+          OCTOLAB_RELEASER_CLIENT_ID: ${{ secrets.OCTOLAB_RELEASER_CLIENT_ID }}
+          OCTOLAB_RELEASER_KEY: ${{ secrets.OCTOLAB_RELEASER_KEY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          TAG: ${{ env.PUBLISH == 'true' && github.ref_name || '' }}
+        run: node .github/scripts/release.mjs preflight ${TAG:+"${TAG}"}
+      # proves the App is installed on the tap with write access before the
+      # build; the tap job mints its own token after the release
+      - name: Mint the tap token
+        if: env.PUBLISH == 'true' && steps.preflight.outputs.cask == 'true'
+        uses: actions/create-github-app-token@v3.4.0
+        with:
+          client-id: ${{ secrets.OCTOLAB_RELEASER_CLIENT_ID }}
+          private-key: ${{ secrets.OCTOLAB_RELEASER_KEY }}
+          owner: ${{ steps.preflight.outputs.tap-owner }}
+          repositories: ${{ steps.preflight.outputs.tap-name }}
+          permission-contents: write
+      - name: Set up GitHub Pages
+        if: env.PUBLISH == 'true'
+        id: pages
+        uses: actions/configure-pages@v6.0.0
+      - name: Check the Pages domain
+        if: env.PUBLISH == 'true'
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: node .github/scripts/release.mjs pages "${BASE_URL}"
+      - name: Render the release note
+        if: env.PUBLISH == 'true'
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          notes="${RUNNER_TEMP}/release-notes.md"
+          title="$(node .github/scripts/release.mjs render "${GITHUB_REF_NAME}" --site-url "${SITE_URL}" --out "${notes}")"
+          echo "RELEASE_TITLE=${title}" >> "${GITHUB_ENV}"
+          echo "RELEASE_NOTES=${notes}" >> "${GITHUB_ENV}"
+
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          check-latest: true
+      - name: Resolve the Rust toolchain
+        id: rust
+        run: echo "version=$(rustc --version | cut -d' ' -f2)" >> "${GITHUB_OUTPUT}"
+      # warmup.caches.yml saves it on main: a cache saved from a tag is out
+      # of reach of the next tag; a stale fallback still brings the crates
+      - name: Restore the Cargo cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            src-tauri/target
+          key: cargo-${{ runner.os }}-rust${{ steps.rust.outputs.version }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-rust${{ steps.rust.outputs.version }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: Run the tests
+        run: |
+          npm test
+          cargo test --manifest-path src-tauri/Cargo.toml --release
+
+      # Developer ID: tauri build imports APPLE_CERTIFICATE into a temporary
+      # keychain, signs with it instead of the ad-hoc identity of
+      # tauri.conf.json, notarizes with the App Store Connect API key and
+      # staples the ticket
+      - name: Prepare Developer ID signing
+        if: steps.preflight.outputs.signing == 'developer-id'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+        run: |
+          umask 077
+          key="${RUNNER_TEMP}/private_keys/AuthKey_${APPLE_API_KEY}.p8"
+          mkdir -p "$(dirname "${key}")"
+          printf '%s\n' "${APPLE_API_PRIVATE_KEY}" > "${key}"
+          echo "APPLE_API_KEY_PATH=${key}" >> "${GITHUB_ENV}"
+      - name: Build the app
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          SIGNING: ${{ steps.preflight.outputs.signing }}
+        # an empty variable is not "unset" to the Tauri CLI: drop them, so an
+        # ad-hoc build sees none. With a certificate, the CLI requires the
+        # configured identity, "-" in tauri.conf.json, to be part of the
+        # certificate's name; "Developer ID Application" is, unless the secret
+        # names the identity in full
+        run: |
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
+            [ -n "${!name:-}" ] || unset "${name}"
+          done
+          if [ "${SIGNING}" = developer-id ]; then
+            export APPLE_SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-Developer ID Application}"
+          else
+            unset APPLE_SIGNING_IDENTITY
+          fi
+          npm run bundle
+      - name: Package the release
+        id: package
+        env:
+          SIGNING: ${{ steps.preflight.outputs.signing }}
+        run: node .github/scripts/release.mjs package --out artifacts --signing "${SIGNING}"
+      - name: Check Gatekeeper accepts the notarized app
+        if: steps.preflight.outputs.signing == 'developer-id'
+        run: |
+          app=src-tauri/target/release/bundle/macos/Susi.app
+          xcrun stapler validate "${app}"
+          spctl --assess --type execute --verbose=4 "${app}"
+      - name: Store the release files
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: susi-${{ steps.package.outputs.version }}-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+
+      # draft first, published last: a run that fails in between leaves a
+      # draft that the rerun replaces; a published release is frozen and a
+      # rerun leaves it as it is
+      - name: Publish the release
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ steps.package.outputs.asset }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if draft="$(gh release view "${tag}" --json isDraft -q .isDraft 2>/dev/null)"; then
+            if [ "${draft}" = true ]; then
+              echo "::notice title=Release::replacing the draft ${tag} left by a previous run"
+              gh release delete "${tag}" --yes
+            else
+              assets="$(gh release view "${tag}" --json assets -q '.assets[].name')"
+              for want in "${ASSET}" checksums.txt; do
+                grep -qxF "${want}" <<<"${assets}" || {
+                  echo "::error title=Release::${tag} is published without ${want}; a published release is frozen, ship the next patch"
+                  exit 1
+                }
+              done
+              echo "::notice title=Release::${tag} is already published; leaving it as it is"
+              exit 0
+            fi
+          fi
+          case "${tag}" in
+            *-*) latest=(--prerelease --latest=false) ;;
+            *) latest=(--latest) ;;
+          esac
+          gh release create "${tag}" "artifacts/${ASSET}" artifacts/checksums.txt \
+            --verify-tag --draft --title "${RELEASE_TITLE}" --notes-file "${RELEASE_NOTES}" "${latest[@]}"
+          gh release edit "${tag}" --draft=false "${latest[@]}"
+
+  # a job of its own: if publishing fails after the release is out, rerun
+  # only this job (gh run rerun <id> --failed); the tap keeps stable
+  # releases only
+  tap:
+    name: Publishing the cask
+    needs: [ release ]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      && !contains(github.ref_name, '-') && needs.release.outputs.cask == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { persist-credentials: false }
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with: { node-version: 24, package-manager-cache: false }
+      # the cask describes the bytes users download, so its sha256 comes
+      # from the published release, never from this run's build
+      - name: Read the published checksum
+        id: asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ needs.release.outputs.asset }}
+        run: |
+          dir="$(mktemp -d)"
+          gh release download "${GITHUB_REF_NAME}" -R "${GITHUB_REPOSITORY}" -D "${dir}" -p checksums.txt -p "${ASSET}"
+          (cd "${dir}" && sha256sum --check --strict checksums.txt)
+          sha="$(awk -v a="${ASSET}" '$2 == a || $2 == "*" a { print $1 }' "${dir}/checksums.txt")"
+          [ -n "${sha}" ] || { echo "::error::checksums.txt names no ${ASSET}"; exit 1; }
+          echo "sha256=${sha}" >> "${GITHUB_OUTPUT}"
+          # the signing mode of the published bytes, not of this run's
+          # secrets: stapler leaves the notarization ticket in
+          # Contents/CodeResources, an ad-hoc build has none
+          if unzip -Z1 "${dir}/${ASSET}" | grep -qx 'Susi.app/Contents/CodeResources'; then
+            echo 'signing=developer-id' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'signing=adhoc' >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Render the cask
+        env:
+          SHA256: ${{ steps.asset.outputs.sha256 }}
+          SIGNING: ${{ steps.asset.outputs.signing }}
+        run: |
+          node .github/scripts/release.mjs cask --version "${GITHUB_REF_NAME#v}" --sha256 "${SHA256}" \
+            --signing "${SIGNING}" --out "${RUNNER_TEMP}/susi.rb"
+          cat "${RUNNER_TEMP}/susi.rb"
+      - name: Mint the tap token
+        id: tap
+        uses: actions/create-github-app-token@v3.4.0
+        with:
+          client-id: ${{ secrets.OCTOLAB_RELEASER_CLIENT_ID }}
+          private-key: ${{ secrets.OCTOLAB_RELEASER_KEY }}
+          owner: ${{ needs.release.outputs.tap-owner }}
+          repositories: ${{ needs.release.outputs.tap-name }}
+          permission-contents: write
+      # the contents API with the App token and no author: GitHub signs the
+      # commit as the App; the same cask again is a no-op, an older one is
+      # refused
+      - name: Publish the cask
+        env:
+          GH_TOKEN: ${{ steps.tap.outputs.token }}
+        run: node .github/scripts/release.mjs tap "${RUNNER_TEMP}/susi.rb" --version "${GITHUB_REF_NAME#v}"
+
+  notify:
+    name: Notifying
+    needs: [ release, tap ]
+    runs-on: ubuntu-24.04
+    # success() is false when the tap job is skipped, on a prerelease or a
+    # snapshot
+    if: ${{ !cancelled() }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+
+      - name: Send notification
+        uses: ./.github/actions/notify
+        with:
+          emoji: 🚀
+          channel: ${{ secrets.SLACK_WEBHOOK }}
+          success: ${{ ! contains(needs.*.result, 'failure') }}

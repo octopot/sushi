@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Reinstalls the npm dependencies when a merge changed the lockfile.
+set -euo pipefail
+
+if ! git diff --quiet ORIG_HEAD HEAD -- package-lock.json 2>/dev/null; then
+  npm ci
+fi

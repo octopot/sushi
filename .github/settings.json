@@ -1,0 +1,32 @@
+{
+  "x-release": {
+    "tag_pattern": "^v\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$",
+    "notes": "docs/content/changelog/{tag}.md",
+    "branches": [],
+    "versions": ["package.json", "src-tauri/Cargo.toml", "src-tauri/tauri.conf.json", "src-tauri/Cargo.lock", "docs/release.mjs"],
+    "app": "Susi.app",
+    "asset": "susi_{version}_darwin-arm64.zip",
+    "tap": {
+      "owner": "octolab",
+      "name": "homebrew-tap",
+      "cask": "Casks/susi.rb",
+      "template": ".github/homebrew/susi.rb"
+    }
+  },
+  "secrets": {
+    "OCTOLAB_RELEASER_CLIENT_ID": { "scope": "organization" },
+    "OCTOLAB_RELEASER_KEY": { "scope": "organization" },
+    "APPLE_CERTIFICATE": { "scope": "repository", "optional": true },
+    "APPLE_CERTIFICATE_PASSWORD": { "scope": "repository", "optional": true },
+    "APPLE_SIGNING_IDENTITY": { "scope": "repository", "optional": true },
+    "APPLE_API_ISSUER": { "scope": "repository", "optional": true },
+    "APPLE_API_KEY": { "scope": "repository", "optional": true },
+    "APPLE_API_PRIVATE_KEY": { "scope": "repository", "optional": true },
+    "SLACK_WEBHOOK": { "scope": "organization", "optional": true }
+  },
+  "pages": {
+    "cname": "susi.octolab.org",
+    "https_enforced": true,
+    "build_type": "workflow"
+  }
+}
