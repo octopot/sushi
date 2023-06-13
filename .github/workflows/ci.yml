@@ -61,7 +61,9 @@ permissions:
 jobs:
   frontend:
     name: Testing the frontend
-    runs-on: ubuntu-24.04
+    # macOS, like the app: the scenarios press ⌘← and ⌘Z as editor keys,
+    # which Chrome on Linux does not bind
+    runs-on: macos-26
 
     steps:
       - name: Checkout the repository

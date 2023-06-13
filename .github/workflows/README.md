@@ -33,7 +33,8 @@ flowchart LR
   `github-actions` ecosystem daily, as well as npm at the root and in `docs/`
   and Cargo in `src-tauri/`. Review upstream changes and the action contract
   before accepting an update.
-- Linux jobs run on `ubuntu-24.04`. Jobs that compile the app run on
+- Linux jobs run on `ubuntu-24.04`. Jobs that compile the app or run its
+  browser scenarios (they press ⌘← and ⌘Z as macOS editor keys) run on
   `macos-26` (Apple Silicon): its default Xcode 26 and macOS 26 SDK build the
   Liquid Glass window, and the image ships Rust, Node.js and Google Chrome.
   Move to the next image deliberately, after checking its Xcode in
