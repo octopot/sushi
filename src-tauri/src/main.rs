@@ -253,7 +253,8 @@ fn main() {
             library::library_read,
             rewrite::rewrite,
             rewrite::cancel_rewrite,
-            rewrite::warm_model
+            rewrite::warm_model,
+            rewrite::ollama_download
         ])
         .build(context)
         .expect("Susi could not start");

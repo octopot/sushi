@@ -73,6 +73,9 @@ window.__TAURI_INTERNALS__ = {
       case 'settings_load': return { rules, terms: dictionary.terms }
       case 'shortcut_status': return null
       case 'warm_model': return
+      case 'ollama_download':
+        emit({ type: 'notice', text: 'In the app, this opens the Ollama download page in your browser.' })
+        return
       case 'copy_text':
         // Only a copy the visitor asked for reaches the real clipboard; the tour never does.
         if (!tour) await navigator.clipboard?.writeText(args.text).catch(() => {})

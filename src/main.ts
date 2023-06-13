@@ -103,8 +103,42 @@ function notify(message: string) {
   noticeTimer = window.setTimeout(() => { notice = ''; update() }, 3000)
   update()
 }
+/**
+ * The messages of src-tauri/src/rewrite.rs that carry an action, word for word; a Rust test keeps them in step.
+ * Only these exact strings get one, so text from elsewhere (an error Ollama returned, say) always stays plain.
+ */
+const ollamaActions: { message: string; phrase: string; download?: true }[] = [
+  { message: 'Ollama is not installed on this Mac. Download Ollama', phrase: 'Download Ollama', download: true },
+  { message: 'Install the local model with ollama pull qwen3.5:4b-mlx', phrase: 'ollama pull qwen3.5:4b-mlx' },
+  { message: 'Ollama did not start. Run ollama serve and try again.', phrase: 'ollama serve' },
+]
+
+/**
+ * Gives one of Susi's own Ollama messages its action: "Download Ollama" opens the download page through a command
+ * that takes no address, a command is copied and `done` shows the confirmation. Other text comes back as it is.
+ */
+function actionable(text: string, done: (message: string) => void): (Node | string)[] {
+  const known = ollamaActions.find(action => action.message === text)
+  if (!known) return [text]
+  const { phrase, download } = known
+  const button = download ? el('button', 'link', phrase) : el('button', 'command', phrase, icon('copy'))
+  button.type = 'button'
+  button.title = download ? 'Open ollama.com/download' : 'Copy'
+  if (!download) button.setAttribute('aria-label', 'Copy ' + phrase)
+  button.addEventListener('mousedown', event => event.preventDefault())
+  button.addEventListener('click', async () => {
+    try {
+      if (download) return await invoke('ollama_download')
+      await (desktop ? invoke('copy_text', { text: phrase }) : navigator.clipboard.writeText(phrase))
+      done('Copied. Run it in Terminal, then try again.')
+    } catch (e) { fail(e) }
+  })
+  const at = text.lastIndexOf(phrase)
+  return [text.slice(0, at), button, text.slice(at + phrase.length)].filter(part => part !== '')
+}
 function hint(): (Node | string)[] {
-  if (error || settingsError) return [error || settingsError]
+  // Tab from the prompt reaches a button here; after a copy the caret goes back to the prompt.
+  if (error || settingsError) return actionable(error || settingsError, message => { error = ''; notify(message); editor.focus() })
   if (notice) return [notice]
   if (busy) return []
   if (chain.diff) return [el('span', 'label', chain.current.label ?? ''), ' · ', keys('⌘', '←'), ' Back · ', keys('⌘', '→'), ' Accept']
@@ -177,6 +211,14 @@ const actions = new Palette(windowRoot, {
     if (custom) rows.splice(instructionFirst(settings.rules, custom) ? 0 : rows.length, 0, free)
     actions.render(rows)
   },
+  // Tab and Shift-Tab move between the field and a button in the note (see openActions); the palette keeps them otherwise.
+  onKey: event => {
+    const button = actions.footer.querySelector('button')
+    if (event.key !== 'Tab' || !button) return false
+    event.preventDefault()
+    button.focus()
+    return true
+  },
   onPaste: query => {
     // Dictation: a pasted phrase that names a rule runs it right away.
     const spoken = phrase(query)
@@ -184,6 +226,14 @@ const actions = new Palette(windowRoot, {
     if (rule) run(rule)
   },
   onClose: closed,
+})
+
+/** Bumped on every ⌘K opening, so that a late warm-up answer of an earlier one is ignored. */
+let warming = 0
+actions.footer.addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return
+  event.preventDefault()
+  actions.focus()
 })
 
 function openActions() {
@@ -194,7 +244,18 @@ function openActions() {
   target = selection.empty ? { from: 0, to: editor.text().length } : { from: selection.from, to: selection.to }
   actions.input.placeholder = selection.empty ? 'What to do with the prompt?' : 'What to do with the selection?'
   opened(actions)
-  if (desktop) invoke('warm_model').catch(() => {})
+  // The warm-up also says when an edit is bound to fail; a quiet note, the actions stay usable.
+  // Only the answer to this opening counts: an earlier one may arrive late.
+  const ticket = ++warming
+  const note = (...parts: (Node | string)[]) => actions.footer.replaceChildren(...parts.length ? [el('span', 'note', ...parts)] : [])
+  note()
+  if (desktop) invoke<string | null>('warm_model')
+    .then(text => {
+      if (ticket !== warming || !actions.isOpen) return
+      if (!text) return note()
+      note(...actionable(text, message => { note(message); actions.focus() }))
+    })
+    .catch(() => {})
 }
 
 function run(rule: Rule) {
@@ -337,6 +398,13 @@ document.addEventListener('keydown', event => {
   }
   if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey) {
     return stop(() => actions.isOpen ? actions.close() : library.isOpen ? library.close() : busy ? cancel() : hide())
+  }
+  // Tab moves between the prompt and a button in the hint line, and back: WebKit's own Tab order skips buttons.
+  const hinted = event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey && !workspace.inert
+    ? hintSlot.querySelector('button') : null
+  if (hinted) {
+    const inHint = hintSlot.contains(document.activeElement)
+    if (inHint || $('editor').contains(document.activeElement)) return stop(() => inHint ? editor.focus() : hinted.focus())
   }
   if (!event.metaKey || event.ctrlKey || event.altKey) return
   const code = event.code

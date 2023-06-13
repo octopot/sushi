@@ -31,6 +31,25 @@
     input.value = 'shrtn'
     input.dispatchEvent(new Event('input', { bubbles: true }))
   }
+  // Ollama's answers for the frames without it; the stage build never contacts Ollama.
+  const ollama = {
+    '18-no-ollama': 'Ollama is not installed on this Mac. Download Ollama',
+    '19-no-model': 'Install the local model with ollama pull qwen3.5:4b-mlx',
+    '21-actions-note': 'Ollama is not installed on this Mac. Download Ollama',
+  }[FRAME]
+  if (ollama) {
+    const internals = window.__TAURI_INTERNALS__, invoke = internals.invoke.bind(internals)
+    internals.invoke = (command, ...rest) => command === 'rewrite' ? Promise.reject(ollama)
+      : command === 'warm_model' ? Promise.resolve(ollama) : invoke(command, ...rest)
+    key(document.body, 'KeyK', 'k', { metaKey: true })
+    await sleep(300)
+    if (FRAME !== '21-actions-note') {
+      const input = document.querySelector('.palette.actions input')
+      input.value = 'Shorten'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      key(input, 'Enter', 'Enter')
+    }
+  }
   // A copy in capture mode leaves the clipboard alone and keeps the window: only the result in the editor shows.
   if (FRAME === '16-copy-accepts') key(document.body, 'Enter', 'Enter', { metaKey: true })
   if (FRAME === '17-copy-clears') key(document.body, 'Enter', 'Enter', { metaKey: true, shiftKey: true })

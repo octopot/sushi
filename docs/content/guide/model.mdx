@@ -11,7 +11,7 @@ Susi edits with one model, <code>{release.model}</code>, through [Ollama](https:
 
 ## Set it up
 
-1. Install the [Ollama app](https://ollama.com/download).
+1. Install the [Ollama app](https://ollama.com/download). The `ollama` command-line tool alone works too, for example from `brew install ollama`.
 2. Download the model once:
 
 ```sh
@@ -22,7 +22,8 @@ That is all. Susi talks to Ollama at `http://127.0.0.1:11434` directly, bypassin
 
 ## What Susi does for you
 
-- **Starts Ollama.** If Ollama is not running, the first edit opens the Ollama app in the background and waits up to about twelve seconds for it.
+- **Starts Ollama.** If Ollama is not running, the first edit starts it in the background and waits up to about twelve seconds: the Ollama app, or `ollama serve` when only the command-line tool is installed. A server Susi starts keeps running after you quit Susi, as the Ollama app does.
+- **Says what is missing.** Without Ollama, the edit stops at once, and **Download Ollama** on the line above the bottom bar opens the download page in your browser. Without the model, that line shows `ollama pull qwen3.5:4b-mlx`: click it to copy the command, then run it in Terminal. **⌘K** shows the same note above its field before you choose an action, and **Turn into goal** still works, since it needs no model. From the keyboard, **Tab** moves to the link or the command and **Enter** uses it.
 - **Loads the model early.** When you press **⌘K** and Ollama is already running, Susi asks it to load the model into memory, so the edit itself starts sooner. This sends no text.
 - **Checks that the model is local.** Before it sends any text, Susi asks Ollama about the model. If the model is missing, or Ollama would forward it to a cloud service, Susi stops with a message instead of sending your text.
 
@@ -43,4 +44,4 @@ ollama list                                                   # qwen3.5:4b-mlx i
 ollama ps                                                     # what is loaded into memory now
 ```
 
-If you start the server yourself with `ollama serve` instead of the app, start it before you edit: Susi can only start the Ollama app. [Troubleshooting →](/guide/troubleshooting/)
+Susi finds the Ollama app the way macOS does, and the `ollama` command in `/opt/homebrew/bin` or `/usr/local/bin`. A server Susi starts does not see the environment of your shell: if you set `OLLAMA_*` variables there, start the server yourself before you edit. [Troubleshooting →](/guide/troubleshooting/)

@@ -156,6 +156,16 @@ bool susi_copy(const unsigned char *bytes, size_t count) {
     }
 }
 
+// Where Launch Services finds the app with this bundle identifier, as the Finder would.
+// Writes a NUL-terminated path into out and returns true, or false when no app is registered.
+bool susi_app_path(const char *bundle_id, char *out, size_t size) {
+    @autoreleasepool {
+        NSString *identifier = [NSString stringWithUTF8String:bundle_id];
+        NSURL *url = identifier ? [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:identifier] : nil;
+        return url.fileURL && [url getFileSystemRepresentation:out maxLength:size];
+    }
+}
+
 void susi_stage_appearance(const char *name) {
     if (!strcmp(name, "dark")) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
     else if (!strcmp(name, "light")) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];

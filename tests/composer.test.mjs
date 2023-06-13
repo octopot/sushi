@@ -70,7 +70,7 @@ test('Susi composer', async t => {
       }).observe(document, { childList: true })
       for (const [key, value] of Object.entries(storage)) if (!localStorage.getItem(key)) localStorage.setItem(key, value)
       const state = window.fixture = {
-        copies: [], hidden: 0, reads: [], requests: [], replies: [], cancelled: [], warmed: 0, openedDictionary: 0,
+        copies: [], hidden: 0, reads: [], requests: [], replies: [], cancelled: [], warmed: 0, warmers: [], downloads: 0, openedDictionary: 0,
         delay: false, callbacks: [], listeners: {},
       }
       // Simulates a full localStorage for the draft: 'always', or only for chains longer than three versions.
@@ -88,13 +88,18 @@ test('Susi composer', async t => {
             case 'settings_load':
               if (state.badSettings) throw new Error('rules.json: expected an array')
               return { rules, terms }
-            case 'warm_model': state.warmed++; return
+            case 'warm_model':
+              state.warmed++
+              if (state.holdWarm) return new Promise(resolve => state.warmers.push(resolve))
+              return state.note ?? null
+            case 'ollama_download': state.downloads++; return
             case 'copy_text':
               if (state.badCopy) throw new Error('The clipboard is not available')
               state.copies.push(args.text); return
             case 'hide_launcher': state.hidden++; return
             case 'rewrite':
               state.requests.push(args)
+              if (state.failure) throw state.failure
               if (state.delay) return new Promise(resolve => { state.finish = resolve })
               return state.replies.shift()
             case 'cancel_rewrite': state.cancelled.push(args.requestId); return
@@ -741,6 +746,206 @@ test('Susi composer', async t => {
     await actionsInput(page).press('Enter')
     await page.locator('#hint', { hasText: 'No changes' }).waitFor()
     assert.equal(await page.evaluate(() => window.fixture.requests.length), 0)
+  })
+
+  // The messages as src-tauri/src/rewrite.rs returns them; Tauri rejects with the bare string.
+  const ollama = {
+    missing: 'Ollama is not installed on this Mac. Download Ollama',
+    model: 'Install the local model with ollama pull qwen3.5:4b-mlx',
+    serve: 'Ollama did not start. Run ollama serve and try again.',
+  }
+  const oneLine = page => hint(page).evaluate(node => node.scrollWidth <= node.clientWidth && node.getBoundingClientRect().height <= 22)
+  async function failEdit(page, failure) {
+    await page.evaluate(failure => { window.fixture.failure = failure }, failure)
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await actionsInput(page).press('Enter')
+    await page.locator('#hint.error').waitFor()
+  }
+
+  await t.test('without Ollama the hint links to the download, and the prompt stays as it was', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText(brief.join('\n'))
+    await failEdit(page, ollama.missing)
+    assert.equal(await hint(page).textContent(), ollama.missing)
+    assert.equal(await oneLine(page), true, 'the hint fits one line at 750 × 470')
+    assert.equal(await editorText(page), brief.join('\n'))
+    await capture(page, '18-no-ollama')
+    await page.getByRole('button', { name: 'Download Ollama' }).click()
+    await page.waitForFunction(() => window.fixture.downloads === 1)
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Prompt', 'the click keeps the caret in the prompt')
+    assert.deepEqual(await page.evaluate(() => window.fixture.copies), [])
+
+    // What needs no model still works.
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('goal')
+    await actionsInput(page).press('Enter')
+    await page.locator('.cm-diff-ins', { hasText: '/goal' }).waitFor()
+    assert.equal(await page.locator('#hint.error').count(), 0)
+    await copy(page, '/goal ' + brief.join('\n'))
+  })
+
+  await t.test('a missing model or server offers its command to copy', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText('Check the logs and report back.')
+    for (const [failure, command] of [[ollama.model, 'ollama pull qwen3.5:4b-mlx'], [ollama.serve, 'ollama serve']]) {
+      await failEdit(page, failure)
+      assert.equal(await hint(page).textContent(), failure)
+      assert.equal(await oneLine(page), true, 'the hint fits one line at 750 × 470')
+      if (command === 'ollama serve') await capture(page, '20-ollama-serve')
+      else await capture(page, '19-no-model')
+      await page.getByRole('button', { name: 'Copy ' + command }).click()
+      await page.waitForFunction(command => window.fixture.copies.at(-1) === command, command)
+      await page.locator('#hint', { hasText: 'Copied. Run it in Terminal, then try again.' }).waitFor()
+      assert.equal(await page.locator('#hint.error').count(), 0)
+      assert.equal(await page.evaluate(() => window.fixture.hidden), 0, 'copying the command keeps the panel open')
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Prompt')
+    }
+    // Other errors stay plain text.
+    await failEdit(page, 'Local Ollama request failed: connection reset')
+    assert.equal(await hint(page).locator('button').count(), 0)
+  })
+
+  await t.test('⌘K notes a missing Ollama or model quietly, and actions still run', async t => {
+    const page = await start(t)
+    const note = page.locator('.actions .footer')
+    await page.keyboard.insertText(brief.join('\n'))
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).waitFor()
+    await page.waitForFunction(() => window.fixture.warmed === 1)
+    assert.equal(await note.isVisible(), false, 'nothing to say while Ollama is ready')
+    await page.keyboard.press('Escape')
+
+    await page.evaluate(note => { window.fixture.note = note }, ollama.missing)
+    await page.keyboard.press('Meta+k')
+    await note.getByRole('button', { name: 'Download Ollama' }).waitFor()
+    assert.equal(await note.textContent(), ollama.missing)
+    assert.equal(await page.locator('#hint.error').count(), 0, 'a note, not an error')
+    await capture(page, '21-actions-note')
+    await note.getByRole('button', { name: 'Download Ollama' }).click()
+    await page.waitForFunction(() => window.fixture.downloads === 1)
+    assert.equal(await actionsInput(page).evaluate(node => node === document.activeElement), true, 'the field keeps the caret')
+    await actionsInput(page).fill('goal')
+    await actionsInput(page).press('Enter')
+    await page.locator('.cm-diff-ins', { hasText: '/goal' }).waitFor()
+
+    await page.evaluate(note => { window.fixture.note = note }, ollama.model)
+    await page.keyboard.press('Meta+k')
+    await note.getByRole('button', { name: 'Copy ollama pull qwen3.5:4b-mlx' }).click()
+    await page.waitForFunction(() => window.fixture.copies.at(-1) === 'ollama pull qwen3.5:4b-mlx')
+    await note.getByText('Copied. Run it in Terminal, then try again.').waitFor()
+    assert.equal(await actionsInput(page).isVisible(), true, 'the palette stays open')
+
+    await page.evaluate(() => { window.fixture.note = null })
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Meta+k')
+    await page.waitForFunction(() => window.fixture.warmed === 4)
+    assert.equal(await note.isVisible(), false, 'the note goes once the cause is fixed')
+  })
+
+  await t.test('only Susi\'s own messages get actions; any other text stays plain', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText('Check the logs and report back.')
+    for (const hostile of [
+      'Ollama: pull model manifest: file does not exist. Install the model with ollama pull qwen3.5:4b-mlx',
+      'Ollama: run ollama pull other-model:latest first',
+      'Ollama is not installed on this Mac. Download Ollama now',
+      'Error: Download Ollama',
+      'ollama serve',
+    ]) {
+      await failEdit(page, hostile)
+      assert.equal(await hint(page).textContent(), hostile)
+      assert.equal(await hint(page).locator('button').count(), 0, hostile)
+      await page.keyboard.press('Meta+k')
+      await actionsInput(page).waitFor()
+      await page.keyboard.press('Escape')
+    }
+    await page.evaluate(note => { window.fixture.note = note }, 'Install the local model with ollama pull other-model')
+    await page.keyboard.press('Meta+k')
+    await page.locator('.actions .footer .note').waitFor()
+    assert.equal(await page.locator('.actions .footer button').count(), 0)
+  })
+
+  await t.test('keyboard: Tab reaches the actions in the ⌘K note and in the hint line', async t => {
+    const page = await start(t)
+    const focused = () => page.evaluate(() => document.activeElement.getAttribute('aria-label') ?? document.activeElement.textContent)
+    await page.keyboard.insertText('Check the logs and report back.')
+
+    // The ⌘K note: Tab from the field to its button, Tab or Shift-Tab back, Enter and Space activate, Esc closes.
+    await page.evaluate(note => { window.fixture.note = note }, ollama.missing)
+    await page.keyboard.press('Meta+k')
+    await page.locator('.actions .footer button').waitFor()
+    await page.keyboard.press('Tab')
+    assert.equal(await focused(), 'Download Ollama')
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => window.fixture.downloads === 1)
+    assert.equal(await page.evaluate(() => window.fixture.requests.length), 0, 'Enter on the link runs no action')
+    await page.keyboard.press('Space')
+    await page.waitForFunction(() => window.fixture.downloads === 2)
+    await page.keyboard.press('Tab')
+    assert.equal(await focused(), 'Actions', 'Tab goes back to the field')
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('Shift+Tab')
+    assert.equal(await focused(), 'Actions', 'Shift-Tab goes back to the field')
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('Escape')
+    await actionsInput(page).waitFor({ state: 'hidden' })
+    assert.equal(await focused(), 'Prompt')
+
+    await page.evaluate(note => { window.fixture.note = note }, ollama.model)
+    await page.keyboard.press('Meta+k')
+    await page.locator('.actions .footer button').waitFor()
+    await page.keyboard.press('Tab')
+    assert.equal(await focused(), 'Copy ollama pull qwen3.5:4b-mlx')
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => window.fixture.copies.at(-1) === 'ollama pull qwen3.5:4b-mlx')
+    assert.equal(await focused(), 'Actions', 'after the copy the caret is back in the field')
+    await page.keyboard.press('Escape')
+
+    // The hint line: Tab from the prompt reaches its button, Enter activates it.
+    await page.evaluate(() => { window.fixture.note = null })
+    await failEdit(page, ollama.serve)
+    assert.equal(await focused(), 'Prompt')
+    await page.keyboard.press('Tab')
+    assert.equal(await focused(), 'Copy ollama serve')
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => window.fixture.copies.at(-1) === 'ollama serve')
+    assert.equal(await focused(), 'Prompt', 'after the copy the caret is back in the prompt')
+    await failEdit(page, ollama.missing)
+    await page.keyboard.press('Tab')
+    assert.equal(await focused(), 'Download Ollama')
+    await page.keyboard.press('Space')
+    await page.waitForFunction(() => window.fixture.downloads === 3)
+  })
+
+  await t.test('a late warm-up answer from an earlier ⌘K never overwrites a newer one', async t => {
+    const page = await start(t)
+    const note = page.locator('.actions .footer')
+    await page.keyboard.insertText('Check the logs and report back.')
+    await page.evaluate(() => { window.fixture.holdWarm = true })
+    await page.keyboard.press('Meta+k')
+    await page.waitForFunction(() => window.fixture.warmers.length === 1)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Meta+k')
+    await page.waitForFunction(() => window.fixture.warmers.length === 2)
+    // The model was installed in between: the newer opening hears "ready" first, the older one "missing" last.
+    await page.evaluate(() => window.fixture.warmers[1](null))
+    await page.evaluate(model => window.fixture.warmers[0](model), ollama.model)
+    await page.waitForTimeout(100)
+    assert.equal(await note.isVisible(), false, 'the earlier answer is ignored')
+
+    // And the other way round: a newer "missing" answer stays, an older "ready" does not clear it.
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Meta+k')
+    await page.waitForFunction(() => window.fixture.warmers.length === 3)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Meta+k')
+    await page.waitForFunction(() => window.fixture.warmers.length === 4)
+    await page.evaluate(model => window.fixture.warmers[3](model), ollama.model)
+    await note.getByText(ollama.model).waitFor()
+    await page.evaluate(() => window.fixture.warmers[2](null))
+    await page.waitForTimeout(100)
+    assert.equal(await note.textContent(), ollama.model)
   })
 
   await t.test('light appearance', async t => {

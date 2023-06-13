@@ -23,8 +23,10 @@ If the panel shows but ignores keys, click inside it: a panel that is visible bu
 
 | Message | What to do |
 | --- | --- |
-| *Install the local model with ollama pull qwen3.5:4b-mlx* | Run `ollama pull qwen3.5:4b-mlx`. |
+| *Ollama is not installed on this Mac. Download Ollama* | Susi found neither the Ollama app nor the `ollama` command. Click **Download Ollama** to open the download page, install the app, then download the model. |
+| *Install the local model with ollama pull qwen3.5:4b-mlx* | Click the command to copy it, run it in Terminal, and edit again once the download finishes. |
 | *Start Ollama on this Mac and try again.* | Susi could not start Ollama in time. Open the Ollama app, wait until its icon appears in the menu bar, and edit again. |
+| *Ollama did not start. Run ollama serve and try again.* | Only the command-line tool is installed, and the server Susi started did not answer in time. Click the command to copy it, run it in Terminal and leave that window open, then edit again. |
 | *Editing requires the local model qwen3.5:4b-mlx.* | The model Ollama offers under this name is not a local copy, for example one forwarded to a cloud service. Remove it with `ollama rm qwen3.5:4b-mlx` and pull it again. |
 | *Select a shorter passage. The text and instruction must fit within 12 KB.* | Select the part you want to change instead of the whole prompt, or shorten your instruction. |
 | *The model reached its context limit. Select a shorter passage.* | The same: edit a shorter part. |

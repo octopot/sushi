@@ -71,7 +71,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 
 To use the prompts of a Tuna assistant, write the absolute path of its `Input` folder as the single line of `library-path.txt` next to `rules.json`. Formats, validation and CUE schemas are in the [local files specification](docs/specs/local-files.md).
 
-**Local model.** Edits run on Ollama at `127.0.0.1:11434` with `qwen3.5:4b-mlx`. If Ollama is not running, the first edit starts it; opening ⌘K asks a running Ollama to load the model in advance. The text with its instruction is limited to 12 KB, so select a passage of a long prompt.
+**Local model.** Edits run on Ollama at `127.0.0.1:11434` with `qwen3.5:4b-mlx`. If Ollama is not running, the first edit starts it: the app, or `ollama serve` when only the command-line tool is installed. Without Ollama or the model, the hint links to the download or offers `ollama pull` to copy; opening ⌘K says the same and asks a running Ollama to load the model in advance. The text with its instruction is limited to 12 KB, so select a passage of a long prompt.
 
 v0.1.0 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Susi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
 

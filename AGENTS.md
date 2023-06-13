@@ -14,7 +14,7 @@ Susi is a local prompt composer for macOS with an icon in the menu bar. ⌘⇧Sp
 | Library sections, Tab, the T/P/D sequences and 1–9 | [src/library.ts](src/library.ts). |
 | ⌘K actions, starting and cancelling an edit, the hint above the bottom line, keys, the draft in `localStorage` | [src/main.ts](src/main.ts) ties together the editor, the palettes and the Tauri commands. |
 | Window look, keycaps, colors on glass | [src/style.css](src/style.css), markup in [index.html](index.html), icons in [src/icons.ts](src/icons.ts). |
-| Edit quality and speed, warm-up and cancelling the model request | [src-tauri/src/rewrite.rs](src-tauri/src/rewrite.rs) — the local model check, the system instruction, the Ollama call. |
+| Edit quality and speed, warm-up and cancelling the model request | [src-tauri/src/rewrite.rs](src-tauri/src/rewrite.rs) — finding and starting Ollama, the local model check, the system instruction, the Ollama call. |
 | Reading Markdown, template titles, choosing the Tuna folder | [src-tauri/src/library.rs](src-tauri/src/library.rs). For a separate library set `SUSI_LIBRARY_DIR`. |
 | Action and dictionary files | [src-tauri/src/settings.rs](src-tauri/src/settings.rs), [examples and CUE schemas](docs/specs/local-files.md). |
 | Glass, the icon menu, the global hotkey, showing the window, the active Space, returning focus, copying, capture mode | [src-tauri/src/main.rs](src-tauri/src/main.rs) registers the commands and manages the window. [src-tauri/src/macos.m](src-tauri/src/macos.m) calls AppKit. Window parameters and Liquid Glass are in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json). |

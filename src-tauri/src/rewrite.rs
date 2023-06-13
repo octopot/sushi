@@ -3,7 +3,10 @@ use serde::Deserialize;
 use serde_json::json;
 use std::{
     collections::HashMap,
-    process::Command,
+    ffi::{CStr, CString},
+    os::unix::process::CommandExt,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
     sync::{LazyLock, Mutex},
     time::Duration,
 };
@@ -29,12 +32,145 @@ fn client() -> Result<&'static Client, String> {
 }
 
 async fn online(client: &Client, wait: Duration) -> bool {
+    answers(client, SERVER, wait).await
+}
+
+async fn answers(client: &Client, server: &str, wait: Duration) -> bool {
     client
-        .get(format!("{SERVER}/api/version"))
+        .get(format!("{server}/api/version"))
         .timeout(wait)
         .send()
         .await
         .is_ok_and(|r| r.status().is_success())
+}
+
+// The page turns "Download Ollama" into a link to DOWNLOAD and an `ollama …` command into a
+// button that copies it (src/main.ts): keep those phrases intact, "Download Ollama" last.
+const NOT_INSTALLED: &str = "Ollama is not installed on this Mac. Download Ollama";
+const APP_DID_NOT_START: &str = "Start Ollama on this Mac and try again.";
+const CLI_DID_NOT_START: &str = "Ollama did not start. Run ollama serve and try again.";
+const DOWNLOAD: &str = "https://ollama.com/download";
+const OLLAMA_APP: &str = "com.electron.ollama";
+
+fn missing_model() -> String {
+    format!("Install the local model with ollama pull {MODEL}")
+}
+
+#[derive(Debug, PartialEq)]
+enum Install {
+    App(PathBuf),
+    Cli(PathBuf),
+    Missing,
+}
+
+/// Where to look besides Launch Services. A GUI app has a minimal PATH, so the binary is
+/// looked up in the folders installers put it in.
+struct Places {
+    apps: Vec<PathBuf>,
+    binaries: Vec<PathBuf>,
+}
+
+impl Places {
+    fn system() -> Self {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        let apps = [
+            Some(PathBuf::from("/Applications")),
+            home.map(|h| h.join("Applications")),
+        ];
+        Self {
+            apps: apps.into_iter().flatten().collect(),
+            binaries: ["/opt/homebrew/bin/ollama", "/usr/local/bin/ollama"]
+                .map(PathBuf::from)
+                .into(),
+        }
+    }
+}
+
+extern "C" {
+    fn susi_app_path(bundle_id: *const libc::c_char, out: *mut libc::c_char, size: usize) -> bool;
+}
+
+/// The Ollama app as Launch Services knows it, by bundle identifier.
+fn registered_app() -> Option<PathBuf> {
+    let id = CString::new(OLLAMA_APP).ok()?;
+    let mut out = vec![0 as libc::c_char; libc::PATH_MAX as usize];
+    unsafe { susi_app_path(id.as_ptr(), out.as_mut_ptr(), out.len()) }.then(|| {
+        let path = unsafe { CStr::from_ptr(out.as_ptr()) };
+        PathBuf::from(path.to_string_lossy().into_owned())
+    })
+}
+
+/// The app wins over the command-line tool: it is what the Ollama installer sets up and
+/// what keeps the server running. Paths that no longer exist do not count.
+fn locate(registered: Option<PathBuf>, places: &Places) -> Install {
+    use std::os::unix::fs::PermissionsExt;
+    let app = registered
+        .into_iter()
+        .chain(places.apps.iter().map(|dir| dir.join("Ollama.app")))
+        .find(|path| path.is_dir());
+    if let Some(app) = app {
+        return Install::App(app);
+    }
+    places
+        .binaries
+        .iter()
+        .find(|path| {
+            std::fs::metadata(path)
+                .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+        })
+        .map_or(Install::Missing, |bin| Install::Cli(bin.clone()))
+}
+
+/// Starts the server in its own process group with no terminal, so it outlives Susi as the
+/// Ollama app would. A thread waits for it, so an exit (for example, the port is already
+/// taken) leaves no zombie behind.
+fn serve(bin: &Path) -> bool {
+    let child = Command::new(bin)
+        .arg("serve")
+        .current_dir("/")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .process_group(0)
+        .spawn();
+    match child {
+        Ok(mut child) => {
+            std::thread::spawn(move || child.wait());
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+/// How long an edit waits for a server it started.
+const START_LIMIT: Duration = Duration::from_secs(12);
+
+/// Polls until the server answers, under one deadline for the sleeps and the requests together,
+/// so a port that accepts connections but never answers cannot stretch it. Dropping the future
+/// (Esc cancels the edit) stops the polling.
+async fn ready_within(client: &Client, server: &str, limit: Duration) -> bool {
+    let poll = async {
+        loop {
+            tokio::time::sleep(Duration::from_millis(250)).await;
+            if answers(client, server, Duration::from_secs(1)).await {
+                return;
+            }
+        }
+    };
+    tokio::time::timeout(limit, poll).await.is_ok()
+}
+
+/// Opens the Ollama download page in the default browser. Takes no address from the page.
+/// Async, so that waiting for `open` stays off the UI thread.
+#[tauri::command]
+pub async fn ollama_download() -> Result<(), String> {
+    if crate::staged() {
+        return Ok(());
+    }
+    match Command::new("/usr/bin/open").arg(DOWNLOAD).status() {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(format!("Could not open {DOWNLOAD}")),
+    }
 }
 
 // Inspect the model without sending user text. A locally configured cloud alias
@@ -47,7 +183,7 @@ async fn ensure_local_model(client: &Client) -> Result<(), String> {
         .await
         .map_err(|e| format!("Could not verify the local model: {e}"))?;
     if !info.status().is_success() {
-        return Err(format!("Install the local model with ollama pull {MODEL}"));
+        return Err(missing_model());
     }
     let info: serde_json::Value = info
         .json()
@@ -117,20 +253,24 @@ async fn infer(
         if !start_ollama_if_offline {
             return Err("This test needs a running Ollama server at 127.0.0.1:11434.".into());
         }
-        // Finder launches have a minimal PATH. Launch the installed app using Launch Services.
-        let _ = Command::new("/usr/bin/open")
-            .args(["-g", "-a", "Ollama"])
-            .status();
-        let mut ready = false;
-        for _ in 0..48 {
-            tokio::time::sleep(Duration::from_millis(250)).await;
-            if online(client, Duration::from_secs(1)).await {
-                ready = true;
-                break;
+        let gave_up = match locate(registered_app(), &Places::system()) {
+            Install::Missing => return Err(NOT_INSTALLED.into()),
+            Install::App(app) => {
+                let _ = Command::new("/usr/bin/open")
+                    .args(["-g", "-a"])
+                    .arg(app)
+                    .status();
+                APP_DID_NOT_START
             }
-        }
-        if !ready {
-            return Err("Start Ollama on this Mac and try again.".into());
+            Install::Cli(bin) => {
+                if !serve(&bin) {
+                    return Err(CLI_DID_NOT_START.into());
+                }
+                CLI_DID_NOT_START
+            }
+        };
+        if !ready_within(client, SERVER, START_LIMIT).await {
+            return Err(gave_up.into());
         }
     }
     ensure_local_model(client).await?;
@@ -169,18 +309,21 @@ async fn infer(
         .ok_or_else(|| "The local model returned an empty response.".into())
 }
 
-/// Loads the model into memory if Ollama is already running. Sends no user text,
-/// never starts Ollama and never reports failure: a real edit explains problems.
+/// Loads the model into memory if Ollama is already running. Sends no user text and never
+/// starts Ollama. Returns a note only when an edit is bound to fail: Ollama is not installed,
+/// or the model is not downloaded. Other problems are left for a real edit to explain.
 #[tauri::command]
-pub async fn warm_model() {
+pub async fn warm_model() -> Option<String> {
     if crate::staged() {
-        return;
+        return None;
     }
-    let Ok(client) = client() else { return };
-    if !online(client, Duration::from_millis(500)).await
-        || ensure_local_model(client).await.is_err()
-    {
-        return;
+    let client = client().ok()?;
+    if !online(client, Duration::from_millis(500)).await {
+        let missing = locate(registered_app(), &Places::system()) == Install::Missing;
+        return missing.then(|| NOT_INSTALLED.into());
+    }
+    if let Err(error) = ensure_local_model(client).await {
+        return (error == missing_model()).then_some(error);
     }
     // An empty message list only loads the model (documented Ollama API).
     let _ = client
@@ -189,6 +332,7 @@ pub async fn warm_model() {
         .json(&json!({"model":MODEL, "messages":[], "options":{"num_ctx":CONTEXT}}))
         .send()
         .await;
+    None
 }
 
 #[tauri::command]
@@ -282,6 +426,90 @@ mod tests {
         .unwrap();
         println!("{noise}");
         assert!(noise.chars().count() <= 20);
+    }
+
+    fn executable(path: &Path) {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::write(path, "#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    #[test]
+    fn finds_ollama_the_way_macos_does() {
+        let dir = tempfile::tempdir().unwrap();
+        let (apps, bins) = (dir.path().join("Applications"), dir.path().join("bin"));
+        std::fs::create_dir_all(&apps).unwrap();
+        std::fs::create_dir_all(&bins).unwrap();
+        let places = Places {
+            apps: vec![dir.path().join("missing"), apps.clone()],
+            binaries: vec![bins.join("ollama"), dir.path().join("other/ollama")],
+        };
+
+        // Nothing at all: no app registered, none in the folders, no binary.
+        assert_eq!(locate(None, &places), Install::Missing);
+        // A file that cannot run and a link into a removed app do not count.
+        std::fs::write(bins.join("ollama"), "").unwrap();
+        assert_eq!(locate(None, &places), Install::Missing);
+        std::fs::remove_file(bins.join("ollama")).unwrap();
+        std::os::unix::fs::symlink(apps.join("Gone.app/ollama"), bins.join("ollama")).unwrap();
+        assert_eq!(locate(None, &places), Install::Missing);
+        // A registered app that has since been deleted does not count either.
+        assert_eq!(
+            locate(Some(dir.path().join("Trash/Ollama.app")), &places),
+            Install::Missing
+        );
+
+        // Only the command-line tool.
+        std::fs::remove_file(bins.join("ollama")).unwrap();
+        executable(&bins.join("ollama"));
+        assert_eq!(locate(None, &places), Install::Cli(bins.join("ollama")));
+
+        // The app wins over the tool: in a standard folder, or wherever Launch Services has it.
+        std::fs::create_dir_all(apps.join("Ollama.app")).unwrap();
+        assert_eq!(locate(None, &places), Install::App(apps.join("Ollama.app")));
+        let elsewhere = dir.path().join("Downloads/Ollama.app");
+        std::fs::create_dir_all(&elsewhere).unwrap();
+        assert_eq!(
+            locate(Some(elsewhere.clone()), &places),
+            Install::App(elsewhere)
+        );
+    }
+
+    #[tokio::test]
+    async fn gives_up_on_a_silent_server_within_the_limit() {
+        // A port that accepts connections and never answers, as a hung server would.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let server = format!("http://{}", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            let held: Vec<_> = listener.incoming().collect();
+            drop(held);
+        });
+        let started = std::time::Instant::now();
+        let limit = Duration::from_millis(1500);
+        assert!(!ready_within(client().unwrap(), &server, limit).await);
+        let took = started.elapsed();
+        assert!(took < limit + Duration::from_millis(300), "{took:?}");
+    }
+
+    #[test]
+    fn the_page_knows_the_messages() {
+        // src/main.ts gives actions only to these exact strings: keep both sides in step.
+        let page = include_str!("../../src/main.ts");
+        for message in [NOT_INSTALLED, CLI_DID_NOT_START, &missing_model()] {
+            assert!(page.contains(&format!("'{message}'")), "{message}");
+        }
+    }
+
+    #[test]
+    fn the_page_can_act_on_the_messages() {
+        // src/main.ts turns these phrases into a link and a copyable command.
+        assert!(NOT_INSTALLED.ends_with(" Download Ollama"));
+        assert!(CLI_DID_NOT_START.contains("ollama serve"));
+        assert!(missing_model().ends_with(&format!("ollama pull {MODEL}")));
+        // One line above the bar at the default window size.
+        for message in [NOT_INSTALLED, CLI_DID_NOT_START, &missing_model()] {
+            assert!(message.chars().count() <= 64, "{message}");
+        }
     }
 
     #[test]
