@@ -1,0 +1,19 @@
+/*
+ * Susi brand, loaded after globals.css, which is kept byte-identical to
+ * octopot/indexit. Only the tokens differ: rice paper and soy-dark green from
+ * the mark (src/mark.svg), salmon for the accent, as in the app (--accent).
+ *
+ * Both blocks restate every token they change: :root and .dark have the same
+ * specificity, so a :root rule here would also win over the dark theme.
+ * Contrast (WCAG): accent 4.9:1 on paper, muted 5.4:1 on paper; dark accent
+ * 7.6:1 and dark muted 8.1:1 on the dark paper.
+ */
+:root {
+  --paper: #fbf8f3; --ink: #1b2a25; --muted: #59665f; --line: #e4ddd2;
+  --accent: #bf4427; --wash: #f4eee5; --card: #fffdf9;
+}
+.dark {
+  --paper: #101513; --ink: #f1ece4; --muted: #a7b2ac; --line: #2b3632;
+  --accent: #ff8a6e; --wash: #1a2320; --card: #151d1a;
+}
+::selection { background: #ffd3c4; color: #1b2a25; }

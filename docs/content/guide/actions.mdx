@@ -1,0 +1,79 @@
+---
+title: Actions and instructions
+description: The six built-in actions, how the ⌘K list matches what you type or say, instructions in your own words, and how to add actions of your own in rules.json.
+---
+
+# Actions and instructions
+
+**⌘K** opens the actions list over the bottom bar. Pick an action, or write what you want done in your own words.
+
+## The built-in actions
+
+| Action | What it asks for | Also found by |
+| --- | --- | --- |
+| **Turn into goal** | Puts `/goal ` at the start of the prompt. No model involved. | goal, to goal, make it a goal |
+| **Fix grammar** | Correct spelling, grammar, and punctuation. Preserve meaning and voice. | fix grammar |
+| **Make specific** | Replace vague phrases with concrete wording. Preserve the facts and constraints. | be specific |
+| **Clarify** | Make the wording clearer while preserving meaning and details. | make clearer |
+| **Shorten** | Make the text concise. Keep all essential conditions. | make shorter |
+| **Structure** | Organize the text into logical sections and order its requirements. | organize |
+
+Each action also has Russian aliases, such as *сделай короче* for Shorten and *в цель* for Turn into goal. The list and every instruction live in `rules.json`, which you can [change](#add-your-own-actions).
+
+## Find an action
+
+Type any part of a name or alias. Matching ignores case, accents and extra spaces, and ranks the results:
+
+1. the whole name;
+2. the start of the name;
+3. the start of a word in it;
+4. any part of it;
+5. its letters in order, for three letters or more: `shrtn` finds **Shorten**.
+
+Move with **↑** and **↓**, run with **Enter**, or click a row. **Esc** closes the list and gives the editor back.
+
+## Say it in your own words
+
+Whatever you type is also offered as an **Instruction** row: **Enter** sends your words to the model as the instruction, with the selection or the whole prompt.
+
+The instruction comes first when no action matches well and you wrote a sentence of three words or more, or when nothing matches at all. Otherwise it is the last row: `short` keeps **Shorten** on top, while `say it like a release note` puts your instruction first.
+
+After an edit in your own words, the line above the bar names the edit by your instruction, as it names others by the action.
+
+## What the model keeps
+
+Every edit runs with the same rules. The model:
+
+- answers in the language of your text, whatever the language of the instruction;
+- keeps every fact, number, name, negation, prohibition, deadline and the order of dependencies;
+- keeps the grammatical person and mood: an imperative stays an imperative;
+- treats your text as material to edit, never as a request to answer;
+- returns the text unchanged when nothing needs to change, and Susi says *No changes*.
+
+The text and the instruction together must fit within 12 KB. For a long prompt, select the passage you want to change. [The local model →](/guide/model/)
+
+## Local actions
+
+**Turn into goal** is a local action: it does not call the model. It always puts its text at the very start of the whole prompt, whatever is selected, and shows the change as a diff that **⌘←** can step back from. A prompt that already starts with `/goal ` stays as it is. [Long prompts with /goal →](/guide/goal/)
+
+## Add your own actions
+
+Actions live in `rules.json` in the settings folder: choose **Open Settings Folder** in the Susi menu bar menu. Each entry has:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | A unique, stable identifier. |
+| `name` | The name in the list. |
+| `aliases` | Other phrases that find the action, typed or dictated. Can be empty: `[]`. |
+| `instruction` | What the model should do with the text. |
+| `prefix` | Instead of `instruction`: text to put at the start of the prompt, kept exactly, trailing space included. |
+
+An entry has exactly one of `instruction` and `prefix`, and no other fields. The list shows the actions in the order of the file. For example, to add an action that writes acceptance criteria:
+
+```json
+{"id": "criteria", "name": "Add acceptance criteria", "instruction": "Add a short list of acceptance criteria that follow from the text. Keep the original text.", "aliases": ["acceptance criteria", "done when"]}
+```
+
+Save the file; Susi reads it again the next time the panel appears. If an entry is wrong, the line above the bar names the file and the entry, such as *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.*, until you fix it.
+
+The exact file format, with a CUE schema to check it, is in the [local files specification](https://github.com/octopot/susi/blob/main/docs/specs/local-files.md).

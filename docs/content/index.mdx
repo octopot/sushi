@@ -1,0 +1,155 @@
+---
+title: The prompt deserves an editor.
+description: Susi is a local prompt composer for macOS. Press ⌘⇧Space, write or dictate, select a phrase and press ⌘K, and a local model rewrites it as an inline diff. ⌘↵ sends the prompt back to your coding agent. Documentation for Susi v0.1.0.
+---
+
+import Link from 'next/link'
+import { Stage } from '../components/stage'
+import { Install } from '../components/install'
+import { Keys } from '../components/keys'
+import { Reveal, SelectionDemo, ChainDemo, VoiceDemo, LibraryDemo, GoalDemo, LocalDiagram } from '../components/showcase'
+import { release } from '../release.mjs'
+
+<div className="susi-home">
+  <section className="susi-hero">
+    <div className="susi-hero-copy">
+      <Link className="release-pill" href="/changelog/v0.1.0/">First release · v{release.version} <span aria-hidden="true">↗</span></Link>
+      <h1>The prompt deserves <em>an&nbsp;editor.</em></h1>
+      <p className="susi-lead">What you ask a coding agent decides what you get back. Susi is a glass panel one keystroke away: write or dictate, select what needs work, press <Keys keys={['⌘', 'K']} />, and a model on your Mac rewrites it right in your text. <Keys keys={['⌘', '↵']} /> sends the prompt back to your agent.</p>
+      <div className="susi-hero-actions">
+        <Install />
+        <Link className="button-text" href="/quick-start/">Quick start <span aria-hidden="true">→</span></Link>
+      </div>
+      <p className="hero-note">{release.chip} · macOS {release.macos} or later · Ollama · free and open source</p>
+    </div>
+  </section>
+
+  <Stage />
+
+  <div className="susi-flow" aria-label="How it works">
+    <span><Keys keys={['⌘', '⇧', 'Space']} /><b>Summon it over any app</b></span>
+    <span><Keys keys={['🎙']} /><b>Write or dictate</b></span>
+    <span><Keys keys={['⌘', 'K']} /><b>Rewrite a selection</b></span>
+    <span><Keys keys={['⌘', '←']} /><Keys keys={['⌘', '→']} /><b>Compare versions</b></span>
+    <span><Keys keys={['⌘', '↵']} /><b>Back to your agent</b></span>
+  </div>
+
+  <section className="susi-feature">
+    <Reveal className="susi-feature-copy">
+      <p className="eyebrow">01 / SELECT, THEN ⌘K</p>
+      <h2>Fix the sentence, not the whole prompt.</h2>
+      <p>Select the part that rambles and press <Keys keys={['⌘', 'K']} />, or right-click it. Pick Shorten, Fix grammar, Clarify, Make specific or Structure, and a local model rewrites only that part. With nothing selected, the action takes the whole prompt.</p>
+      <p>The answer lands in place as a diff: new words on green, old ones struck through. While the model works, the text is locked and <Keys keys={['esc']} /> cancels.</p>
+      <Link className="susi-more" href="/guide/editing/">Editing and versions <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <div className="susi-tile"><SelectionDemo /></div>
+  </section>
+
+  <section className="susi-feature is-flipped">
+    <Reveal className="susi-feature-copy">
+      <p className="eyebrow">02 / ⌘← ⌘→</p>
+      <h2>Every version, one keystroke apart.</h2>
+      <p>Each edit adds a version to one chain: your text, the diff, the result. Right after an edit, <Keys keys={['⌘', '←']} /> steps back, all the way to the words you started with, and <Keys keys={['⌘', '→']} /> accepts the edit or moves forward. The arrows at the sides of the panel step at any time.</p>
+      <p><Keys keys={['⌘', '↵']} /> always copies the whole prompt. On a diff, that is the new version. Step through the chain and watch what a copy would take.</p>
+      <Link className="susi-more" href="/guide/editing/#the-version-chain">How the chain works <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <div className="susi-tile"><ChainDemo /></div>
+  </section>
+
+  <section className="susi-feature">
+    <Reveal className="susi-feature-copy">
+      <p className="eyebrow">03 / VOICE AND YOUR OWN WORDS</p>
+      <h2>Say the action. Or say what you want.</h2>
+      <p>Dictate with MacWhisper or any tool that pastes into the focused field. After <Keys keys={['⌘', 'K']} />, a pasted phrase that names an action, like “make shorter” or “fix grammar”, runs it at once.</p>
+      <p>Any other phrase becomes the first row: an instruction in your own words. <Keys keys={['↵']} /> sends it to the model with your selection.</p>
+      <Link className="susi-more" href="/guide/actions/">Actions and instructions <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <div className="susi-tile"><VoiceDemo /></div>
+  </section>
+
+  <section className="susi-feature is-flipped">
+    <Reveal className="susi-feature-copy">
+      <p className="eyebrow">04 / ⌘L</p>
+      <h2>Start from what already works.</h2>
+      <p><Keys keys={['⌘', 'L']} /> opens one searchable list of your templates, saved prompts and dictation dictionary. <Keys keys={['⌘', 'L']} /> <Keys keys={['T']} /> <Keys keys={['3']} /> opens the third template, with the caret on its first empty line.</p>
+      <p>They are Markdown and JSON files in a folder you open from the menu bar. Edit them in any editor, or point Susi at a library you already keep.</p>
+      <Link className="susi-more" href="/guide/library/">Library and files <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <div className="susi-tile"><LibraryDemo /></div>
+  </section>
+
+  <section className="susi-feature">
+    <Reveal className="susi-feature-copy">
+      <p className="eyebrow">05 / /GOAL</p>
+      <h2>A long task? Make it a goal.</h2>
+      <p>Turn into goal puts <code>/goal</code> at the very start of the prompt. It runs on the spot, without the model, and steps back like any other edit.</p>
+      <p>Claude Code and Codex fold a long paste into a placeholder, and the command inside goes unseen. The guide shows the one keystroke that unfolds it in each.</p>
+      <Link className="susi-more" href="/guide/goal/">Long prompts with /goal <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <div className="susi-tile"><GoalDemo /></div>
+  </section>
+
+  <section className="susi-local">
+    <Reveal className="susi-local-copy">
+      <p className="eyebrow">06 / LOCAL ONLY</p>
+      <h2>Nothing leaves your Mac.</h2>
+      <p>Edits run on Ollama with <code>{release.model}</code> at 127.0.0.1. Before any text goes out, Susi checks that the model really is local and refuses one that Ollama would forward to a cloud service. There is no account and no server of ours.</p>
+      <p>If Ollama is not running, the first edit starts it. When you open actions, Susi asks a running Ollama to load the model, so the edit itself starts sooner.</p>
+      <Link className="susi-more" href="/guide/model/">The local model <span aria-hidden="true">→</span></Link>
+    </Reveal>
+    <LocalDiagram />
+  </section>
+
+  <section className="susi-keys">
+    <Reveal>
+      <p className="eyebrow">THE WHOLE INTERFACE</p>
+      <h2>Eight shortcuts are the whole interface.</h2>
+    </Reveal>
+    <dl className="susi-keys-grid">
+      <div><dt><Keys keys={['⌘', '⇧', 'Space']} /></dt><dd>Show or hide the panel</dd></div>
+      <div><dt><Keys keys={['⌘', 'K']} /></dt><dd>Actions on the selection or the whole prompt</dd></div>
+      <div><dt><Keys keys={['↑', '↓']} /><Keys keys={['↵']} /></dt><dd>Pick an action, or send your own instruction</dd></div>
+      <div><dt><Keys keys={['⌘', '←']} /><Keys keys={['⌘', '→']} /></dt><dd>Step back, accept, step forward</dd></div>
+      <div><dt><Keys keys={['⌘', 'L']} /></dt><dd>Templates, prompts and dictionary</dd></div>
+      <div><dt><Keys keys={['⌘', '↵']} /></dt><dd>Copy the prompt, return to the previous app</dd></div>
+      <div><dt><Keys keys={['⇧', '⌘', '↵']} /></dt><dd>Copy, then start an empty prompt</dd></div>
+      <div><dt><Keys keys={['esc']} /></dt><dd>Close a list, cancel an edit, or hide</dd></div>
+    </dl>
+    <Link className="susi-more" href="/guide/keyboard/">Keyboard reference <span aria-hidden="true">→</span></Link>
+  </section>
+
+  <section className="susi-scope">
+    <div>
+      <p className="eyebrow">IN v{release.version}</p>
+      <ul>
+        <li>The panel on <Keys keys={['⌘', '⇧', 'Space']} />, with a menu bar icon</li>
+        <li>Six actions, plus your own in <code>rules.json</code></li>
+        <li>Instructions in your own words, typed or dictated</li>
+        <li>Inline diffs and a version chain that survives a restart</li>
+        <li>Templates, saved prompts and a dictionary view on <Keys keys={['⌘', 'L']} /></li>
+        <li>Copy and return to the app you came from</li>
+      </ul>
+    </div>
+    <div>
+      <p className="eyebrow">NOT IN THIS RELEASE</p>
+      <ul className="is-not">
+        <li>Another model or a cloud provider: edits use <code>{release.model}</code> through Ollama</li>
+        <li>A microphone of its own: dictate with MacWhisper or a similar tool</li>
+        <li>Editing actions, templates or prompts inside the panel: they are files</li>
+        <li>Dictionary replacement: the terms are shown, not applied</li>
+        <li>A different global shortcut</li>
+        <li>Intel Macs, macOS before {release.macos}, and a notarized download</li>
+      </ul>
+    </div>
+  </section>
+
+  <section className="susi-install">
+    <div className="susi-install-copy">
+      <p className="eyebrow">GET SUSI</p>
+      <h2>Two commands. Then <Keys keys={['⌘', '⇧', 'Space']} className="big" />.</h2>
+      <p>Install Susi with Homebrew, then download the model once with <a href="https://ollama.com/download">Ollama</a>.</p>
+    </div>
+    <Install full />
+    <p className="susi-install-note">Prefer a download? Get <code>{release.archive}</code> from the <a href={release.download}>v{release.version} release</a>. This first build is not notarized yet, so macOS asks you to confirm opening it: the <Link href="/quick-start/#download-instead">quick start</Link> shows how.</p>
+  </section>
+</div>

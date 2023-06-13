@@ -1,0 +1,91 @@
+---
+title: Edit and compare versions
+description: Rewrite a selection or the whole prompt with ⌘K, read the inline diff, walk the version chain with ⌘← and ⌘→, and copy exactly the version you mean.
+---
+
+# Edit and compare versions
+
+Susi edits in place. You choose what to change, the model rewrites only that, and every result stays one keystroke away from the text before it.
+
+## Rewrite a selection
+
+1. Select the words, sentence or paragraph that needs work.
+2. Press **⌘K**, or right-click the selection.
+3. Pick an action with the arrow keys and **Enter**, type an instruction of your own, or dictate either. [Actions and instructions →](/guide/actions/)
+
+With nothing selected, the action takes the whole prompt. The field says which: *What to do with the selection?* or *What to do with the prompt?*
+
+Whitespace around the selection stays where it was: the model's answer goes between the same leading and trailing spaces and line breaks.
+
+### While the model works
+
+- The text you are editing pulses, and the editor is read-only.
+- The **Action** button in the bottom bar turns into **Rewriting…**; **Esc** or a click on it cancels. Your selection comes back as it was.
+- **Library** and **Copy** wait until the edit is done.
+
+If the model returns the same text, nothing changes and the line above the bar says *No changes*.
+
+## Read the diff
+
+The answer appears in your text as a diff:
+
+- added and changed words on a green background;
+- removed words struck through, just before them.
+
+The line above the bottom bar names the edit and the next steps: **Shorten · ⌘← Back · ⌘→ Accept**. Removed words are only drawn: they are not part of the text, and selecting or copying never picks them up.
+
+## The version chain
+
+Every edit adds a version to one chain, without branches. An edit made by an action has a diff position before its result, so a chain of two edits, A → (Shorten) → B → (Clarify) → C, has five positions:
+
+| Position | Text A | diff(A, B) | Text B | diff(B, C) | Text C |
+| --- | --- | --- | --- | --- | --- |
+| **⌘↵** copies | A | B | B | C | C |
+
+- **⌘←** steps one position left, back to the very first text.
+- **⌘→** steps one position right. On a diff, it accepts the edit and shows the new text without marks.
+- The arrows at the left and right edges of the panel do the same, at any time.
+
+**⌘↵ always copies the whole prompt.** On a text position, that is the text you see. On a diff, it is the right-hand side, the new version, and the copy accepts the edit as **⌘→** would. Nothing is lost: **⌘←** still leads back to the diff and the original.
+
+A version opened from the [library](/guide/library/) has no diff: stepping to it shows its text at once.
+
+### Review mode
+
+Right after an edit or a step along the chain, these keys walk the chain:
+
+| Keys | Step |
+| --- | --- |
+| **⌘←** or **⌘Z** | Back |
+| **⌘→** or **⇧⌘Z** | Forward, or accept the diff |
+
+The line above the bar shows which steps are available. The first key that types something, or opening a [library](/guide/library/) entry, ends review mode, and the same keys go back to their usual editing jobs: start and end of the line, undo and redo.
+
+### What changes the chain
+
+| You | The chain |
+| --- | --- |
+| Run an action | Everything to the right of the current version is dropped; the result is added and shown as a diff. On a diff, the action works on its right-hand text. |
+| Type | The current version changes in place; the others stay. Typing on a diff accepts it first. |
+| Open a library entry | It replaces an empty prompt. Otherwise, everything to the right is dropped and the entry is added as the next version. |
+| Replace all the text | Select all and type, paste or delete: a new prompt starts, with a one-version chain. **⌘Z** still brings the old text back into the editor. |
+
+The precise rules are in the [version chain specification](https://github.com/octopot/susi/blob/main/docs/specs/version-history.md).
+
+## Copy and start again
+
+| Keys | What happens |
+| --- | --- |
+| **⌘↵** | Copies the whole prompt, hides Susi and returns to the app you came from. |
+| **⇧⌘↵** | Copies the same, then clears the prompt and forgets its versions. |
+| **Esc** | Hides Susi without copying. The prompt stays as it is. |
+
+The **Copy** button in the bar does what **⌘↵** does. Neither works while an edit runs, while a list is open, or on an empty prompt. If the copy fails, the text stays and the panel stays open.
+
+After **⌘↵**, the next time you open Susi the whole prompt is selected. Type or dictate to start a new prompt; press **→** or click in the text to keep editing the old one. After **Esc**, nothing is selected: you hid the panel to come back to this prompt.
+
+## Your draft is kept
+
+The text, its versions and your position in the chain are saved as you work. They survive hiding the panel and quitting Susi.
+
+A very long chain can fill the space the panel has for drafts. Susi then keeps the first version and the versions from the previous one on, and saves again. If even that fails, the line above the bar shows the error and the panel does not hide on **Esc** or **⌘↵**, so the text is not lost: copy it out by hand or shorten it.

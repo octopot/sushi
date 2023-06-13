@@ -1,0 +1,31 @@
+---
+title: Long prompts with /goal
+description: Turn a prompt into a /goal command for Claude Code or Codex, and make sure the agent sees the command when it pastes a long prompt as a placeholder.
+---
+
+# Long prompts with /goal
+
+Some coding agents, Claude Code and Codex among them, take a task as a `/goal` command. **Turn into goal** puts the command in front of your prompt, so a prompt written in Susi arrives ready to run.
+
+## Turn a prompt into a goal
+
+1. Press **⌘K**.
+2. Type or say `goal`. **Turn into goal** comes first.
+3. Press **Enter**.
+
+Or say *“make it a goal”* after **⌘K**: a pasted alias runs the action at once.
+
+`/goal ` appears at the very start of the prompt, as a diff. Selection does not matter: the command always goes in front of the whole prompt. The action runs on the spot, without the model, and **⌘←** steps back from it like any other edit. A prompt that already starts with `/goal ` stays as it is.
+
+Then **⌘↵** copies the prompt and takes you back to the agent.
+
+## When the agent folds a long paste
+
+Claude Code and Codex fold a long paste into a short placeholder, and they do not see a command at its start. Unfold the text before you send it:
+
+| Agent | Unfold the paste |
+| --- | --- |
+| Claude Code | Paste a second time: the text unfolds in the input. |
+| Codex | Press **Ctrl+G**: the text opens in your external editor, unfolded. |
+
+A short prompt arrives as plain text, and the command works as is.

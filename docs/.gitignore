@@ -1,0 +1,8 @@
+# dependencies
+/node_modules/
+
+# generated files
+/.next/
+/dist/
+# the interactive panel, built from ../src by `npm run demo`
+/public/demo/

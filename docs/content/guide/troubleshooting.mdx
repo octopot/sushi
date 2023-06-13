@@ -1,0 +1,61 @@
+---
+title: Troubleshooting
+description: What Susi's messages mean and what to do about them, from the shortcut and the first launch to Ollama, the model and your settings files.
+---
+
+# Troubleshooting
+
+Susi reports problems on the line just above the bottom bar, or at the bottom of the library when it is open.
+
+## macOS will not open Susi
+
+This first build is not notarized yet. If macOS says it cannot verify Susi, open **System Settings → Privacy & Security**, find the message about Susi near the bottom and click **Open Anyway**. macOS asks once.
+
+Susi needs a Mac with Apple Silicon and macOS 26 or later.
+
+## The shortcut does not work
+
+*Could not register ⌘⇧Space: …* means another app already uses **⌘⇧Space**. In this release the shortcut cannot be changed: free it in the other app, then quit Susi from its menu bar icon and open it again. Until then, **Show Susi** in the menu bar menu opens the panel.
+
+If the panel shows but ignores keys, click inside it: a panel that is visible but not active does not receive keys.
+
+## Edits fail
+
+| Message | What to do |
+| --- | --- |
+| *Install the local model with ollama pull qwen3.5:4b-mlx* | Run `ollama pull qwen3.5:4b-mlx`. |
+| *Start Ollama on this Mac and try again.* | Susi could not start Ollama in time. Open the Ollama app, wait until its icon appears in the menu bar, and edit again. |
+| *Editing requires the local model qwen3.5:4b-mlx.* | The model Ollama offers under this name is not a local copy, for example one forwarded to a cloud service. Remove it with `ollama rm qwen3.5:4b-mlx` and pull it again. |
+| *Select a shorter passage. The text and instruction must fit within 12 KB.* | Select the part you want to change instead of the whole prompt, or shorten your instruction. |
+| *The model reached its context limit. Select a shorter passage.* | The same: edit a shorter part. |
+| *Local Ollama request failed: …* or *Invalid response from local Ollama: …* | Check that Ollama runs: `curl --noproxy '*' -fsS http://127.0.0.1:11434/api/version`. Restart the Ollama app if it does not answer. |
+| *The local model returned an empty response.* or *The model returned an empty edit.* | Try again, or reword the instruction. |
+| *No changes* | The model found nothing to change, or the prompt already starts with `/goal `. |
+| *Write a prompt first* | The prompt, or the selection, is empty. |
+
+The first edit after Ollama starts takes longer while the model loads. Pressing **⌘K** with Ollama already running loads the model ahead of time. [Local model →](/guide/model/)
+
+## Copying fails
+
+*Could not copy the text to the macOS clipboard.* The prompt stays in the panel and the panel stays open. Try **⌘↵** again.
+
+*Could not save the draft: …* The panel's draft storage is full even after Susi dropped the middle of a long version chain. The panel will not hide on **Esc** or **⌘↵**, so the text is not lost: select it, copy it with **⌘C**, then start a new prompt with **⇧⌘↵** or by replacing all the text.
+
+## Settings files
+
+Errors in your files name the file and the entry, for example:
+
+| Message | Fix |
+| --- | --- |
+| *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.* | Keep one of the two fields in that entry. |
+| *rules.json: entry 3 contains an empty field.* | Fill in `id`, `name`, the instruction or prefix, and every alias, or remove the empty alias. |
+| *rules.json: duplicate rule ID 'shorten'.* | Give each action its own `id`. |
+| *dictionary.json: entry 2 needs both 'from' and 'to'.* | Fill in both. |
+| *dictionary.json: duplicate source 'mac whisper'.* | Spoken forms must differ, ignoring case. |
+| *Enter an absolute library directory in library-path.txt.* | Write a full path starting with `/`, or delete the file to use the default library. |
+
+Susi reads the files again each time the panel appears, so a fixed file takes effect the next time you open it. The message stays until then. [Library and files →](/guide/library/#your-files)
+
+## Report a problem
+
+[Open an issue](https://github.com/octopot/susi/issues/new) with the message, what you did just before it, and your macOS version. Leave your prompt text out unless it is needed.

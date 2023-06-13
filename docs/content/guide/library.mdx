@@ -1,0 +1,97 @@
+---
+title: Library and files
+description: Open templates and saved prompts with ⌘L, move through the list with Tab, letters and numbers, and keep actions, templates and prompts as plain files you own.
+---
+
+# Library and files
+
+**⌘L** opens the library over the whole panel: one list with search, in three sections.
+
+| Section | What it holds | Key |
+| --- | --- | --- |
+| **Templates** | Starting points with headings to fill in, such as *Task brief* and *Bug report*. | **T** |
+| **Prompts** | Your saved prompts, newest first, with their age: *2h*, *1d*. | **P** |
+| **Dictionary** | Dictation terms, shown for reference. | **D** |
+
+## Find and open an entry
+
+- **Type** to search all sections at once. Matching works as in the [actions list](/guide/actions/#find-an-action).
+- **Tab** switches the section: All, Templates, Prompts, Dictionary. **⇧Tab** goes back. The button at the right of the field shows the current one.
+- **T**, **P** or **D** on an empty field jumps to that section. Typing a second letter returns to All with both letters in the field, so a word that starts with *t* is still easy to search.
+- **1–9** open a numbered row at once. In All, the templates are numbered; in Templates or Prompts, that section's rows are.
+- **Enter** opens the selected row, as does a click.
+- **Esc** closes the library and returns to the editor.
+
+So **⌘L T 1** opens the first template, and **⌘L P 1** your newest prompt.
+
+### What opening does
+
+The entry's text goes into the editor:
+
+- an empty prompt is replaced;
+- otherwise, the entry becomes the next version, and the arrow at the left edge of the panel returns to what you had. Opening an entry ends [review mode](/guide/editing/#review-mode), so **⌘←** moves the caret until that first step. [The version chain →](/guide/editing/#the-version-chain)
+
+The caret lands on the first empty line, ready for you to fill in a template's first section, or at the end when there is none.
+
+## Your files
+
+Everything in the library is a file, and there is no editing inside the panel. Choose **Open Settings Folder** in the Susi menu bar menu to open the folder:
+
+```text
+~/Library/Application Support/me.octopot.susi/
+```
+
+| File | Holds |
+| --- | --- |
+| `rules.json` | The actions on **⌘K**. [Add your own actions →](/guide/actions/#add-your-own-actions) |
+| `dictionary.json` | Dictation terms for the **Dictionary** section. |
+| `Input/*.md` | Saved prompts: each Markdown file is one prompt, named by its file name. |
+| `Input/.templates/*.md` | Templates. |
+
+On first use, Susi creates the files with examples: the six actions, one dictionary term and three templates, *Task brief*, *Bug report* and *Release review*. Your edits always win: Susi never overwrites a file, and a template you delete stays deleted.
+
+### Saved prompts
+
+To keep a prompt for later, save it as a Markdown file in `Input/`, for example `Input/Release checklist.md`. The file name is its name in the list. Opening it puts the whole file into the editor.
+
+### Templates
+
+A template is a Markdown file in `Input/.templates/`. A title at the top, in frontmatter, is the name in the list; without one, the file name is used. Everything after the frontmatter is the template:
+
+```md
+---
+title: Task brief
+---
+
+## Context
+
+## Goal
+
+## Acceptance criteria
+
+## Constraints
+```
+
+Blank lines at the start of a template are dropped when it opens.
+
+### Dictionary
+
+`dictionary.json` lists terms with the way they are spoken (`from`) and the spelling you want (`to`):
+
+```json
+{
+  "terms": [
+    {"from": "Mac Whisper", "to": "MacWhisper"}
+  ]
+}
+```
+
+The **Dictionary** section shows the terms; **Enter** on one opens `dictionary.json` in your default text editor. In this release Susi does not replace terms in dictated text: dictation tools already correct spelling themselves.
+
+### Use another library
+
+To read prompts and templates from a folder you already keep, write its absolute path, on one line, into `library-path.txt` in the settings folder. Susi then reads prompts from that folder and templates from its `.templates/` subfolder. For example, point it at the `Input` folder of a Tuna assistant.
+
+Actions and the dictionary stay in the settings folder.
+
+The exact formats, with CUE schemas to check them, are in the [local files specification](https://github.com/octopot/susi/blob/main/docs/specs/local-files.md).

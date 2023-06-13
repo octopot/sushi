@@ -1,0 +1,46 @@
+---
+title: Local model
+description: How Susi uses Ollama and qwen3.5:4b-mlx on your Mac, what it checks before sending text, and the limits of one edit.
+---
+
+import { release } from '../../release.mjs'
+
+# Local model
+
+Susi edits with one model, <code>{release.model}</code>, through [Ollama](https://ollama.com) on your Mac. There is no account, no API key and no server of ours: the text you rewrite goes to Ollama at `127.0.0.1` and nowhere else.
+
+## Set it up
+
+1. Install the [Ollama app](https://ollama.com/download).
+2. Download the model once:
+
+```sh
+ollama pull qwen3.5:4b-mlx
+```
+
+That is all. Susi talks to Ollama at `http://127.0.0.1:11434` directly, bypassing any proxy settings.
+
+## What Susi does for you
+
+- **Starts Ollama.** If Ollama is not running, the first edit opens the Ollama app in the background and waits up to about twelve seconds for it.
+- **Loads the model early.** When you press **⌘K** and Ollama is already running, Susi asks it to load the model into memory, so the edit itself starts sooner. This sends no text.
+- **Checks that the model is local.** Before it sends any text, Susi asks Ollama about the model. If the model is missing, or Ollama would forward it to a cloud service, Susi stops with a message instead of sending your text.
+
+## Limits of one edit
+
+- The text and the instruction together must fit within **12 KB**. For a long prompt, select the passage to change.
+- If the answer runs into the model's context limit, Susi reports it and changes nothing.
+- An edit gives up after about two and a half minutes. **Esc** cancels it any time before that.
+- The model runs with temperature 0, so it does not add randomness of its own.
+
+[What the model keeps in your text →](/guide/actions/#what-the-model-keeps)
+
+## Check Ollama yourself
+
+```sh
+curl --noproxy '*' -fsS http://127.0.0.1:11434/api/version   # Ollama answers
+ollama list                                                   # qwen3.5:4b-mlx is downloaded
+ollama ps                                                     # what is loaded into memory now
+```
+
+If you start the server yourself with `ollama serve` instead of the app, start it before you edit: Susi can only start the Ollama app. [Troubleshooting →](/guide/troubleshooting/)

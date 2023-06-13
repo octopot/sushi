@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The social preview, rendered to public/og.png by og.mjs at 1733×908. No version label: it needs no update per release. -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1733px; height: 908px; overflow: hidden; }
+  body { position: relative; background: #101513; color: #f1ece4; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wall { position: absolute; inset: -15%; filter: blur(90px) saturate(1.15); }
+  .wall i { position: absolute; border-radius: 50%; }
+  .wall i:nth-child(1) { left: 40%; top: 0; width: 55%; height: 75%; background: #c4573f; opacity: .85; }
+  .wall i:nth-child(2) { right: -5%; top: 45%; width: 50%; height: 70%; background: #24564a; }
+  .wall i:nth-child(3) { left: 62%; top: 22%; width: 22%; height: 30%; background: #f48160; opacity: .7; }
+  .wall i:nth-child(4) { left: -10%; top: 60%; width: 40%; height: 60%; background: #1b3a32; }
+  .copy { position: absolute; left: 110px; top: 128px; width: 760px; }
+  .brand { display: flex; align-items: center; gap: 22px; font-size: 54px; font-weight: 750; letter-spacing: -2px; }
+  .brand img { width: 74px; height: 74px; }
+  h1 { margin: 64px 0 0; font-size: 104px; line-height: 1.02; letter-spacing: -5.5px; font-weight: 740; }
+  h1 em { font-style: normal; color: #ff8a6e; }
+  .keys { display: flex; align-items: center; gap: 14px; margin-top: 56px; color: rgba(241, 236, 228, .72); font-size: 28px; }
+  kbd { display: inline-grid; place-items: center; min-width: 46px; height: 46px; padding: 0 10px; border-radius: 11px; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16); border-bottom-width: 3px; color: #fff; font: 600 23px/1 inherit; font-family: inherit; }
+  .keys span { margin: 0 14px 0 6px; }
+  .panel { position: absolute; left: 930px; top: 150px; width: 720px; height: 470px; border-radius: 30px; padding: 40px 44px; background: rgba(32, 34, 37, .58); backdrop-filter: blur(30px) saturate(1.8); box-shadow: 0 50px 100px -30px rgba(0,0,0,.7), inset 0 0 0 1.5px rgba(255,255,255,.14), inset 0 1.5px 0 rgba(255,255,255,.2); font-size: 27px; line-height: 1.6; color: rgba(255,255,255,.92); }
+  del { color: rgba(255, 170, 160, .7); text-decoration: line-through; text-decoration-color: rgba(255, 107, 94, .7); margin-right: 6px; }
+  ins { text-decoration: none; background: rgba(48, 209, 88, .26); border-radius: 5px; padding: 0 2px; }
+  .hint { position: absolute; left: 0; right: 0; bottom: 92px; text-align: center; color: rgba(255,255,255,.55); font-size: 21px; }
+  .hint kbd, .bar kbd { min-width: 30px; height: 30px; font-size: 16px; border: 0; background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); border-radius: 8px; padding: 0 6px; }
+  .bar { position: absolute; left: 30px; right: 30px; bottom: 26px; display: flex; justify-content: space-between; font-size: 22px; font-weight: 500; }
+  .bar span { display: flex; align-items: center; gap: 8px; }
+  .url { position: absolute; left: 110px; bottom: 92px; color: rgba(241, 236, 228, .55); font: 500 25px/1 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+  <div class="wall"><i></i><i></i><i></i><i></i></div>
+  <div class="copy">
+    <div class="brand"><img src="../../src/mark.svg" alt="">Susi</div>
+    <h1>The prompt deserves <em>an editor.</em></h1>
+    <div class="keys"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>Space</kbd><span>write</span><kbd>⌘</kbd><kbd>K</kbd><span>rewrite</span><kbd>⌘</kbd><kbd>↵</kbd><span>send</span></div>
+  </div>
+  <div class="panel">
+    Add a dark mode toggle to the settings screen.<br>
+    <del>Please make sure that it basically follows</del><ins>Follow</ins> the system appearance by default and <del>also remembers whatever</del><ins>remember</ins> the <del>user picked</del><ins>user’s</ins> last <del>time</del><ins>choice</ins>.
+    <div class="hint">Shorten · <kbd>⌘</kbd> <kbd>←</kbd> Back · <kbd>⌘</kbd> <kbd>→</kbd> Accept</div>
+    <div class="bar"><span>✦ Action <kbd>⌘</kbd><kbd>K</kbd></span><span>Library <kbd>⌘</kbd><kbd>L</kbd></span><span>Copy <kbd>⌘</kbd><kbd>↵</kbd></span></div>
+  </div>
+  <div class="url">susi.octolab.org · local prompt composer for macOS</div>
+</body>
+</html>
