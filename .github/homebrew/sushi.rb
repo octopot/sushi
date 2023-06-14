@@ -30,12 +30,6 @@ cask "sushi" do
   end
 #! adhoc:end
 
-  # Homebrew reopens what it quit by the old cask's bundle identifier, which an
-  # upgrade from Susi does not have: start Sushi in the menu bar, panel closed.
-  postflight_steps do
-    run "/usr/bin/open", args: ["-g", "-a", "{{appdir}}/Sushi.app", "--args", "--hidden"], must_succeed: false
-  end
-
   uninstall quit: "me.octopot.sushi"
 
   # me.octopot.susi: left by Susi, the app's name before v0.2.0, and kept by the move to Sushi.
@@ -48,8 +42,12 @@ cask "sushi" do
     "~/Library/WebKit/me.octopot.susi",
   ]
 
+  # Install steps run in Homebrew's sandbox, which cannot launch apps, and an
+  # upgrade from Susi reopens nothing: Homebrew reopens by the old bundle ID.
   caveats <<~EOS
-    Sushi rewrites text with a local Ollama model. Install Ollama, then run once:
+    Sushi lives in the menu bar. If it is not running, start it with:
+      open -a Sushi
+    It rewrites text with a local Ollama model. Install Ollama, then run once:
       ollama pull qwen3.5:4b-mlx
   EOS
 end
