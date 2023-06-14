@@ -14,7 +14,7 @@
     : ['04-diff', '16-copy-accepts', '17-copy-clears'].includes(FRAME) ? { versions: [{ text: A }, { text: B, label: 'Shorten' }], index: 1, diff: true, review: true, copied: false }
     : text(A)
   if (!sessionStorage.getItem('stage')) {
-    localStorage.setItem('susi.draft.v3', JSON.stringify(draft))
+    localStorage.setItem('sushi.draft.v3', JSON.stringify(draft))
     sessionStorage.setItem('stage', '1')
     location.reload()
     return

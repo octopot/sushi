@@ -2,6 +2,9 @@
 #import <QuartzCore/QuartzCore.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
 
 // Window operations and these focus transitions run on AppKit's main thread.
 static NSRunningApplication *previousApplication;
@@ -163,6 +166,32 @@ bool sushi_app_path(const char *bundle_id, char *out, size_t size) {
         NSString *identifier = [NSString stringWithUTF8String:bundle_id];
         NSURL *url = identifier ? [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:identifier] : nil;
         return url.fileURL && [url getFileSystemRepresentation:out maxLength:size];
+    }
+}
+
+// Asks every running app with this bundle identifier to quit and waits up to timeout seconds.
+// Runs before NSApplication starts, so it watches the processes rather than KVO on
+// NSRunningApplication. Returns true when none is left. v0.3.0: remove with migrate.rs.
+bool sushi_quit_app(const char *bundle_id, double timeout) {
+    @autoreleasepool {
+        NSString *identifier = [NSString stringWithUTF8String:bundle_id];
+        if (!identifier) return true;
+        NSMutableArray<NSNumber *> *pids = [NSMutableArray array];
+        for (NSRunningApplication *app in [NSRunningApplication runningApplicationsWithBundleIdentifier:identifier]) {
+            [pids addObject:@(app.processIdentifier)];
+            [app terminate];
+        }
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+        while (pids.count) {
+            NSIndexSet *gone = [pids indexesOfObjectsPassingTest:^BOOL(NSNumber *pid, __unused NSUInteger i, __unused BOOL *stop) {
+                return kill(pid.intValue, 0) == -1 && errno == ESRCH;
+            }];
+            [pids removeObjectsAtIndexes:gone];
+            if (!pids.count) break;
+            if ([deadline timeIntervalSinceNow] <= 0) return false;
+            usleep(100 * 1000);
+        }
+        return true;
     }
 }
 

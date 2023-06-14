@@ -76,7 +76,7 @@ test('Sushi composer', async t => {
       // Simulates a full localStorage for the draft: 'always', or only for chains longer than three versions.
       const setItem = Storage.prototype.setItem
       Storage.prototype.setItem = function (key, value) {
-        if (key === 'susi.draft.v3' && (state.full === 'always' || (state.full === 'big' && JSON.parse(value).versions.length > 3)))
+        if (key === 'sushi.draft.v3' && (state.full === 'always' || (state.full === 'big' && JSON.parse(value).versions.length > 3)))
           throw new DOMException('The quota has been exceeded.', 'QuotaExceededError')
         return setItem.call(this, key, value)
       }
@@ -113,7 +113,7 @@ test('Sushi composer', async t => {
               if (state.badRead) throw new Error('Could not read \'' + args.name + '\': permission denied')
               return args.kind === 'templates' ? templates[args.name] ?? '' : '\nSaved prompt: ' + args.name
             case 'dictionary_open': state.openedDictionary++; return
-            case 'shortcut_status': return shortcutError
+            case 'startup_notes': return shortcutError
             case 'plugin:event|listen': state.listeners[args.event] = state.callbacks[args.handler - 1]; return 1
             default: throw new Error('Unexpected IPC call: ' + command)
           }
@@ -132,7 +132,7 @@ test('Sushi composer', async t => {
   const hint = page => page.locator('#hint')
   const editorText = page => page.evaluate(() => [...document.querySelectorAll('.cm-line')].map(line => line.textContent).join('\n'))
   const diffShown = async page => await page.locator('.cm-diff-ins, .cm-diff-del').count() > 0
-  const draft = page => page.evaluate(() => JSON.parse(localStorage.getItem('susi.draft.v3')))
+  const draft = page => page.evaluate(() => JSON.parse(localStorage.getItem('sushi.draft.v3')))
 
   async function capture(page, name) {
     if (!screens) return
@@ -612,7 +612,7 @@ test('Sushi composer', async t => {
     await page.waitForFunction(() => document.querySelector('#hint').textContent === '')
   })
 
-  await t.test('the draft and its position survive a reload; a v2 draft is imported once', async t => {
+  await t.test('the draft and its position survive a reload; the Susi draft carries over once', async t => {
     const page = await start(t)
     await page.keyboard.insertText('One')
     await act(page, 'Shorten', 'Two')
@@ -628,14 +628,21 @@ test('Sushi composer', async t => {
     await page.keyboard.press('Meta+ArrowLeft')
     await copy(page, 'One')
 
-    const v2 = JSON.stringify({ nodes: [{ id: 'a', text: 'Old root' }, { id: 'b', text: 'Old active' }], activeId: 'b' })
-    const legacy = await start(t, { storage: { 'susi.history.v2': v2 } })
-    await copy(legacy, 'Old active')
+    // The draft Susi left in the copied WebKit folder opens where it was; v0.3.0: remove.
+    const susi = JSON.stringify({ versions: [{ text: 'Susi first' }, { text: 'Susi second' }], index: 0, diff: false })
+    const legacy = await start(t, { storage: { 'susi.draft.v3': susi, 'susi.history.v2': '{}', 'susi.draft.v1': '{}' } })
+    assert.equal(await editorText(legacy), 'Susi first')
+    assert.equal(await legacy.evaluate(() => localStorage.getItem('susi.draft.v3') !== null), true, 'kept until the new key is written')
+    await legacy.keyboard.press('End')
+    await legacy.keyboard.insertText('!')
+    await legacy.waitForFunction(() => localStorage.getItem('sushi.draft.v3') !== null)
+    assert.deepEqual(await legacy.evaluate(() => ['susi.draft.v3', 'susi.history.v2', 'susi.draft.v1'].map(key => localStorage.getItem(key))), [null, null, null])
+    assert.deepEqual(await legacy.evaluate(() => JSON.parse(localStorage.getItem('sushi.draft.v3')).versions.map(v => v.text)), ['Susi first!', 'Susi second'])
 
     // A copy flag saved before a restart selects the text once, at startup.
     const draft = JSON.stringify({ versions: [{ text: 'Copied before' }], index: 0, copied: true })
-    const restarted = await start(t, { storage: { 'susi.draft.v3': draft } })
-    const stored = () => restarted.evaluate(() => JSON.parse(localStorage.getItem('susi.draft.v3'))?.copied ?? true)
+    const restarted = await start(t, { storage: { 'sushi.draft.v3': draft } })
+    const stored = () => restarted.evaluate(() => JSON.parse(localStorage.getItem('sushi.draft.v3'))?.copied ?? true)
     assert.equal(await restarted.evaluate(() => getSelection().toString()), 'Copied before')
     assert.equal(await stored(), true, 'a hidden cold start keeps the flag')
     await emit(restarted, 'launcher-shown')
@@ -646,11 +653,11 @@ test('Sushi composer', async t => {
     assert.equal(await restarted.evaluate(() => getSelection().toString()), '', 'the select-all happens once')
 
     // If the first launcher-shown was missed, hiding without a copy still drops the flag.
-    const missed = await start(t, { storage: { 'susi.draft.v3': draft } })
+    const missed = await start(t, { storage: { 'sushi.draft.v3': draft } })
     await missed.keyboard.press('ArrowRight')
     await missed.keyboard.press('Escape')
     await missed.waitForFunction(() => window.fixture.hidden === 1)
-    assert.equal(await missed.evaluate(() => JSON.parse(localStorage.getItem('susi.draft.v3')).copied), false)
+    assert.equal(await missed.evaluate(() => JSON.parse(localStorage.getItem('sushi.draft.v3')).copied), false)
     await emit(missed, 'launcher-shown')
     assert.equal(await missed.evaluate(() => getSelection().toString()), '', 'a kept prompt is not selected again')
   })

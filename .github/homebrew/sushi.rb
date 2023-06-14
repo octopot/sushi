@@ -32,10 +32,14 @@ cask "sushi" do
 
   uninstall quit: "me.octopot.sushi"
 
+  # me.octopot.susi: left by Susi, the app's name before v0.2.0, and kept by the move to Sushi.
   zap trash: [
     "~/Library/Application Support/me.octopot.sushi",
+    "~/Library/Application Support/me.octopot.susi",
     "~/Library/Caches/me.octopot.sushi",
+    "~/Library/Caches/me.octopot.susi",
     "~/Library/WebKit/me.octopot.sushi",
+    "~/Library/WebKit/me.octopot.susi",
   ]
 
   caveats <<~EOS

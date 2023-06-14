@@ -14,7 +14,7 @@ type Detail = { type: string; [key: string]: unknown }
 const emit = (detail: Detail) => window.frameElement?.dispatchEvent(new CustomEvent('sushi', { detail }))
 
 // Every visit starts with an empty prompt; the visitor's draft lives only as long as the page.
-try { localStorage.removeItem('susi.draft.v3') } catch {}
+try { localStorage.removeItem('sushi.draft.v3') } catch {}
 
 // ——— Theme: follow the page, not the system ———
 
@@ -71,7 +71,7 @@ window.__TAURI_INTERNALS__ = {
   async invoke(command: string, args: Record<string, any> = {}) {
     switch (command) {
       case 'settings_load': return { rules, terms: dictionary.terms }
-      case 'shortcut_status': return null
+      case 'startup_notes': return null
       case 'warm_model': return
       case 'ollama_download':
         emit({ type: 'notice', text: 'In the app, this opens the Ollama download page in your browser.' })

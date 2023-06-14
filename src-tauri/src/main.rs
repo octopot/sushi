@@ -1,4 +1,5 @@
 mod library;
+mod migrate;
 mod rewrite;
 mod settings;
 
@@ -40,12 +41,22 @@ pub(crate) fn staged() -> bool {
     STAGE.load(Ordering::Relaxed)
 }
 
+/// Problems found while starting (the hotkey, the move from Susi), shown once the page asks.
 #[derive(Default)]
-struct ShortcutStatus(Mutex<Option<String>>);
+struct StartupNotes(Mutex<Vec<String>>);
+
+impl StartupNotes {
+    fn add(&self, note: String) {
+        if let Ok(mut notes) = self.0.lock() {
+            notes.push(note);
+        }
+    }
+}
 
 #[tauri::command]
-fn shortcut_status(state: State<'_, ShortcutStatus>) -> Option<String> {
-    state.0.lock().ok().and_then(|status| status.clone())
+fn startup_notes(state: State<'_, StartupNotes>) -> Option<String> {
+    let notes = state.0.lock().ok()?;
+    (!notes.is_empty()).then(|| notes.join(" "))
 }
 
 // Dispatch window and NSApplication calls together so that focus capture precedes activation.
@@ -160,6 +171,13 @@ fn main() {
         eprintln!("SUSHI_STAGE needs a build with a separate identifier, not me.octopot.sushi.");
         std::process::exit(2);
     }
+    let notes = StartupNotes::default();
+    if !stage {
+        // Before the webview exists: WebKit must find the copied draft in its new folder.
+        if let Some(note) = migrate::run(&context.config().identifier) {
+            notes.add(note);
+        }
+    }
     let mut builder = tauri::Builder::default();
     if stage {
         builder = builder.activate_ignoring_other_apps(false);
@@ -191,7 +209,7 @@ fn main() {
             );
     }
     let app = builder
-        .manage(ShortcutStatus::default())
+        .manage(notes)
         .manage(rewrite::Requests::default())
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -229,8 +247,8 @@ fn main() {
                 .build(app)?;
 
             if let Err(error) = app.global_shortcut().register("super+shift+space") {
-                *app.state::<ShortcutStatus>().0.lock().unwrap() =
-                    Some(format!("Could not register ⌘⇧Space: {error}"));
+                app.state::<StartupNotes>()
+                    .add(format!("Could not register ⌘⇧Space: {error}"));
             }
             if !hidden {
                 show_launcher(app.handle(), false);
@@ -246,7 +264,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             hide_launcher,
             copy_text,
-            shortcut_status,
+            startup_notes,
             settings::settings_load,
             settings::dictionary_open,
             library::library_list,

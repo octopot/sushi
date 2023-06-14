@@ -27,14 +27,13 @@ const hintSlot = $('hint')
 
 // ——— Draft ———
 
-const KEY = 'susi.draft.v3'
+const KEY = 'sushi.draft.v3'
+// Susi's keys, copied with its WebKit folder on the first launch of Sushi. v0.3.0: remove.
+const SUSI_KEY = 'susi.draft.v3'
+const SUSI_LEFTOVERS = [SUSI_KEY, 'susi.history.v2', 'susi.draft.v1']
 function loadChain(): Chain {
   const read = (key: string) => { try { return JSON.parse(localStorage.getItem(key) ?? 'null') } catch { return undefined } }
-  const saved = read(KEY)
-  if (saved !== null) return Chain.restore(saved)
-  const v2 = read('susi.history.v2')
-  const node = Array.isArray(v2?.nodes) ? v2.nodes.find((n: { id?: unknown }) => n?.id === v2.activeId) : undefined
-  return new Chain(typeof node?.text === 'string' ? node.text : '')
+  return Chain.restore(read(KEY) ?? read(SUSI_KEY))
 }
 const chain = loadChain()
 let saveTimer = 0
@@ -45,7 +44,11 @@ function save(now = false): boolean {
     saveTimer = window.setTimeout(() => save(true), 200)
     return true
   }
-  const write = () => localStorage.setItem(KEY, JSON.stringify(chain))
+  const write = () => {
+    localStorage.setItem(KEY, JSON.stringify(chain))
+    // Only once the draft is safe under the new key.
+    for (const key of SUSI_LEFTOVERS) localStorage.removeItem(key)
+  }
   try { write(); return true } catch (e) {
     try {
       if (!chain.compact()) throw e
@@ -461,5 +464,5 @@ if (desktop) {
     refocus()
     void loadSettings()
   })
-  invoke<string | null>('shortcut_status').then(message => { if (message) fail(message) }).catch(fail)
+  invoke<string | null>('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
 }
