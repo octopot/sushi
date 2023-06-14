@@ -1,6 +1,6 @@
 ---
 title: The prompt deserves an editor.
-description: Sushi is a local prompt composer for macOS. Press ⌘⇧Space, write or dictate, select a phrase and press ⌘K, and a local model rewrites it as an inline diff. ⌘↵ sends the prompt back to your coding agent. Documentation for Sushi v0.1.1.
+description: Sushi is a local prompt composer for macOS. Press Caps Lock, write or dictate, select a phrase and press ⌘K, and a local model rewrites it as an inline diff. ⌘↵ sends the prompt back to your coding agent. Documentation for Sushi v0.1.1.
 ---
 
 import Link from 'next/link'
@@ -27,7 +27,7 @@ import { release } from '../release.mjs'
   <Stage />
 
   <div className="sushi-flow" aria-label="How it works">
-    <span><Keys keys={['⌘', '⇧', 'Space']} /><b>Summon it over any app</b></span>
+    <span><Keys keys={['Caps Lock']} /><b>Summon it over any app</b></span>
     <span><Keys keys={['🎙']} /><b>Write or dictate</b></span>
     <span><Keys keys={['⌘', 'K']} /><b>Rewrite a selection</b></span>
     <span><Keys keys={['⌘', '←']} /><Keys keys={['⌘', '→']} /><b>Compare versions</b></span>
@@ -106,7 +106,7 @@ import { release } from '../release.mjs'
       <h2>Eight shortcuts are the whole interface.</h2>
     </Reveal>
     <dl className="sushi-keys-grid">
-      <div><dt><Keys keys={['⌘', '⇧', 'Space']} /></dt><dd>Show or hide the panel</dd></div>
+      <div><dt><Keys keys={['Caps Lock']} /></dt><dd>Show or hide the panel</dd></div>
       <div><dt><Keys keys={['⌘', 'K']} /></dt><dd>Actions on the selection or the whole prompt</dd></div>
       <div><dt><Keys keys={['↑', '↓']} /><Keys keys={['↵']} /></dt><dd>Pick an action, or send your own instruction</dd></div>
       <div><dt><Keys keys={['⌘', '←']} /><Keys keys={['⌘', '→']} /></dt><dd>Step back, accept, step forward</dd></div>
@@ -122,7 +122,7 @@ import { release } from '../release.mjs'
     <div>
       <p className="eyebrow">IN v{release.version}</p>
       <ul>
-        <li>The panel on <Keys keys={['⌘', '⇧', 'Space']} />, with a menu bar icon</li>
+        <li>The panel on <Keys keys={['Caps Lock']} />, with a menu bar icon</li>
         <li>Six actions, plus your own in <code>rules.json</code></li>
         <li>Instructions in your own words, typed or dictated</li>
         <li>Inline diffs and a version chain that survives a restart</li>
@@ -137,7 +137,6 @@ import { release } from '../release.mjs'
         <li>A microphone of its own: dictate with MacWhisper or a similar tool</li>
         <li>Editing actions, templates or prompts inside the panel: they are files</li>
         <li>Dictionary replacement: the terms are shown, not applied</li>
-        <li>A different global shortcut</li>
         <li>Intel Macs, macOS before {release.macos}, and a notarized download</li>
       </ul>
     </div>
@@ -146,7 +145,7 @@ import { release } from '../release.mjs'
   <section className="sushi-install">
     <div className="sushi-install-copy">
       <p className="eyebrow">GET SUSHI</p>
-      <h2>Two commands. Then <Keys keys={['⌘', '⇧', 'Space']} className="big" />.</h2>
+      <h2>Two commands. Then <Keys keys={['Caps Lock']} className="big" />.</h2>
       <p>Install Sushi with Homebrew, then download the model once with <a href="https://ollama.com/download">Ollama</a>.</p>
     </div>
     <Install full />

@@ -465,4 +465,5 @@ if (desktop) {
     void loadSettings()
   })
   invoke<string | null>('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
+  void listen<string>('startup-notes', event => fail(event.payload))
 }

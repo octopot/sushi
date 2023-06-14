@@ -69,7 +69,7 @@ The examples use synthetic text. ⟨del⟩ and ⟨ins⟩ mark what the diff draw
 
 **Typing on a diff (VH-13, VH-17).** On diff(A, B) the user types `!` at the end. The marks disappear, the version B becomes `Check three reports.!`, the hint line clears, and ⌘← now moves the caret to the start of the line.
 
-**After a copy (VH-9).** The user copies `First prompt, clarified.` and the window hides. On the next ⌘⇧Space the text is selected. Pressing → and typing ` More.` continues the same chain; typing `Second prompt.` instead replaces the selection and starts a new chain of one version.
+**After a copy (VH-9).** The user copies `First prompt, clarified.` and the window hides. On the next Caps Lock the text is selected. Pressing → and typing ` More.` continues the same chain; typing `Second prompt.` instead replaces the selection and starts a new chain of one version.
 
 ## Not supported or switched off
 

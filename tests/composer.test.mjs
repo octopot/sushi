@@ -685,8 +685,8 @@ test('Sushi composer', async t => {
   })
 
   await t.test('after a copy the next launch selects all, so typing starts a new prompt', async t => {
-    const page = await start(t, { shortcutError: 'The shortcut ⌘⇧Space is taken by another app.' })
-    await page.locator('#hint', { hasText: 'shortcut' }).waitFor()
+    const page = await start(t, { shortcutError: 'Could not register ⌃⇧Space: taken by another app.' })
+    await page.locator('#hint', { hasText: 'Could not register' }).waitFor()
     assert.equal(await page.locator('#hint.error').count(), 1)
     await page.keyboard.insertText('First prompt.')
     await act(page, 'Clarify', 'First prompt, clarified.')

@@ -30,5 +30,11 @@ import "strings"
 	_sources: {for i, t in terms {(strings.ToLower(strings.TrimSpace(t.from))): i}}
 }
 
+// hotkey.json: Caps Lock shows the panel, or a combination of modifiers and one key.
+#Hotkey: {
+	capsLock!: bool
+	shortcut!: string & =~"^((Control|Ctrl|Option|Alt|Shift|Command|Cmd|Super|Meta)\\+)+[A-Za-z0-9]+$"
+}
+
 // The YAML frontmatter of a template: a title and nothing else.
 #Template: {title!: #Text}

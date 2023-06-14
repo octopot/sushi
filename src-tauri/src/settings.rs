@@ -104,7 +104,11 @@ pub(crate) fn create_once(path: &Path, bytes: &[u8]) -> io::Result<()> {
 }
 
 // Existing files always win, so edits survive. A missing file is seeded from its example.
-fn read_json<T: DeserializeOwned>(dir: &Path, name: &str, example: &str) -> Result<T, String> {
+pub(crate) fn read_json<T: DeserializeOwned>(
+    dir: &Path,
+    name: &str,
+    example: &str,
+) -> Result<T, String> {
     let path = dir.join(name);
     let data = match fs::read(&path) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => fs::create_dir_all(dir)

@@ -115,14 +115,17 @@ let speed = 1
 for (const type of ['pointerdown', 'keydown', 'paste'] as const)
   addEventListener(type, event => { if (event.isTrusted) emit({ type: 'interact' }) }, true)
 
-// ⌘⇧Space while the panel has focus hides it, as the global shortcut does in the app.
-document.addEventListener('keydown', event => {
-  if (event.isTrusted && event.code === 'Space' && event.shiftKey && (event.metaKey || event.ctrlKey)) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-    emit({ type: 'hide' })
-  }
-}, true)
+// Caps Lock (or the fallback ⌃⇧Space) while the panel has focus hides it, as the hotkey does in the app.
+// Browsers on macOS report Caps Lock as keydown when it turns on and keyup when it turns off.
+for (const type of ['keydown', 'keyup'] as const)
+  document.addEventListener(type, event => {
+    const space = type === 'keydown' && event.code === 'Space' && event.shiftKey && event.ctrlKey
+    if (event.isTrusted && (event.code === 'CapsLock' || space)) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      emit({ type: 'hide' })
+    }
+  }, true)
 
 // Outside macOS, Ctrl stands in for ⌘ on the app's own shortcuts. This listener runs before the app's.
 const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
@@ -169,7 +172,7 @@ const api = {
   /** 0 makes canned rewrites instant. */
   setSpeed(value: number) { speed = value },
   state: snapshot,
-  /** The launcher was shown again, as after ⌘⇧Space: the app selects a copied prompt. */
+  /** The launcher was shown again, as after Caps Lock: the app selects a copied prompt. */
   show() { listeners['launcher-shown']?.({ event: 'launcher-shown', payload: null }); report() },
   focus() { if (!openPalette()) view().focus() },
   /** A key as the app receives it; ⌘ by default. */

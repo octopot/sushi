@@ -15,7 +15,16 @@ Sushi needs a Mac with Apple Silicon and macOS 26 or later.
 
 ## The shortcut does not work
 
-*Could not register ⌘⇧Space: …* means another app already uses **⌘⇧Space**. In this release the shortcut cannot be changed: free it in the other app, then quit Sushi from its menu bar icon and open it again. Until then, **Show Sushi** in the menu bar menu opens the panel.
+Sushi shows the panel on **Caps Lock**: while it runs, it maps Caps Lock to a key no keyboard has and listens to that key. It needs no permission, and quitting Sushi gives Caps Lock back. The menu bar menu shows the key in use.
+
+| Message | What to do |
+| --- | --- |
+| *Caps Lock switches input sources on this Mac, so ⌃⇧Space shows Sushi.* | macOS uses Caps Lock to change the keyboard layout. Turn off **Use the Caps Lock key to switch to and from ABC** in System Settings → Keyboard → Input Sources → Edit, then turn **Use Caps Lock** off and on again in the menu bar menu. Or keep it and use ⌃⇧Space. |
+| *Another app already remaps Caps Lock, so ⌃⇧Space shows Sushi.* | Another tool owns Caps Lock, for example Raycast's Hyper Key or a `hidutil` mapping. Turn that off, then turn **Use Caps Lock** off and on again; or keep ⌃⇧Space. |
+| *Could not register …: …* | Another app holds that key combination. Free it there, or set another combination as `shortcut` in `hotkey.json` in the settings folder and turn **Use Caps Lock** off and on again. Until then, **Show Sushi** in the menu bar menu opens the panel. |
+| *hotkey.json: …* | The file is not valid. Sushi uses Caps Lock with ⌃⇧Space as the fallback until you fix it; see [Change the key](/guide/keyboard/#change-the-key). |
+
+To keep Caps Lock for capitals, turn **Use Caps Lock** off in the menu bar menu: ⌃⇧Space then shows the panel, or the combination you put in `hotkey.json`.
 
 If the panel shows but ignores keys, click inside it: a panel that is visible but not active does not receive keys.
 

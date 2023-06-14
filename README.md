@@ -4,7 +4,7 @@
 
 **Write the prompt here. Paste it there.**
 
-Sushi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press ⌘⇧Space, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. Nothing leaves your Mac: edits run on Ollama.
+Sushi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press Caps Lock, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. Nothing leaves your Mac: edits run on Ollama.
 
 ## Install
 
@@ -27,13 +27,13 @@ See the [installation steps](docs/content/quick-start.mdx).
 ## Quick start
 
 1. Launch Sushi. Its icon appears in the menu bar.
-2. Press **⌘⇧Space** and write a prompt: `Add a dark mode toggle to the settings screen and keep the existing labels.`
+2. Press **Caps Lock** and write a prompt: `Add a dark mode toggle to the settings screen and keep the existing labels.`
 3. Select a sentence, press **⌘K**, type `short` and press Enter. The edit appears as a diff: **⌘→** accepts it, **⌘←** goes back.
 4. Press **⌘↵**. The prompt is on the clipboard and focus is back in your terminal or editor.
 
 | Action | Keys |
 | --- | --- |
-| Show or hide the window | ⌘⇧Space |
+| Show or hide the window | Caps Lock (or ⌃⇧Space, see the menu bar icon) |
 | Copy the prompt and hide | ⌘↵ |
 | Copy, clear the field and hide | ⇧⌘↵ |
 | Hide without copying, or cancel a running edit | Esc |

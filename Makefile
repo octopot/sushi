@@ -66,6 +66,7 @@ config-vet:
 	$(AT) cue vet -c .github/settings.cue .github/settings.json
 	$(AT) cue vet docs/specs/files.cue docs/specs/examples/rules.json -d '#Rules'
 	$(AT) cue vet docs/specs/files.cue docs/specs/examples/dictionary.json -d '#Dictionary'
+	$(AT) cue vet docs/specs/files.cue docs/specs/examples/hotkey.json -d '#Hotkey'
 .PHONY: config-vet
 
 workflows-check:

@@ -2,6 +2,9 @@
 #import <QuartzCore/QuartzCore.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
+#import <IOKit/IOKitLib.h>
+#import <IOKit/hidsystem/IOHIDEventSystemClient.h>
+#import <IOKit/hidsystem/IOHIDServiceClient.h>
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
@@ -192,6 +195,108 @@ bool sushi_quit_app(const char *bundle_id, double timeout) {
             usleep(100 * 1000);
         }
         return true;
+    }
+}
+
+// ——— Caps Lock as the hotkey ———
+// While Sushi runs, every keyboard maps Caps Lock to F18 through the HID event system's
+// UserKeyMapping, as `hidutil property --set` does; Sushi registers F18 as an ordinary
+// hotkey. No permission is involved. Other entries of each keyboard's mapping stay.
+static const unsigned long long CAPS_LOCK = 0x700000039, F18 = 0x70000006D;
+static IOHIDEventSystemClientRef hid;
+static bool caps_taken;
+static IONotificationPortRef keyboard_port;
+static io_iterator_t keyboards_added;
+
+static NSArray *keyboards(void) {
+    if (!hid) hid = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault);
+    NSArray *services = CFBridgingRelease(IOHIDEventSystemClientCopyServices(hid));
+    NSMutableArray *found = [NSMutableArray array];
+    for (id service in services) {
+        // Generic Desktop / Keyboard
+        if (IOHIDServiceClientConformsTo((__bridge IOHIDServiceClientRef)service, 1, 6)) [found addObject:service];
+    }
+    return found;
+}
+
+static NSArray<NSDictionary *> *key_mapping(id service) {
+    id value = CFBridgingRelease(IOHIDServiceClientCopyProperty((__bridge IOHIDServiceClientRef)service, CFSTR("UserKeyMapping")));
+    return [value isKindOfClass:NSArray.class] ? value : @[];
+}
+
+static BOOL maps_caps_lock(NSDictionary *entry) {
+    return [entry[@"HIDKeyboardModifierMappingSrc"] unsignedLongLongValue] == CAPS_LOCK;
+}
+
+static BOOL is_ours(NSDictionary *entry) {
+    return maps_caps_lock(entry) && [entry[@"HIDKeyboardModifierMappingDst"] unsignedLongLongValue] == F18;
+}
+
+static void set_mapping(id service, NSArray *mapping) {
+    IOHIDServiceClientSetProperty((__bridge IOHIDServiceClientRef)service, CFSTR("UserKeyMapping"), (__bridge CFArrayRef)mapping);
+}
+
+static void map_all_keyboards(void) {
+    for (id service in keyboards()) {
+        NSArray *mapping = key_mapping(service);
+        if ([mapping indexOfObjectPassingTest:^BOOL(NSDictionary *e, __unused NSUInteger i, __unused BOOL *stop) { return maps_caps_lock(e); }] != NSNotFound) continue;
+        set_mapping(service, [mapping arrayByAddingObject:@{@"HIDKeyboardModifierMappingSrc": @(CAPS_LOCK), @"HIDKeyboardModifierMappingDst": @(F18)}]);
+    }
+}
+
+static void drain(io_iterator_t iterator) {
+    io_object_t service;
+    while ((service = IOIteratorNext(iterator))) IOObjectRelease(service);
+}
+
+// A keyboard connected later gets the mapping too; the event system lists it a moment after IOKit does.
+static void keyboard_added(__unused void *context, io_iterator_t iterator) {
+    drain(iterator);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        if (caps_taken) map_all_keyboards();
+    });
+}
+
+static void watch_keyboards(void) {
+    if (keyboard_port) return;
+    keyboard_port = IONotificationPortCreate(kIOMainPortDefault);
+    IONotificationPortSetDispatchQueue(keyboard_port, dispatch_get_main_queue());
+    if (IOServiceAddMatchingNotification(keyboard_port, kIOFirstMatchNotification, IOServiceMatching("IOHIDEventService"),
+                                         keyboard_added, NULL, &keyboards_added) == KERN_SUCCESS) {
+        drain(keyboards_added);
+    }
+}
+
+// 0: Caps Lock now opens Sushi. 1: macOS switches input sources with Caps Lock.
+// 2: another tool (Raycast's Hyper key, hidutil) already maps Caps Lock. Runs on the main thread.
+int sushi_caps_take(void) {
+    @autoreleasepool {
+        id switching = CFBridgingRelease(CFPreferencesCopyAppValue(CFSTR("TISRomanSwitchState"), CFSTR("com.apple.HIToolbox")));
+        if ([switching respondsToSelector:@selector(boolValue)] && [switching boolValue]) return 1;
+        for (id service in keyboards()) {
+            for (NSDictionary *entry in key_mapping(service)) {
+                if (maps_caps_lock(entry) && !is_ours(entry)) return 2;
+            }
+        }
+        caps_taken = true;
+        map_all_keyboards();
+        watch_keyboards();
+        return 0;
+    }
+}
+
+// Gives Caps Lock back. Also clears a mapping a crashed run left behind.
+void sushi_caps_release(void) {
+    @autoreleasepool {
+        caps_taken = false;
+        for (id service in keyboards()) {
+            NSArray *mapping = key_mapping(service);
+            NSIndexSet *ours = [mapping indexesOfObjectsPassingTest:^BOOL(NSDictionary *e, __unused NSUInteger i, __unused BOOL *stop) { return is_ours(e); }];
+            if (!ours.count) continue;
+            NSMutableArray *rest = [mapping mutableCopy];
+            [rest removeObjectsAtIndexes:ours];
+            set_mapping(service, rest);
+        }
     }
 }
 

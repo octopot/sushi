@@ -9,7 +9,25 @@ description: Every key in Sushi on one page, for the panel, the ⌘K actions lis
 
 | Keys | Action |
 | --- | --- |
-| **⌘⇧Space** | Show Sushi; press again to hide it. |
+| **Caps Lock** | Show Sushi; press again to hide it. While Sushi runs, Caps Lock does not switch case. |
+| **⌃⇧Space** | The same, when **Use Caps Lock** is off in the menu bar menu or Caps Lock is taken. Change it in `hotkey.json`. |
+
+## Change the key
+
+Caps Lock shows Sushi while **Use Caps Lock** is on in the menu bar menu. Sushi maps Caps Lock to a key no keyboard has, on every keyboard, including one you connect later; other key mappings stay as they are, and quitting Sushi gives Caps Lock back. No permission is needed.
+
+Turn **Use Caps Lock** off to keep Caps Lock for capitals: then **⌃⇧Space** shows Sushi. Sushi also falls back to it when macOS switches input sources with Caps Lock or another app already remaps it, and says so in the panel.
+
+Both choices live in `hotkey.json` in the settings folder (**Open Settings Folder** in the menu bar menu):
+
+```json
+{
+  "capsLock": true,
+  "shortcut": "Control+Shift+Space"
+}
+```
+
+`shortcut` takes modifiers (`Control`, `Option`, `Shift`, `Command`) and one key, joined with `+`: `Option+Command+KeyP`, `Control+Shift+Space`, `Shift+F13`. Sushi reads the file at launch and when you switch **Use Caps Lock**; the switch writes `capsLock` back. To return to ⌘⇧Space, the key of Susi, set `"capsLock": false` and `"shortcut": "Command+Shift+Space"`; on macOS 27 that combination opens Visual Intelligence instead.
 
 ## In the panel
 

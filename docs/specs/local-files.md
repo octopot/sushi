@@ -28,6 +28,11 @@ Everything Sushi knows besides the current draft lives in plain files on the Mac
 - **LF-9. Format and validation.** An object with one array, `terms`. Each term has a phrase `from`, as a dictation tool may hear it, and the preferred spelling `to`. Both must contain something besides whitespace; unknown fields are rejected. The phrases `from` are unique after trimming and lowercasing.
 - **LF-10. In the Library.** The Dictionary section lists each term as `to` with `from` beside it, searchable by both. Its rows have no numbers. Enter or **Open in Editor** opens `dictionary.json` in the default text editor and leaves the Library open; the file must be a regular file, not a link.
 
+### `hotkey.json` — the key that shows Sushi
+
+- **LF-18. Caps Lock or a combination.** `hotkey.json` holds `capsLock` (true or false) and `shortcut`, a combination of at least one modifier (`Control`, `Option`, `Shift`, `Command`) and one key joined with `+`; unknown fields are errors, and an invalid file is reported (`hotkey.json: …`) while Sushi uses the [example](examples/hotkey.json): Caps Lock with `Control+Shift+Space`. The file is read at launch and when **Use Caps Lock** is switched in the menu bar menu; the switch writes `capsLock` back and keeps `shortcut`.
+- **LF-19. Caps Lock.** With `capsLock` true, Sushi maps Caps Lock to F18 in the `UserKeyMapping` of every keyboard, including one connected later, keeps the other entries, and registers F18 as its hotkey; quitting Sushi removes its entry. Sushi does not take Caps Lock when macOS switches input sources with it (`TISRomanSwitchState`) or another entry already maps it: it registers `shortcut` and says why. With `capsLock` false it registers `shortcut` and removes an entry a crashed run left. Holding the key toggles the panel once.
+
 ### Library: prompts and templates
 
 - **LF-11. Which directory.** The Library reads one directory, chosen in this order: the environment variable `SUSHI_LIBRARY_DIR`, if set and non-empty; else the path written in `library-path.txt` in the settings folder; else `Input/` in the settings folder. The path in `library-path.txt` must be absolute; only trailing line breaks are trimmed. Pointing it at a Tuna assistant's `Input/` directory shares that assistant's prompts. The choice is made again on every Library request, and a missing directory is created.
@@ -73,6 +78,7 @@ The Library lists it as **Handover note**. Opening it puts `## What is done⏎�
 ```sh
 cue vet docs/specs/files.cue docs/specs/examples/rules.json -d '#Rules'
 cue vet docs/specs/files.cue docs/specs/examples/dictionary.json -d '#Dictionary'
+cue vet docs/specs/files.cue docs/specs/examples/hotkey.json -d '#Hotkey'
 for t in task-brief bug-report release-review; do
   awk 'NR == 1 {next} /^---$/ {exit} {print}' docs/specs/examples/$t.md |
     cue vet docs/specs/files.cue yaml: - -d '#Template'
@@ -86,7 +92,7 @@ Replace the example paths with the files in your settings folder or library. The
 These are deliberate limits of v0.1.1, not defects. Changing any of them is a change of this specification.
 
 - **Dictionary replacement is switched off.** When on, Sushi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
-- **No editing inside Sushi.** Rules, terms, prompts and templates are edited as files. Sushi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3 and LF-16 and the marker `.initialized-v1`, besides creating missing directories.
+- **No editing inside Sushi.** Rules, terms, prompts and templates are edited as files. Sushi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3, LF-16 and LF-18, the marker `.initialized-v1`, `capsLock` in `hotkey.json` (LF-18) and the move from Susi (LF-17), besides creating missing directories.
 - **Text only.** Prompts and templates are read as text. Images and other attachments are not supported; an image link stays a line of Markdown.
 - **No template variables.** Template frontmatter carries only `title`; there are no placeholders, descriptions or per-template aliases.
 - **One flat library.** One directory at a time, without subdirectories.
@@ -110,5 +116,7 @@ These are deliberate limits of v0.1.1, not defects. Changing any of them is a ch
 | LF-13, LF-14, LF-15 | `library::tests::templates_read_titles_and_preserve_legacy_markdown`; `composer.test.mjs` — Library … (numbers, caret) | `header`, `mentions_title`, `section`; `files.cue` |
 | LF-16 | `library::tests::templates_read_titles_and_preserve_legacy_markdown` (removal, earlier libraries) | `ensure_templates` |
 | LF-17 | `migrate::tests::*` (copy, the mark, a folder without the mark, a failed copy, a fresh install); the WebKit copy read under a new identifier: manual, with throwaway identifiers in stage mode | `run`, `migrate`, `replace_with_copy` in `src-tauri/src/migrate.rs`; `sushi_quit_app` in `src-tauri/src/macos.m` |
+| LF-18 | `hotkey::tests::*` (seeding, saving the switch, invalid files, symbols); `cue vet` on the example | `load`, `save`, `apply`, `toggle_caps_lock` in `src-tauri/src/hotkey.rs`; `files.cue` |
+| LF-19 | `hotkey::tests::a_held_key_toggles_once`; the mapping itself: manual, on a Mac whose keyboard may be remapped (see AGENTS.md) | `sushi_caps_take`, `sushi_caps_release` in `src-tauri/src/macos.m`; `apply` |
 
 Run the Rust tests with `cargo test --manifest-path src-tauri/Cargo.toml --release` and the browser tests with `npm test`. Both work in temporary directories and profiles and never touch the real settings folder.

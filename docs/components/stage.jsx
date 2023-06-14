@@ -107,7 +107,7 @@ export function Stage() {
       setShown(false)
       setPasted(null)
       await wait(900)
-      say('summon', ['⌘', '⇧', 'Space'], 'From any app')
+      say('summon', ['Caps Lock'], 'From any app')
       await wait(650)
       setShown(true)
       demoApi.show()
@@ -167,7 +167,7 @@ export function Stage() {
       await wait(500)
       demoApi.key('Enter')
       await wait(3600)
-      say('summon', ['⌘', '⇧', 'Space'], 'Next time, your last prompt waits, selected')
+      say('summon', ['Caps Lock'], 'Next time, your last prompt waits, selected')
       await wait(600)
       setShown(true)
       demoApi.show()
@@ -270,9 +270,10 @@ export function Stage() {
     return () => observer.disconnect()
   }, [])
 
-  // ⌘⇧Space (Ctrl+Shift+Space elsewhere) brings the panel back, but only while focus is on the stage.
+  // Caps Lock (or the fallback ⌃⇧Space) brings the panel back, but only while focus is on the stage.
+  // Browsers on macOS report Caps Lock as keydown when it turns on and keyup when it turns off.
   const onKeyDown = event => {
-    if (event.code === 'Space' && event.shiftKey && (event.metaKey || event.ctrlKey) && !shown) {
+    if ((event.code === 'CapsLock' || (event.code === 'Space' && event.shiftKey && event.ctrlKey)) && !shown) {
       event.preventDefault()
       takeOver(false)
       summon()
@@ -293,7 +294,7 @@ export function Stage() {
 
   return (
     <div className="stage-wrap">
-      <div ref={root} className="stage" data-phase={phase} data-theme={theme} onKeyDown={onKeyDown}>
+      <div ref={root} className="stage" data-phase={phase} data-theme={theme} onKeyDown={onKeyDown} onKeyUp={event => event.code === 'CapsLock' && onKeyDown(event)}>
         <div className="stage-wallpaper" aria-hidden="true"><span /><span /><span /></div>
 
         <div className={`stage-terminal${shown ? '' : ' is-front'}`} aria-hidden="true">
@@ -325,7 +326,7 @@ export function Stage() {
 
         {!shown && phase === 'yours' && (
           <button className="stage-summon" type="button" onClick={() => summon()}>
-            Show Sushi <Keys keys={['⌘', '⇧', 'Space']} />
+            Show Sushi <Keys keys={['Caps Lock']} />
           </button>
         )}
 

@@ -1,6 +1,6 @@
 # Working on Sushi
 
-Sushi is a local prompt composer for macOS with an icon in the menu bar. ⌘⇧Space shows a glass panel with a single text field. With ⌘K the user edits the selection or the whole text through Ollama and sees the diff right in the editor. ⌘← and ⌘→ step through the version chain, ⌘L opens the library, ⌘↵ copies the prompt and returns focus to the previous app. On a diff the right-hand version is copied, on text the version shown. [Chain specification](docs/specs/version-history.md) · [Keys and files](README.md)
+Sushi is a local prompt composer for macOS with an icon in the menu bar. Caps Lock shows a glass panel with a single text field (⌃⇧Space when Caps Lock is not available). With ⌘K the user edits the selection or the whole text through Ollama and sees the diff right in the editor. ⌘← and ⌘→ step through the version chain, ⌘L opens the library, ⌘↵ copies the prompt and returns focus to the previous app. On a diff the right-hand version is copied, on text the version shown. [Chain specification](docs/specs/version-history.md) · [Keys and files](README.md)
 
 **On the working Mac, check changes in the background.** Use synthetic text, a temporary profile and input addressed to the Playwright page. Open the app in the user's session only when the user explicitly asks for it. Capture the look of the real window with [background capture](#background-capture-of-the-real-window). Check system key presses, dictation, the real clipboard and focus switching inside a guest macOS or on a separate Mac. Run one-off browser scripts with the IPC stub too: without it ⌘↵ writes to the real clipboard.
 
@@ -288,7 +288,7 @@ pgrep -lf /Applications/Sushi.app/Contents/MacOS/sushi                          
 `brew upgrade` quits the running app (`uninstall quit:`) and opens it again;
 after a first `brew install`, start it with `open -g -a Sushi --args --hidden`,
 which keeps the panel closed. The owner then checks in the running app: the
-menu bar icon is there, ⌘⇧Space shows the panel, ⌘K edits a short phrase with
+menu bar icon is there, Caps Lock shows the panel, ⌘K edits a short phrase with
 Ollama running, ⌘↵ pastes the result into the previous app, and the library
 (⌘L) still lists his prompts. What he has not checked yet goes to
 [.github/self-control.md](.github/self-control.md).

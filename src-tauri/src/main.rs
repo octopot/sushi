@@ -1,3 +1,4 @@
+mod hotkey;
 mod library;
 mod migrate;
 mod rewrite;
@@ -12,11 +13,10 @@ use std::{
         Mutex,
     },
 };
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::webview::PageLoadEvent;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WindowEvent};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 extern "C" {
     fn sushi_remember_frontmost();
@@ -201,7 +201,7 @@ fn main() {
             .plugin(
                 tauri_plugin_global_shortcut::Builder::new()
                     .with_handler(|app, _, event| {
-                        if event.state == ShortcutState::Pressed {
+                        if hotkey::pressed(event.state) {
                             show_launcher(app, true);
                         }
                     })
@@ -210,6 +210,7 @@ fn main() {
     }
     let app = builder
         .manage(notes)
+        .manage(hotkey::State::default())
         .manage(rewrite::Requests::default())
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -231,8 +232,28 @@ fn main() {
                 None::<&str>,
             )?;
             let quit = MenuItem::with_id(app, "sushi-quit", "Quit", true, None::<&str>)?;
+            let key = MenuItem::with_id(app, "sushi-key", "Shows Sushi:", false, None::<&str>)?;
+            let caps_lock = CheckMenuItem::with_id(
+                app,
+                "sushi-caps-lock",
+                "Use Caps Lock",
+                true,
+                false,
+                None::<&str>,
+            )?;
             let separator = PredefinedMenuItem::separator(app)?;
-            let menu = Menu::with_items(app, &[&show, &folder, &separator, &quit])?;
+            let keys = PredefinedMenuItem::separator(app)?;
+            let menu = Menu::with_items(
+                app,
+                &[&show, &key, &caps_lock, &keys, &folder, &separator, &quit],
+            )?;
+            hotkey::attach(
+                app.handle(),
+                hotkey::Menu {
+                    label: key,
+                    caps_lock,
+                },
+            );
             TrayIconBuilder::with_id("sushi")
                 .tooltip("Sushi")
                 .icon(tauri::include_image!("icons/menu-template.png"))
@@ -241,14 +262,14 @@ fn main() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "sushi-show" => show_launcher(app, false),
                     "sushi-folder" => open_settings_folder(app),
+                    "sushi-caps-lock" => hotkey::toggle_caps_lock(app),
                     "sushi-quit" => app.exit(0),
                     _ => (),
                 })
                 .build(app)?;
 
-            if let Err(error) = app.global_shortcut().register("super+shift+space") {
-                app.state::<StartupNotes>()
-                    .add(format!("Could not register ⌘⇧Space: {error}"));
+            for note in hotkey::apply(app.handle()) {
+                app.state::<StartupNotes>().add(note);
             }
             if !hidden {
                 show_launcher(app.handle(), false);
@@ -279,6 +300,7 @@ fn main() {
     app.run(move |app, event| match event {
         RunEvent::Ready if stage => stage_present(app),
         RunEvent::Reopen { .. } if !stage => show_launcher(app, false),
+        RunEvent::Exit if !stage => hotkey::release(),
         _ => (),
     });
 }

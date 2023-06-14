@@ -9,7 +9,7 @@ export function Keys({ keys, className = '' }) {
 
 /** Keycaps with a text equivalent for screen readers, e.g. ⌘K → "Command K". */
 export function Shortcut({ keys }) {
-  const names = { '⌘': 'Command', '⇧': 'Shift', '↵': 'Return', '←': 'Left Arrow', '→': 'Right Arrow', '↑': 'Up Arrow', '↓': 'Down Arrow', '⇥': 'Tab' }
+  const names = { '⌘': 'Command', '⇧': 'Shift', '↵': 'Return', '←': 'Left Arrow', '→': 'Right Arrow', '↑': 'Up Arrow', '↓': 'Down Arrow', '⇥': 'Tab', '⌃': 'Control', '⌥': 'Option' }
   return (
     <>
       <Keys keys={keys} />
