@@ -97,4 +97,10 @@ Lead installation with Homebrew. The manual download is not notarized in v0.2.0,
 
 `package.json` pins Zod to `4.1.12` under `nextra-theme-docs` and overrides `@xmldom/xmldom` for `speech-rule-engine`, as in the indexit docs; see its README for the reasons and when to drop them.
 
+Three Dependabot alerts of the site are dismissed, none of them reaches `Sushi.app`:
+
+- Zod before 4.6.6 can exhaust memory (GHSA-mrhx-c7xc-m3w5): a tolerable risk, since only the static build validates the repository's own files. The fix for the regression, [shuding/nextra#4990](https://github.com/shuding/nextra/pull/4990), is merged but not released; once a Nextra release after 4.6.1 ships it, move the override to `4.6.6` or later, or drop it, and check the static export.
+- minimatch 10 comes through `ts-morph`, which the site does not use. Its advisory GHSA-g3hv-75wg-m249 needs `optimizationLevel` 2 or more, while `@ts-morph/common` calls minimatch without options, at level 1: not used. Look again when `ts-morph` or its glob options change.
+- KaTeX 0.16 (GHSA-238p-pmpm-9mq7) renders nothing: `latex` is off and the pages have no math or Mermaid: not used. It goes away with Nextra's own upgrade.
+
 Search is disabled: static search indexing is not configured.

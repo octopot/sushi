@@ -36,6 +36,11 @@ touching Sushi; the note says so.
   mapping. Not tried: this Mac had only the built-in keyboard. If Caps Lock
   does not show the panel on a keyboard connected later, the IOKit
   notification in `macos.m` is the place to look.
+- [ ] **After Sushi crashes or is killed**, Caps Lock stays mapped to F18
+  until the next launch, which takes the mapping over: `is_ours` accepts
+  Sushi's own entry. Not tried live. If the next launch falls back to
+  ⌃⇧Space with "Another app already remaps Caps Lock", the check in
+  `sushi_caps_take` is the place to look.
 - [ ] **v0.3.0 removes the move from Susi**: `src-tauri/src/migrate.rs`,
   `sushi_quit_app` in `macos.m`, the `susi.draft.v3` fallback in `src/main.ts`,
   LF-17 and the Susi part of VH-18, their tests, `x-release.tap.renamed_from`
@@ -73,6 +78,19 @@ opened it again with the signature intact.
   that fail Gatekeeper. A tap cask is not audited for that today; if Homebrew
   starts refusing quarantine removal in tap casks, Developer ID signing and
   notarization become the only way to keep `brew install` working.
+
+### Dismissed dependency alerts
+
+Dismissed on 2026-11-19 with the reasons on each alert; none reaches the app.
+
+- [ ] **A Nextra release after 4.6.1**: move the Zod override in
+  `docs/package.json` to `4.6.6` or later, or drop it, and check the static
+  export ([docs README](../docs/README.md)). Proven when the site builds and
+  the Zod alert does not come back.
+- [ ] **Tauri on gtk 0.19 or later, or a Linux build of Sushi**: glib 0.18
+  (GHSA-wrw7-89jp-8q8g) comes only through gtk for Linux, and
+  `cargo tree -i glib --target aarch64-apple-darwin` is empty. When either
+  changes, update Tauri so that glib is 0.20 or later.
 
 ## Decisions waiting
 
