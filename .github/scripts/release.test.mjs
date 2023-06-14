@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { checksumOf, declaredVersion, renderCask, tapAction } from './release.mjs'
+import { checksumOf, declaredVersion, renderCask, tapAction, tapRenames } from './release.mjs'
 
 const script = resolve('.github/scripts/release.mjs')
 const template = readFileSync(resolve('.github/homebrew/sushi.rb'), 'utf8')
@@ -170,6 +170,84 @@ esac
   assert.equal(older.status, 1)
   assert.match(older.stderr, /has 0\.3\.0, newer than 0\.2\.0/)
   assert.equal(existsSync(put), false)
+}))
+
+test('a renamed cask maps every old token once and keeps other renames', () => {
+  assert.deepEqual(tapRenames('sushi', ['susi'], ['susi'], null), { deletions: ['Casks/susi.rb'], renames: '{\n  "susi": "sushi"\n}\n' })
+  assert.deepEqual(tapRenames('sushi', ['susi'], [], '{"susi": "sushi"}'), { deletions: [], renames: null })
+  assert.deepEqual(tapRenames('sushi', ['susi'], [], '{"zeta": "z", "alpha": "a"}').renames, '{\n  "alpha": "a",\n  "susi": "sushi",\n  "zeta": "z"\n}\n')
+})
+
+test('a rename writes the new cask, deletes the old one and maps it in one commit', () => fixture(({ cwd, settings, run, withEnv }) => {
+  settings({}, { ...RELEASE, tap: { ...RELEASE.tap, cask: 'Casks/sushi.rb', template: '.github/homebrew/sushi.rb', renamed_from: ['susi'] } })
+  mkdirSync(join(cwd, 'bin'))
+  const tapDir = join(cwd, 'tap')
+  mkdirSync(join(tapDir, 'Casks'), { recursive: true })
+  const graphql = join(cwd, 'graphql.json')
+  const put = join(cwd, 'put.json')
+  // a stand-in for gh serving the tap from tap/: contents, the repository, the head ref, GraphQL and PUT
+  writeFileSync(join(cwd, 'bin/gh'), `#!/bin/sh
+case "$*" in
+  *"-X PUT"*) cat > "${put}"; echo '{"commit":{"sha":"c0ffee","verification":{"verified":true}}}' ;;
+  "api graphql --input -") cat > "${graphql}"; echo '{"data":{"createCommitOnBranch":{"commit":{"oid":"beef","signature":{"isValid":true}}}}}' ;;
+  "api repos/octolab/homebrew-tap") echo '{"default_branch":"main"}' ;;
+  "api repos/octolab/homebrew-tap/git/ref/heads/main") echo '{"object":{"sha":"head1"}}' ;;
+  "api repos/octolab/homebrew-tap/contents/"*)
+     f="${tapDir}/\${2#repos/octolab/homebrew-tap/contents/}"
+     [ -f "$f" ] || { echo 'gh: Not Found (HTTP 404)' >&2; exit 1; }
+     printf '{"sha":"blob1","content":"%s"}' "$(base64 < "$f" | tr -d '\n')" ;;
+  *) echo "unexpected: $*" >&2; exit 2 ;;
+esac
+`)
+  chmodSync(join(cwd, 'bin/gh'), 0o755)
+  withEnv({ PATH: `${join(cwd, 'bin')}:${process.env.PATH}`, GH_TOKEN: 'fixture' })
+  const next = join(cwd, 'sushi.rb')
+  writeFileSync(next, renderCask(template, { version: '0.2.0', sha256: SHA }))
+  writeFileSync(join(tapDir, 'Casks/susi.rb'), renderCask(template, { version: '0.1.1', sha256: SHA }).replace('cask "sushi"', 'cask "susi"'))
+
+  const renamed = run('tap', next, '--version', '0.2.0')
+  assert.equal(renamed.status, 0, renamed.stderr)
+  assert.match(renamed.stdout, /created, renamed from susi in beef, verified: true/)
+  const { variables: { input } } = JSON.parse(readFileSync(graphql, 'utf8'))
+  assert.equal(input.expectedHeadOid, 'head1')
+  assert.deepEqual(input.branch, { repositoryNameWithOwner: 'octolab/homebrew-tap', branchName: 'main' })
+  assert.equal(input.message.headline, 'Brew cask update for sushi version v0.2.0')
+  assert.match(input.message.body, /Renamed from susi/)
+  assert.deepEqual(input.fileChanges.deletions, [{ path: 'Casks/susi.rb' }])
+  const added = Object.fromEntries(input.fileChanges.additions.map(a => [a.path, Buffer.from(a.contents, 'base64').toString('utf8')]))
+  assert.deepEqual(Object.keys(added).sort(), ['Casks/sushi.rb', 'cask_renames.json'])
+  assert.equal(added['Casks/sushi.rb'], readFileSync(next, 'utf8'))
+  assert.deepEqual(JSON.parse(added['cask_renames.json']), { susi: 'sushi' })
+  assert.equal(existsSync(put), false, 'no second commit through the contents API')
+
+  // The rerun after the commit landed: nothing is left to rename and the cask is the same.
+  rmSync(graphql)
+  rmSync(join(tapDir, 'Casks/susi.rb'))
+  copyFileSync(next, join(tapDir, 'Casks/sushi.rb'))
+  writeFileSync(join(tapDir, 'cask_renames.json'), added['cask_renames.json'])
+  const rerun = run('tap', next)
+  assert.equal(rerun.status, 0, rerun.stderr)
+  assert.match(rerun.stdout, /already has this cask/)
+  assert.equal(existsSync(graphql), false)
+  assert.equal(existsSync(put), false)
+
+  // The next release after the rename is an ordinary update through the contents API.
+  const later = join(cwd, 'later.rb')
+  writeFileSync(later, renderCask(template, { version: '0.2.1', sha256: SHA }))
+  assert.equal(run('tap', later).status, 0)
+  assert.equal(JSON.parse(readFileSync(put, 'utf8')).message, 'Brew cask update for sushi version v0.2.1')
+  assert.equal(existsSync(graphql), false)
+
+  // A tap that has the new cask but lost the mapping gets only the mapping back.
+  rmSync(join(tapDir, 'cask_renames.json'))
+  copyFileSync(later, join(tapDir, 'Casks/sushi.rb'))
+  const mapped = run('tap', later)
+  assert.equal(mapped.status, 0, mapped.stderr)
+  assert.match(mapped.stdout, /kept, renamed from susi/)
+  const second = JSON.parse(readFileSync(graphql, 'utf8')).variables.input
+  assert.equal(second.message.headline, 'sushi: renamed from susi')
+  assert.deepEqual(second.fileChanges.additions.map(a => a.path), ['cask_renames.json'])
+  assert.deepEqual(second.fileChanges.deletions, [])
 }))
 
 test('preflight needs the App on a stable tag only and Apple secrets all or none', () => fixture(({ cwd, settings, run, withEnv }) => {

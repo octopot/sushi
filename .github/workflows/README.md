@@ -174,7 +174,12 @@ flowchart TB
   token minted per run by `actions/create-github-app-token` from the
   Releaser App. No author or committer is sent, so GitHub signs the commit as
   the App. The same text in the tap is a no-op; a newer version there is
-  refused, never downgraded. The job is separate so that a failed publication
+  refused, never downgraded. While `x-release.tap.renamed_from` names old
+  tokens that the tap still has, or that `cask_renames.json` does not map
+  yet, the job writes the cask, deletes the old cask files and maps them in
+  `cask_renames.json` in one commit through GraphQL `createCommitOnBranch`
+  (no author either), so the tap never holds both casks; a rerun after that
+  commit is an ordinary update. The job is separate so that a failed publication
   can be rerun alone (`gh run rerun <run-id> --failed`) while the release
   stays as it is.
 - **Prereleases leave the tap alone.** A tag with a prerelease suffix, such as

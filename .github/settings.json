@@ -10,7 +10,8 @@
       "owner": "octolab",
       "name": "homebrew-tap",
       "cask": "Casks/sushi.rb",
-      "template": ".github/homebrew/sushi.rb"
+      "template": ".github/homebrew/sushi.rb",
+      "renamed_from": ["susi"]
     }
   },
   "secrets": {

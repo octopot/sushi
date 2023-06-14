@@ -417,30 +417,81 @@ export function tapAction(current, next) {
   return { action: 'update' }
 }
 
-// Commits through the contents API with the token minted from the Releaser
-// App and no author or committer, so GitHub signs the commit as the App.
+// Reads a file of the tap: its text and blob sha, or null when it does not exist.
+function tapFile(owner, name, path) {
+  try {
+    const got = JSON.parse(gh('api', `repos/${owner}/${name}/contents/${path}`))
+    return { text: Buffer.from(got.content, 'base64').toString('utf8'), sha: got.sha }
+  } catch (e) {
+    if (/Not Found|HTTP 404/.test(e.message)) return null
+    throw e
+  }
+}
+
+// What a cask rename still needs in the tap: old cask files to delete and the
+// cask_renames.json text with every old token mapped to the new one, or null.
+export function tapRenames(token, renamedFrom, existing, renamesText) {
+  const renames = renamesText ? JSON.parse(renamesText) : {}
+  const missing = renamedFrom.filter(old => renames[old] !== token)
+  for (const old of missing) renames[old] = token
+  const sorted = Object.fromEntries(Object.entries(renames).sort(([a], [b]) => a.localeCompare(b)))
+  return {
+    deletions: renamedFrom.filter(old => existing.includes(old)).map(old => `Casks/${old}.rb`),
+    renames: missing.length ? JSON.stringify(sorted, null, 2) + '\n' : null,
+  }
+}
+
+// Commits with the token minted from the Releaser App and no author or
+// committer, so GitHub signs the commit as the App. A plain update goes
+// through the contents API; a rename (x-release.tap.renamed_from) writes the
+// new cask, deletes the old ones and maps them in cask_renames.json in one
+// commit through createCommitOnBranch, so the tap never has both casks.
 function tap(file, opts) {
   const { release } = settings()
   if (!release.tap) throw new Error(`no x-release.tap in ${SETTINGS}`)
   if (!process.env.GH_TOKEN) throw new Error('tap: GH_TOKEN is empty; pass the token minted for the tap')
   const { owner, name, cask: path } = release.tap
+  const token = basename(path, '.rb')
   const next = readFileSync(file, 'utf8')
   const version = opts.version || caskVersion(next)
-  const endpoint = `repos/${owner}/${name}/contents/${path}`
-  let current = null
-  let sha
-  try {
-    const got = JSON.parse(gh('api', endpoint))
-    current = Buffer.from(got.content, 'base64').toString('utf8')
-    sha = got.sha
-  } catch (e) {
-    if (!/Not Found|HTTP 404/.test(e.message)) throw e
-  }
-  const decision = tapAction(current, next)
+  const current = tapFile(owner, name, path)
+  const decision = tapAction(current?.text ?? null, next)
   if (decision.action === 'refuse') throw new Error(`tap: ${decision.reason}`)
+  const headline = `Brew cask update for ${token} version v${version}`
+
+  const renamedFrom = release.tap.renamed_from || []
+  if (renamedFrom.length) {
+    const existing = renamedFrom.filter(old => tapFile(owner, name, `Casks/${old}.rb`))
+    const { deletions, renames } = tapRenames(token, renamedFrom, existing, tapFile(owner, name, 'cask_renames.json')?.text)
+    if (deletions.length || renames) {
+      const additions = [
+        ...(decision.action === 'skip' ? [] : [{ path, contents: Buffer.from(next).toString('base64') }]),
+        ...(renames ? [{ path: 'cask_renames.json', contents: Buffer.from(renames).toString('base64') }] : []),
+      ]
+      const branch = JSON.parse(gh('api', `repos/${owner}/${name}`)).default_branch
+      const head = JSON.parse(gh('api', `repos/${owner}/${name}/git/ref/heads/${branch}`)).object.sha
+      const query = `mutation($input: CreateCommitOnBranchInput!) {
+  createCommitOnBranch(input: $input) { commit { oid signature { isValid } } }
+}`
+      const input = {
+        branch: { repositoryNameWithOwner: `${owner}/${name}`, branchName: branch },
+        message: {
+          headline: decision.action === 'skip' ? `${token}: renamed from ${renamedFrom.join(', ')}` : headline,
+          body: `Renamed from ${renamedFrom.join(', ')}: Homebrew moves installed casks with cask_renames.json.`,
+        },
+        expectedHeadOid: head,
+        fileChanges: { additions, deletions: deletions.map(p => ({ path: p })) },
+      }
+      const res = JSON.parse(gh('api', 'graphql', '--input', '-', { input: JSON.stringify({ query, variables: { input } }) }))
+      const commit = res.data.createCommitOnBranch.commit
+      console.log(`tap: ${owner}/${name} ${path} ${decision.action === 'skip' ? 'kept' : decision.action + 'd'}, renamed from ${renamedFrom.join(', ')} in ${commit.oid}, verified: ${commit.signature?.isValid ?? 'unknown'}`)
+      return
+    }
+  }
+
   if (decision.action === 'skip') { console.log(`tap: ${owner}/${name} ${path}: ${decision.reason}`); return }
-  const body = { message: `Brew cask update for sushi version v${version}`, content: Buffer.from(next).toString('base64'), ...(sha ? { sha } : {}) }
-  const res = JSON.parse(gh('api', '-X', 'PUT', endpoint, '--input', '-', { input: JSON.stringify(body) }))
+  const body = { message: headline, content: Buffer.from(next).toString('base64'), ...(current ? { sha: current.sha } : {}) }
+  const res = JSON.parse(gh('api', '-X', 'PUT', `repos/${owner}/${name}/contents/${path}`, '--input', '-', { input: JSON.stringify(body) }))
   console.log(`tap: ${owner}/${name} ${path} ${decision.action}d in ${res.commit.sha}, verified: ${res.commit.verification?.verified ?? 'unknown'}`)
 }
 

@@ -73,6 +73,10 @@ package settings
 	// Path of the cask in the tap.
 	cask: string & =~"^Casks/[a-z0-9-]+\\.rb$"
 
+	// Old tokens of this cask: the tap job deletes their files and maps them to
+	// the new token in cask_renames.json, in the same commit as the cask.
+	renamed_from?: [...string & =~"^[a-z0-9-]+$"]
+
 	// The cask template in this repository; release.mjs cask fills in
 	// @VERSION@ and @SHA256@ and keeps or drops the ad-hoc block.
 	template: string
