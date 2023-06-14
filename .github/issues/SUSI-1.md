@@ -1,5 +1,5 @@
 ---
-code: null
+code: SUSI-1
 id: I_kwDOVy11Hs8AAAABgroL2w
 databaseId: 6488198107
 number: 2
@@ -7,20 +7,20 @@ url: https://github.com/octopot/sushi/issues/2
 title: "hotkey: move off ⌘⇧Space, which macOS 27 and 1Password claim"
 issueType: Bug
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: null
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T11:07:40Z
-updatedAt: 2026-11-19T11:33:00Z
+updatedAt: 2026-11-19T13:11:21Z
 lastEditedAt: 2026-11-19T11:33:00Z
-closedAt: null
+closedAt: 2026-11-19T13:11:21Z
 ---
 
 # hotkey: move off ⌘⇧Space, which macOS 27 and 1Password claim
@@ -56,3 +56,20 @@ One press of Caps Lock opens and hides the panel, with no permission to grant an
 ## Out of scope
 
 Caps Lock held together with another key (Caps + Space) and double-tapped modifiers: both need an event tap and the Input Monitoring permission.
+
+<!-- 2026-11-19T13:11Z https://github.com/octopot/sushi/issues/2#issuecomment-7010107834
+Shipped in [v0.2.0](https://github.com/octopot/sushi/releases/tag/v0.2.0) by 9449501; its `Closes` keyword did not close the issue.
+
+The fallback, ⌃⇧Space, is free of every default checked:
+
+| Who | Keys with Space |
+| --- | --- |
+| macOS: Spotlight, Finder search | ⌘Space, ⌥⌘Space |
+| macOS: input sources | ⌃Space, ⌃⌥Space |
+| macOS: Character Viewer | ⌃⌘Space |
+| macOS 27: Visual Intelligence | ⇧⌘Space |
+| 1Password Quick Access | ⇧⌘Space |
+| Raycast, ChatGPT | ⌥Space |
+
+Open after the release, tracked in `.github/self-control.md`: a keyboard connected while Sushi runs gets the mapping (only the built-in keyboard was tried), and the takeover after a crash is by design (`is_ours` accepts Sushi's own Caps Lock → F18 entry) but was not tried live.
+-->
