@@ -1,6 +1,6 @@
 'use client'
 
-// The landing page's centrepiece: the real Susi frontend (public/demo/, built from ../src by
+// The landing page's centrepiece: the real Sushi frontend (public/demo/, built from ../src by
 // `npm run demo`) on a pretend desktop. A guided tour drives it while the visitor watches; the first
 // click, tap or key inside the panel hands it over. Keys reach the panel only while it has focus.
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -208,7 +208,7 @@ export function Stage() {
     const handle = ({ detail }) => {
       switch (detail.type) {
         case 'ready': {
-          api.current = node.contentWindow.susiDemo
+          api.current = node.contentWindow.sushiDemo
           api.current.setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark')
           if (reduced.matches) void still()
           else { setPhase('ready'); if (visible.current) void play() }
@@ -227,10 +227,10 @@ export function Stage() {
         case 'notice': notify(detail.text); break
       }
     }
-    node.addEventListener('susi', handle)
+    node.addEventListener('sushi', handle)
     // The panel may have loaded before React attached the listener.
-    if (node.contentWindow?.susiDemo && !api.current) handle({ detail: { type: 'ready' } })
-    return () => node.removeEventListener('susi', handle)
+    if (node.contentWindow?.sushiDemo && !api.current) handle({ detail: { type: 'ready' } })
+    return () => node.removeEventListener('sushi', handle)
   }, [play, still, takeOver, notify])
 
   // Start the tour when the stage comes into view.
@@ -305,7 +305,7 @@ export function Stage() {
               <span className="caret-mark">›</span>
               {pasted ? <span className="pasted">{pasted.text}</span> : <span className="muted">Paste a prompt…</span>}
             </div>
-            {pasted && <p className="stage-terminal-note">Pasted from Susi</p>}
+            {pasted && <p className="stage-terminal-note">Pasted from Sushi</p>}
           </div>
         </div>
 
@@ -314,7 +314,7 @@ export function Stage() {
           <iframe
             ref={frame}
             src={`${base}/demo/index.html`}
-            title="Susi, interactive demo"
+            title="Sushi, interactive demo"
             allow="clipboard-write"
             style={fit
               ? { colorScheme: theme, width: 600, height: fit.height, transform: `scale(${fit.scale})`, transformOrigin: '0 0' }
@@ -325,7 +325,7 @@ export function Stage() {
 
         {!shown && phase === 'yours' && (
           <button className="stage-summon" type="button" onClick={() => summon()}>
-            Show Susi <Keys keys={['⌘', '⇧', 'Space']} />
+            Show Sushi <Keys keys={['⌘', '⇧', 'Space']} />
           </button>
         )}
 

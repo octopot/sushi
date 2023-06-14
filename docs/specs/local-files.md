@@ -1,17 +1,17 @@
 # Local files
 
-**Status:** describes Susi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
-Everything Susi knows besides the current draft lives in plain files on the Mac: the actions, the dictation dictionary, saved prompts and templates. Susi has no screen for editing them; the user edits the files in any text editor, and Susi reads them again the next time it needs them. This document fixes where the files live, their formats, how they are validated and what Susi does on first run. The formats are also given as [CUE definitions](files.cue), and the [examples](examples/) are the files Susi ships and seeds.
+Everything Sushi knows besides the current draft lives in plain files on the Mac: the actions, the dictation dictionary, saved prompts and templates. Sushi has no screen for editing them; the user edits the files in any text editor, and Sushi reads them again the next time it needs them. This document fixes where the files live, their formats, how they are validated and what Sushi does on first run. The formats are also given as [CUE definitions](files.cue), and the [examples](examples/) are the files Sushi ships and seeds.
 
 ## Rules
 
 ### Settings folder
 
-- **LF-1. Location.** Settings live in `~/Library/Application Support/me.octopot.susi/`. **Open Settings Folder** in the menu of the menu-bar icon creates the folder if needed and opens it in Finder. All files are UTF-8.
-- **LF-2. Fresh reads.** Susi reads `rules.json` and `dictionary.json` at launch, every time the window is shown or gains focus, and when the Library opens. An edit takes effect the next time the window appears; no restart is needed.
-- **LF-3. First run.** A missing `rules.json` or `dictionary.json` is created from the [rule set](examples/rules.json) or the [dictionary](examples/dictionary.json) that ship with Susi. A file that exists always wins and is never rewritten, including one with an empty array.
-- **LF-4. Invalid settings.** Both files must be valid; an error in either rejects both. The error names the file and the entry by its position (`rules.json: entry 2 contains an empty field.`), the duplicate value (`rules.json: duplicate rule ID 'shorten'.`), or the parser's line and column. It shows in the hint line, and Susi keeps using the settings it last read successfully — none, if there were none. The next successful read clears the error.
+- **LF-1. Location.** Settings live in `~/Library/Application Support/me.octopot.sushi/`. **Open Settings Folder** in the menu of the menu-bar icon creates the folder if needed and opens it in Finder. All files are UTF-8.
+- **LF-2. Fresh reads.** Sushi reads `rules.json` and `dictionary.json` at launch, every time the window is shown or gains focus, and when the Library opens. An edit takes effect the next time the window appears; no restart is needed.
+- **LF-3. First run.** A missing `rules.json` or `dictionary.json` is created from the [rule set](examples/rules.json) or the [dictionary](examples/dictionary.json) that ship with Sushi. A file that exists always wins and is never rewritten, including one with an empty array.
+- **LF-4. Invalid settings.** Both files must be valid; an error in either rejects both. The error names the file and the entry by its position (`rules.json: entry 2 contains an empty field.`), the duplicate value (`rules.json: duplicate rule ID 'shorten'.`), or the parser's line and column. It shows in the hint line, and Sushi keeps using the settings it last read successfully — none, if there were none. The next successful read clears the error.
 
 ### `rules.json` — actions
 
@@ -29,12 +29,12 @@ Everything Susi knows besides the current draft lives in plain files on the Mac:
 
 ### Library: prompts and templates
 
-- **LF-11. Which directory.** The Library reads one directory, chosen in this order: the environment variable `SUSI_LIBRARY_DIR`, if set and non-empty; else the path written in `library-path.txt` in the settings folder; else `Input/` in the settings folder. The path in `library-path.txt` must be absolute; only trailing line breaks are trimmed. Pointing it at a Tuna assistant's `Input/` directory shares that assistant's prompts. The choice is made again on every Library request, and a missing directory is created.
+- **LF-11. Which directory.** The Library reads one directory, chosen in this order: the environment variable `SUSHI_LIBRARY_DIR`, if set and non-empty; else the path written in `library-path.txt` in the settings folder; else `Input/` in the settings folder. The path in `library-path.txt` must be absolute; only trailing line breaks are trimmed. Pointing it at a Tuna assistant's `Input/` directory shares that assistant's prompts. The choice is made again on every Library request, and a missing directory is created.
 - **LF-12. Prompts.** Every regular `*.md` file directly in the library directory is a saved prompt, named after the file. Files whose names start with `.` or contain `/`, `\`, `:` or control characters, symbolic links, subdirectories and their contents are not listed. The Prompts section shows the newest modification first, with its age (`2h`, `1d`, `5w`); while it is the only section shown, its first nine rows carry the numbers 1–9. Opening a prompt puts the whole file into the editor as it is — frontmatter and leading blank lines included — with line endings turned into `\n`. A file that is not valid UTF-8 gives an error naming it.
 - **LF-13. Templates.** Templates are `*.md` files in the `.templates/` subdirectory of the library directory, under the same naming rules. They are listed in file-name order under their title. With an empty query the first nine templates carry the numbers 1–9, both in the full list and in the Templates section.
 - **LF-14. Template frontmatter.** A template may start with a YAML block: the first line is exactly `---`, a later line is exactly `---`, and the block, both lines included, is at most 16 KiB. The block holds `title`, a string with something besides whitespace, and nothing else. Opening the template puts the bytes after the closing line into the editor, without its leading blank lines. CRLF line endings are accepted.
 - **LF-15. Legacy templates.** A template without that block is plain Markdown: its file name is its title and the whole file is the prompt. The same holds when the block does not mention `title` at all, so a note that merely starts with a horizontal rule stays intact. A block that mentions `title` but is broken — unclosed, too large, not valid YAML, an empty or non-string title, another key — is listed under its file name and gives an error when opened.
-- **LF-16. Seeded templates.** The first time a library's templates are listed, Susi creates the [task brief](examples/task-brief.md), [bug report](examples/bug-report.md) and [release review](examples/release-review.md) in its `.templates/` directory, without overwriting files, and marks the directory with `.initialized-v1`. This happens once per library directory, a Tuna directory included: a deleted example does not come back, and a library initialised earlier receives no new examples.
+- **LF-16. Seeded templates.** The first time a library's templates are listed, Sushi creates the [task brief](examples/task-brief.md), [bug report](examples/bug-report.md) and [release review](examples/release-review.md) in its `.templates/` directory, without overwriting files, and marks the directory with `.initialized-v1`. This happens once per library directory, a Tuna directory included: a deleted example does not come back, and a library initialised earlier receives no new examples.
 
 ## Worked examples
 
@@ -67,7 +67,7 @@ The Library lists it as **Handover note**. Opening it puts `## What is done⏎�
 
 **A shared library (LF-11).** `library-path.txt` holds one line, `/Volumes/Notes/assistant/Input`. The Library then lists the `*.md` files of that directory as prompts and its `.templates/` as templates, creating and seeding `.templates/` the first time (LF-16). A relative path such as `assistant/Input` gives `Enter an absolute library directory in library-path.txt.`
 
-**Validating files before Susi reads them.** From the repository root:
+**Validating files before Sushi reads them.** From the repository root:
 
 ```sh
 cue vet docs/specs/files.cue docs/specs/examples/rules.json -d '#Rules'
@@ -78,14 +78,14 @@ for t in task-brief bug-report release-review; do
 done
 ```
 
-Replace the example paths with the files in your settings folder or library. The schema checks the fields, the kinds of rule, non-blank text and uniqueness (LF-6, LF-9, LF-14); the placement of the `---` lines and the 16 KiB limit are checked only by Susi.
+Replace the example paths with the files in your settings folder or library. The schema checks the fields, the kinds of rule, non-blank text and uniqueness (LF-6, LF-9, LF-14); the placement of the `---` lines and the 16 KiB limit are checked only by Sushi.
 
 ## Not supported or switched off
 
 These are deliberate limits of v0.1.1, not defects. Changing any of them is a change of this specification.
 
-- **Dictionary replacement is switched off.** When on, Susi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
-- **No editing inside Susi.** Rules, terms, prompts and templates are edited as files. Susi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3 and LF-16 and the marker `.initialized-v1`, besides creating missing directories.
+- **Dictionary replacement is switched off.** When on, Sushi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
+- **No editing inside Sushi.** Rules, terms, prompts and templates are edited as files. Sushi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3 and LF-16 and the marker `.initialized-v1`, besides creating missing directories.
 - **Text only.** Prompts and templates are read as text. Images and other attachments are not supported; an image link stays a line of Markdown.
 - **No template variables.** Template frontmatter carries only `title`; there are no placeholders, descriptions or per-template aliases.
 - **One flat library.** One directory at a time, without subdirectories.
@@ -104,7 +104,7 @@ These are deliberate limits of v0.1.1, not defects. Changing any of them is a ch
 | LF-8 | `composer.test.mjs` — pasting a spoken rule name runs it; typing never does; Turn into goal … (`Преврати в цель.`) | `phrase` in `src/fuzzy.ts`; `onPaste` in `src/main.ts` |
 | LF-9 | `settings::tests::invalid_entries_name_file_and_entry`; `cue vet` on the example | `Term`, `validate_terms`; `files.cue` |
 | LF-10 | `composer.test.mjs` — Library: ⌘L T 1 … scopes and dictionary | `Library.open` in `src/library.ts`; `dictionary_open` in `src-tauri/src/settings.rs` (regular-file check: manual) |
-| LF-11 | Manual, with `SUSI_LIBRARY_DIR` and `library-path.txt` in a temporary profile | `directory` in `src-tauri/src/library.rs` |
+| LF-11 | Manual, with `SUSHI_LIBRARY_DIR` and `library-path.txt` in a temporary profile | `directory` in `src-tauri/src/library.rs` |
 | LF-12 | `library::tests::reads_markdown_and_rejects_unsafe_paths`; `composer.test.mjs` — Library … (prompts keep their leading blank lines, order by age) | `list`, `valid_stem`, `open_file`, `read` |
 | LF-13, LF-14, LF-15 | `library::tests::templates_read_titles_and_preserve_legacy_markdown`; `composer.test.mjs` — Library … (numbers, caret) | `header`, `mentions_title`, `section`; `files.cue` |
 | LF-16 | `library::tests::templates_read_titles_and_preserve_legacy_markdown` (removal, earlier libraries) | `ensure_templates` |

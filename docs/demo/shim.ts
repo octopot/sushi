@@ -1,6 +1,6 @@
 // Runs before the real src/main.ts in the landing-page demo. It answers the Tauri IPC calls the app
 // makes (see tests/composer.test.mjs for the same boundary), keeps the panel's theme in step with the
-// page around it, and exposes `window.susiDemo` so the page can drive a guided tour and touch buttons.
+// page around it, and exposes `window.sushiDemo` so the page can drive a guided tour and touch buttons.
 // Nothing here changes the app's own code: the panel is the product, only the native side is stubbed.
 import { EditorView } from '@codemirror/view'
 import shipped from '../specs/examples/rules.json'
@@ -11,7 +11,7 @@ import releaseReview from '../specs/examples/release-review.md?raw'
 import { answer } from './answers'
 
 type Detail = { type: string; [key: string]: unknown }
-const emit = (detail: Detail) => window.frameElement?.dispatchEvent(new CustomEvent('susi', { detail }))
+const emit = (detail: Detail) => window.frameElement?.dispatchEvent(new CustomEvent('sushi', { detail }))
 
 // Every visit starts with an empty prompt; the visitor's draft lives only as long as the page.
 try { localStorage.removeItem('susi.draft.v3') } catch {}
@@ -64,7 +64,7 @@ const callbacks: ((payload: unknown) => void)[] = []
 const listeners: Record<string, (payload: unknown) => void> = {}
 const pending = new Map<string, () => void>()
 
-declare global { interface Window { isTauri?: boolean; __TAURI_INTERNALS__?: unknown; susiDemo?: typeof api } }
+declare global { interface Window { isTauri?: boolean; __TAURI_INTERNALS__?: unknown; sushiDemo?: typeof api } }
 window.isTauri = true
 window.__TAURI_INTERNALS__ = {
   transformCallback: (callback: (payload: unknown) => void) => callbacks.push(callback),
@@ -255,7 +255,7 @@ const api = {
     report()
   },
 }
-window.susiDemo = api
+window.sushiDemo = api
 
 addEventListener('DOMContentLoaded', () => {
   new MutationObserver(report).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['hidden', 'class', 'aria-selected'] })

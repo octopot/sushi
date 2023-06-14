@@ -1,6 +1,6 @@
 #!/bin/bash
-# Captures the real Susi window on Liquid Glass without disturbing work on this Mac.
-# A separate build, me.octopot.susi.stage, puts the window under the desktop wallpaper: it is not visible,
+# Captures the real Sushi window on Liquid Glass without disturbing work on this Mac.
+# A separate build, me.octopot.sushi.stage, puts the window under the desktop wallpaper: it is not visible,
 # takes no focus or mouse, and creates neither the hotkey nor the menu bar icon.
 # The terminal needs Screen Recording access. Without it the capture ends and no access prompt is shown.
 set -euo pipefail
@@ -12,16 +12,16 @@ frames=("$@")
 mkdir -p "$out"
 out="$(cd "$out" && pwd -P)"
 work="$(mktemp -d)"
-profile="$HOME/Library/Application Support/me.octopot.susi.stage"
+profile="$HOME/Library/Application Support/me.octopot.sushi.stage"
 cleanup() {
-  rm -rf "$work" "$profile" "$HOME/Library/WebKit/me.octopot.susi.stage" "$HOME/Library/Caches/me.octopot.susi.stage"
+  rm -rf "$work" "$profile" "$HOME/Library/WebKit/me.octopot.sushi.stage" "$HOME/Library/Caches/me.octopot.sushi.stage"
 }
 trap cleanup EXIT
 
 npx tauri build --bundles app \
-  --config '{"identifier":"me.octopot.susi.stage","productName":"Susi Stage"}' </dev/null >"$work/build.log" 2>&1 ||
+  --config '{"identifier":"me.octopot.sushi.stage","productName":"Sushi Stage"}' </dev/null >"$work/build.log" 2>&1 ||
   { tail -20 "$work/build.log" >&2; exit 1; }
-app="src-tauri/target/release/bundle/macos/Susi Stage.app/Contents/MacOS/susi"
+app="src-tauri/target/release/bundle/macos/Sushi Stage.app/Contents/MacOS/sushi"
 swiftc -O tests/stage/stagecap.swift -o "$work/stagecap"
 
 mkdir -p "$work/library" "$profile"
@@ -42,7 +42,7 @@ JSON
 for frame in "${frames[@]}"; do
   { echo "const FRAME = '$frame';"; cat tests/stage/frames.js; } >"$work/frame.js"
   : >"$work/stage.out"
-  SUSI_STAGE=1 SUSI_LIBRARY_DIR="$work/library" SUSI_STAGE_SCRIPT="$work/frame.js" "$app" >"$work/stage.out" 2>"$work/stage.err" &
+  SUSHI_STAGE=1 SUSHI_LIBRARY_DIR="$work/library" SUSHI_STAGE_SCRIPT="$work/frame.js" "$app" >"$work/stage.out" 2>"$work/stage.err" &
   pid=$!
   for _ in $(seq 1 60); do
     grep -q BACKDROP "$work/stage.out" && break
@@ -54,8 +54,8 @@ for frame in "${frames[@]}"; do
     kill -TERM "$pid" 2>/dev/null || true
     exit 1
   fi
-  window="$(sed -n 's/^SUSI_STAGE_WINDOW=//p' "$work/stage.out")"
-  backdrop="$(sed -n 's/^SUSI_STAGE_BACKDROP_WINDOW=//p' "$work/stage.out")"
+  window="$(sed -n 's/^SUSHI_STAGE_WINDOW=//p' "$work/stage.out")"
+  backdrop="$(sed -n 's/^SUSHI_STAGE_BACKDROP_WINDOW=//p' "$work/stage.out")"
   # WebKit stops painting a hidden window a few seconds after launch. The frame is taken within that time.
   perl -e 'select(undef, undef, undef, 1.9)'
   "$work/stagecap" "$out/$frame.png" 60 "$window" "$backdrop"

@@ -176,13 +176,13 @@ jobs:
       - name: Check Gatekeeper accepts the notarized app
         if: steps.preflight.outputs.signing == 'developer-id'
         run: |
-          app=src-tauri/target/release/bundle/macos/Susi.app
+          app=src-tauri/target/release/bundle/macos/Sushi.app
           xcrun stapler validate "${app}"
           spctl --assess --type execute --verbose=4 "${app}"
       - name: Store the release files
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: susi-${{ steps.package.outputs.version }}-${{ github.run_id }}
+          name: sushi-${{ steps.package.outputs.version }}-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: error
 
@@ -256,7 +256,7 @@ jobs:
           # the signing mode of the published bytes, not of this run's
           # secrets: stapler leaves the notarization ticket in
           # Contents/CodeResources, an ad-hoc build has none
-          if unzip -Z1 "${dir}/${ASSET}" | grep -qx 'Susi.app/Contents/CodeResources'; then
+          if unzip -Z1 "${dir}/${ASSET}" | grep -qx 'Sushi.app/Contents/CodeResources'; then
             echo 'signing=developer-id' >> "${GITHUB_OUTPUT}"
           else
             echo 'signing=adhoc' >> "${GITHUB_OUTPUT}"
@@ -267,8 +267,8 @@ jobs:
           SIGNING: ${{ steps.asset.outputs.signing }}
         run: |
           node .github/scripts/release.mjs cask --version "${GITHUB_REF_NAME#v}" --sha256 "${SHA256}" \
-            --signing "${SIGNING}" --out "${RUNNER_TEMP}/susi.rb"
-          cat "${RUNNER_TEMP}/susi.rb"
+            --signing "${SIGNING}" --out "${RUNNER_TEMP}/sushi.rb"
+          cat "${RUNNER_TEMP}/sushi.rb"
       - name: Mint the tap token
         id: tap
         uses: actions/create-github-app-token@v3.4.0
@@ -284,7 +284,7 @@ jobs:
       - name: Publish the cask
         env:
           GH_TOKEN: ${{ steps.tap.outputs.token }}
-        run: node .github/scripts/release.mjs tap "${RUNNER_TEMP}/susi.rb" --version "${GITHUB_REF_NAME#v}"
+        run: node .github/scripts/release.mjs tap "${RUNNER_TEMP}/sushi.rb" --version "${GITHUB_REF_NAME#v}"
 
   notify:
     name: Notifying

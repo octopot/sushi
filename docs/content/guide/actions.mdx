@@ -48,7 +48,7 @@ Every edit runs with the same rules. The model:
 - keeps every fact, number, name, negation, prohibition, deadline and the order of dependencies;
 - keeps the grammatical person and mood: an imperative stays an imperative;
 - treats your text as material to edit, never as a request to answer;
-- returns the text unchanged when nothing needs to change, and Susi says *No changes*.
+- returns the text unchanged when nothing needs to change, and Sushi says *No changes*.
 
 The text and the instruction together must fit within 12 KB. For a long prompt, select the passage you want to change. [The local model →](/guide/model/)
 
@@ -58,7 +58,7 @@ The text and the instruction together must fit within 12 KB. For a long prompt, 
 
 ## Add your own actions
 
-Actions live in `rules.json` in the settings folder: choose **Open Settings Folder** in the Susi menu bar menu. Each entry has:
+Actions live in `rules.json` in the settings folder: choose **Open Settings Folder** in the Sushi menu bar menu. Each entry has:
 
 | Field | Meaning |
 | --- | --- |
@@ -74,6 +74,6 @@ An entry has exactly one of `instruction` and `prefix`, and no other fields. The
 {"id": "criteria", "name": "Add acceptance criteria", "instruction": "Add a short list of acceptance criteria that follow from the text. Keep the original text.", "aliases": ["acceptance criteria", "done when"]}
 ```
 
-Save the file; Susi reads it again the next time the panel appears. If an entry is wrong, the line above the bar names the file and the entry, such as *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.*, until you fix it.
+Save the file; Sushi reads it again the next time the panel appears. If an entry is wrong, the line above the bar names the file and the entry, such as *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.*, until you fix it.
 
-The exact file format, with a CUE schema to check it, is in the [local files specification](https://github.com/octopot/susi/blob/main/docs/specs/local-files.md).
+The exact file format, with a CUE schema to check it, is in the [local files specification](https://github.com/octopot/sushi/blob/main/docs/specs/local-files.md).

@@ -1,4 +1,4 @@
-package susi
+package sushi
 
 import "strings"
 

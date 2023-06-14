@@ -9,7 +9,7 @@ import test from 'node:test'
 import { checksumOf, declaredVersion, renderCask, tapAction } from './release.mjs'
 
 const script = resolve('.github/scripts/release.mjs')
-const template = readFileSync(resolve('.github/homebrew/susi.rb'), 'utf8')
+const template = readFileSync(resolve('.github/homebrew/sushi.rb'), 'utf8')
 const SHA = 'a'.repeat(64)
 // Fixtures run Git in disposable repositories only: drop the variables that
 // select another repository or configuration, such as GIT_DIR exported to a
@@ -21,19 +21,19 @@ const isolated = {
 }
 const RELEASE = {
   versions: ['package.json', 'src-tauri/Cargo.toml', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.lock', 'docs/release.mjs'],
-  tap: { owner: 'octolab', name: 'homebrew-tap', cask: 'Casks/susi.rb', template: '.github/homebrew/susi.rb' },
+  tap: { owner: 'octolab', name: 'homebrew-tap', cask: 'Casks/sushi.rb', template: '.github/homebrew/sushi.rb' },
 }
 const APPLE = ['APPLE_CERTIFICATE', 'APPLE_CERTIFICATE_PASSWORD', 'APPLE_API_ISSUER', 'APPLE_API_KEY', 'APPLE_API_PRIVATE_KEY']
 
 function fixture(fn) {
-  const cwd = mkdtempSync(join(tmpdir(), 'susi-release-'))
+  const cwd = mkdtempSync(join(tmpdir(), 'sushi-release-'))
   mkdirSync(join(cwd, '.github'))
   const settings = (pages = {}, release = RELEASE) => writeFileSync(join(cwd, '.github/settings.json'), JSON.stringify({ 'x-release': release, pages }))
   const blank = Object.fromEntries(['OCTOLAB_RELEASER_CLIENT_ID', 'OCTOLAB_RELEASER_KEY', ...APPLE].map((n) => [n, '']))
   let extra = {}
   const run = (...args) => spawnSync(process.execPath, [script, ...args], {
     cwd, encoding: 'utf8',
-    env: { ...isolated, GITHUB_REPOSITORY: 'octopot/susi', GITHUB_OUTPUT: '', ...blank, ...extra },
+    env: { ...isolated, GITHUB_REPOSITORY: 'octopot/sushi', GITHUB_OUTPUT: '', ...blank, ...extra },
   })
   const withEnv = (env) => { extra = env }
   try { fn({ cwd, settings, run, withEnv }) } finally { rmSync(cwd, { recursive: true, force: true }) }
@@ -41,32 +41,32 @@ function fixture(fn) {
 
 function versionFiles(cwd, v, lock = v) {
   mkdirSync(join(cwd, 'src-tauri'), { recursive: true })
-  writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'susi', version: v }))
-  writeFileSync(join(cwd, 'src-tauri/tauri.conf.json'), JSON.stringify({ productName: 'Susi', version: v }))
-  writeFileSync(join(cwd, 'src-tauri/Cargo.toml'), `[package]\nname = "susi"\nversion = "${v}"\n\n[dependencies]\nserde = { version = "1" }\n`)
-  writeFileSync(join(cwd, 'src-tauri/Cargo.lock'), `[[package]]\nname = "serde"\nversion = "1.0.0"\n\n[[package]]\nname = "susi"\nversion = "${lock}"\n`)
+  writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'sushi', version: v }))
+  writeFileSync(join(cwd, 'src-tauri/tauri.conf.json'), JSON.stringify({ productName: 'Sushi', version: v }))
+  writeFileSync(join(cwd, 'src-tauri/Cargo.toml'), `[package]\nname = "sushi"\nversion = "${v}"\n\n[dependencies]\nserde = { version = "1" }\n`)
+  writeFileSync(join(cwd, 'src-tauri/Cargo.lock'), `[[package]]\nname = "serde"\nversion = "1.0.0"\n\n[[package]]\nname = "sushi"\nversion = "${lock}"\n`)
   siteVersion(cwd, v)
 }
 
 function siteVersion(cwd, v) {
   mkdirSync(join(cwd, 'docs'), { recursive: true })
-  writeFileSync(join(cwd, 'docs/release.mjs'), `export const release = {\n  version: '${v}',\n  tag: 'v${v}',\n  archive: 'susi_${v}_darwin-arm64.zip',\n}\n`)
+  writeFileSync(join(cwd, 'docs/release.mjs'), `export const release = {\n  version: '${v}',\n  tag: 'v${v}',\n  archive: 'sushi_${v}_darwin-arm64.zip',\n}\n`)
 }
 
 test('every version file is read by its own rules', () => {
-  const toml = '[package]\nname = "susi"\nversion = "0.1.0"\n\n[dependencies]\ntauri = { version = "2" }\n'
+  const toml = '[package]\nname = "sushi"\nversion = "0.1.0"\n\n[dependencies]\ntauri = { version = "2" }\n'
   assert.equal(declaredVersion('src-tauri/Cargo.toml', toml), '0.1.0')
   assert.equal(declaredVersion('src-tauri/Cargo.toml', '[dependencies]\nversion = "9"\n'), null)
-  const lock = '[[package]]\nname = "susi-x"\nversion = "9.9.9"\n\n[[package]]\nname = "susi"\nversion = "0.1.0"\n'
+  const lock = '[[package]]\nname = "sushi-x"\nversion = "9.9.9"\n\n[[package]]\nname = "sushi"\nversion = "0.1.0"\n'
   assert.equal(declaredVersion('src-tauri/Cargo.lock', lock, () => toml), '0.1.0')
   assert.equal(declaredVersion('package.json', '{"version":"0.1.0"}'), '0.1.0')
-  assert.equal(declaredVersion('src-tauri/tauri.conf.json', '{"productName":"Susi"}'), null)
-  const site = (v, tag = `v${v}`, archive = `susi_${v}_darwin-arm64.zip`) =>
+  assert.equal(declaredVersion('src-tauri/tauri.conf.json', '{"productName":"Sushi"}'), null)
+  const site = (v, tag = `v${v}`, archive = `sushi_${v}_darwin-arm64.zip`) =>
     `export const release = {\n  version: '${v}',\n  tag: '${tag}',\n  macos: '26',\n  archive: '${archive}',\n}\n`
   assert.equal(declaredVersion('docs/release.mjs', site('0.1.0')), '0.1.0')
   assert.equal(declaredVersion('docs/release.mjs', 'export const release = {}\n'), null)
   assert.throws(() => declaredVersion('docs/release.mjs', site('0.1.0', 'v0.0.9')), /tag is v0\.0\.9, not v0\.1\.0/)
-  assert.throws(() => declaredVersion('docs/release.mjs', site('0.1.0', 'v0.1.0', 'susi_0.0.9_darwin-arm64.zip')), /archive is susi_0\.0\.9/)
+  assert.throws(() => declaredVersion('docs/release.mjs', site('0.1.0', 'v0.1.0', 'sushi_0.0.9_darwin-arm64.zip')), /archive is sushi_0\.0\.9/)
 })
 
 test('version reports the one version the files agree on', () => fixture(({ cwd, settings, run }) => {
@@ -81,12 +81,12 @@ test('version reports the one version the files agree on', () => fixture(({ cwd,
 
 test('the cask template renders for both signing modes and passes the placeholders through once', () => {
   const adhoc = renderCask(template, { version: '0.1.0', sha256: SHA })
-  assert.match(adhoc, /^cask "susi" do\n/)
+  assert.match(adhoc, /^cask "sushi" do\n/)
   assert.match(adhoc, /version "0\.1\.0"/)
   assert.match(adhoc, new RegExp(`sha256 "${SHA}"`))
-  assert.match(adhoc, /preflight_steps do\n {4}run "\/usr\/bin\/xattr", args: \["-dr", "com\.apple\.quarantine", "\{\{staged_path\}\}\/Susi\.app"\]/)
+  assert.match(adhoc, /preflight_steps do\n {4}run "\/usr\/bin\/xattr", args: \["-dr", "com\.apple\.quarantine", "\{\{staged_path\}\}\/Sushi\.app"\]/)
   assert.match(adhoc, /depends_on arch: :arm64/)
-  assert.match(adhoc, /uninstall quit: "me\.octopot\.susi"/)
+  assert.match(adhoc, /uninstall quit: "me\.octopot\.sushi"/)
   assert.match(adhoc, /ollama pull qwen3\.5:4b-mlx/)
   assert.doesNotMatch(adhoc, /^#!|@[A-Z0-9_]+@/m)
   const signed = renderCask(template, { version: '0.1.0', sha256: SHA, signing: 'developer-id' })
@@ -102,18 +102,18 @@ test('the cask template renders for both signing modes and passes the placeholde
 test('cask renders from the template that settings.json names', () => fixture(({ cwd, settings, run }) => {
   settings()
   mkdirSync(join(cwd, '.github/homebrew'))
-  copyFileSync(resolve('.github/homebrew/susi.rb'), join(cwd, '.github/homebrew/susi.rb'))
-  const out = join(cwd, 'susi.rb')
+  copyFileSync(resolve('.github/homebrew/sushi.rb'), join(cwd, '.github/homebrew/sushi.rb'))
+  const out = join(cwd, 'sushi.rb')
   const result = run('cask', '--version', '0.1.0', '--sha256', SHA, '--out', out)
   assert.equal(result.status, 0, result.stderr)
   assert.equal(readFileSync(out, 'utf8'), renderCask(template, { version: '0.1.0', sha256: SHA }))
 }))
 
 test('checksums.txt lookups match the asset name exactly', () => {
-  const text = `${'1'.repeat(64)}  susi_0.1.0_darwin-arm64.zip\n${'2'.repeat(64)} *susi_0.1.0_darwin-arm64.zip.sig\n`
-  assert.equal(checksumOf(text, 'susi_0.1.0_darwin-arm64.zip'), '1'.repeat(64))
-  assert.equal(checksumOf(text, 'susi_0.1.0_darwin-arm64.zip.sig'), '2'.repeat(64))
-  assert.equal(checksumOf(text, 'susi_0.2.0_darwin-arm64.zip'), null)
+  const text = `${'1'.repeat(64)}  sushi_0.1.0_darwin-arm64.zip\n${'2'.repeat(64)} *sushi_0.1.0_darwin-arm64.zip.sig\n`
+  assert.equal(checksumOf(text, 'sushi_0.1.0_darwin-arm64.zip'), '1'.repeat(64))
+  assert.equal(checksumOf(text, 'sushi_0.1.0_darwin-arm64.zip.sig'), '2'.repeat(64))
+  assert.equal(checksumOf(text, 'sushi_0.2.0_darwin-arm64.zip'), null)
 })
 
 test('the tap is created, updated, left alone on a rerun and never downgraded', () => {
@@ -139,7 +139,7 @@ case "$*" in
 esac
 `)
   chmodSync(join(cwd, 'bin/gh'), 0o755)
-  const next = join(cwd, 'susi.rb')
+  const next = join(cwd, 'sushi.rb')
   writeFileSync(next, renderCask(template, { version: '0.2.0', sha256: SHA }))
   withEnv({ PATH: `${join(cwd, 'bin')}:${process.env.PATH}`, GH_TOKEN: '' })
   assert.match(run('tap', next).stderr, /GH_TOKEN is empty/)
@@ -150,7 +150,7 @@ esac
   assert.match(created.stdout, /created in c0ffee, verified: true/)
   const body = JSON.parse(readFileSync(put, 'utf8'))
   assert.deepEqual(Object.keys(body).sort(), ['content', 'message'])
-  assert.equal(body.message, 'Brew cask update for susi version v0.2.0')
+  assert.equal(body.message, 'Brew cask update for sushi version v0.2.0')
   assert.equal(Buffer.from(body.content, 'base64').toString('utf8'), readFileSync(next, 'utf8'))
 
   rmSync(put)
@@ -206,13 +206,13 @@ test('preflight needs the App on a stable tag only and Apple secrets all or none
 
 test('Pages preview resolves default and custom domains and rejects drift', () => fixture(({ settings, run }) => {
   settings()
-  assert.equal(run('pages', 'https://octopot.github.io/susi/').status, 0)
+  assert.equal(run('pages', 'https://octopot.github.io/sushi/').status, 0)
   assert.equal(run('pages', 'https://octopot.github.io/indexit/').status, 1)
-  assert.equal(run('site-env').stdout, 'SITE_URL=https://octopot.github.io/susi/\nBASE_PATH=/susi\n')
-  settings({ cname: 'susi.example.com' })
-  assert.equal(run('pages', 'https://susi.example.com').status, 0)
-  assert.equal(run('pages', 'https://octopot.github.io/susi/').status, 1)
-  assert.equal(run('site-env').stdout, 'SITE_URL=https://susi.example.com/\nBASE_PATH=\n')
+  assert.equal(run('site-env').stdout, 'SITE_URL=https://octopot.github.io/sushi/\nBASE_PATH=/sushi\n')
+  settings({ cname: 'sushi.example.com' })
+  assert.equal(run('pages', 'https://sushi.example.com').status, 0)
+  assert.equal(run('pages', 'https://octopot.github.io/sushi/').status, 1)
+  assert.equal(run('site-env').stdout, 'SITE_URL=https://sushi.example.com/\nBASE_PATH=\n')
 }))
 
 test('release notes render site links but preserve code examples', () => fixture(({ cwd, settings, run }) => {
@@ -221,11 +221,11 @@ test('release notes render site links but preserve code examples', () => fixture
   const note = join(cwd, 'docs/content/changelog/v9.9.9.md')
   writeFileSync(note, '---\ntitle: Example release\ndescription: Test note.\n---\n\n# Example release\n\n[Guide](/guide/keys/)\n\n```md\n[Example](/keep-this/)\n```\n')
   const output = join(cwd, 'rendered.md')
-  const result = run('render', 'v9.9.9', '--site-url', 'https://susi.octolab.org/', '--out', output)
+  const result = run('render', 'v9.9.9', '--site-url', 'https://sushi.octolab.org/', '--out', output)
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, 'Example release\n')
   const text = readFileSync(output, 'utf8')
-  assert.match(text, /https:\/\/susi.octolab.org\/guide\/keys\//)
+  assert.match(text, /https:\/\/sushi.octolab.org\/guide\/keys\//)
   assert.match(text, /\[Example\]\(\/keep-this\/\)/)
   assert.doesNotMatch(text, /# Example release|description:/)
   writeFileSync(note, '---\ntitle: Example release\ndescription: Test.\n---\n\n# Wrong title\n')
@@ -245,7 +245,7 @@ test('smoke checks pages and assets, and an og:image only when declared', async 
   })
   await new Promise((done) => server.listen(0, '127.0.0.1', done))
   const site = `http://127.0.0.1:${server.address().port}/`
-  const cwd = mkdtempSync(join(tmpdir(), 'susi-smoke-'))
+  const cwd = mkdtempSync(join(tmpdir(), 'sushi-smoke-'))
   const smoke = () => new Promise((done) => {
     const child = spawn(process.execPath, [script, 'smoke', site, '--retries', '0'], {
       cwd, env: { ...isolated, GITHUB_REPOSITORY: '' },
@@ -336,7 +336,7 @@ test('a release tag requires the site to name the same version', () => releaseFi
   const result = run('check', 'v9.9.9', '--local')
   assert.equal(result.status, 1)
   assert.match(result.stderr, /docs\/release\.mjs: version is 9\.9\.8, not 9\.9\.9 in v9\.9\.9/)
-  writeFileSync(join(cwd, 'docs/release.mjs'), `export const release = {\n  version: '9.9.9',\n  tag: 'v9.9.8',\n  archive: 'susi_9.9.9_darwin-arm64.zip',\n}\n`)
+  writeFileSync(join(cwd, 'docs/release.mjs'), `export const release = {\n  version: '9.9.9',\n  tag: 'v9.9.8',\n  archive: 'sushi_9.9.9_darwin-arm64.zip',\n}\n`)
   git('commit', '-am', 'Site tag left behind')
   git('tag', '-f', '-a', 'v9.9.9', '-m', 'Annotated release fixture')
   assert.match(run('check', 'v9.9.9', '--local').stderr, /docs\/release\.mjs: tag is v9\.9\.8, not v9\.9\.9 for version 9\.9\.9.* in v9\.9\.9/)
@@ -399,7 +399,7 @@ test('hooks are wired in place through the local core.hooksPath and leave shared
 }))
 
 test('fixtures ignore the Git repository and config the caller selects', () => {
-  const victim = mkdtempSync(join(tmpdir(), 'susi-victim-'))
+  const victim = mkdtempSync(join(tmpdir(), 'sushi-victim-'))
   try {
     const git = (...args) => spawnSync('git', ['-C', victim, ...args], { env: isolated, encoding: 'utf8' }).stdout
     git('init', '-q')

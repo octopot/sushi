@@ -333,7 +333,7 @@ export function LocalDiagram() {
     <figure ref={ref} className="local-diagram" data-inview={inView || undefined}>
       <div className="local-mac">
         <span className="local-mac-label">Your Mac</span>
-        <div className="local-node local-susi"><img src={`${process.env.BASE_PATH || ''}/icon.svg`} alt="" width="36" height="36" /><b>Susi</b><span>the panel</span></div>
+        <div className="local-node local-sushi"><img src={`${process.env.BASE_PATH || ''}/icon.svg`} alt="" width="36" height="36" /><b>Sushi</b><span>the panel</span></div>
         <div className="local-link"><span className="packet" /><span className="packet back" /><small>127.0.0.1:11434</small></div>
         <div className="local-node local-model"><svg className="local-glyph" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="13" /><circle cx="18" cy="18" r="6" /><circle cx="18" cy="18" r="1.5" fill="currentColor" /></svg><b>Ollama</b><span>qwen3.5:4b-mlx</span></div>
         <div className="local-files">

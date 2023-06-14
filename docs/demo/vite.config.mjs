@@ -1,4 +1,4 @@
-// Builds the real Susi frontend (../index.html and ../src) into public/demo/ for the landing page.
+// Builds the real Sushi frontend (../index.html and ../src) into public/demo/ for the landing page.
 // The only addition is demo/shim.ts, which runs before src/main.ts and answers the Tauri IPC calls
 // in the browser. Bare imports from ../src resolve to this project's node_modules, so `npm ci`
 // inside docs/ is enough; keep the versions in package.json in step with the root package.json.
@@ -31,12 +31,12 @@ export default defineConfig({
     rollupOptions: { input: resolve(repo, 'index.html') },
   },
   plugins: [{
-    name: 'susi-demo',
+    name: 'sushi-demo',
     enforce: 'pre',
     transformIndexHtml: { order: 'pre', handler(html) {
       if (!html.includes(main)) throw new Error('index.html no longer loads /src/main.ts: update docs/demo/vite.config.mjs')
       return html
-        .replace('<title>Susi</title>', '<title>Susi · interactive demo</title>\n  <meta name="robots" content="noindex">')
+        .replace('<title>Sushi</title>', '<title>Sushi · interactive demo</title>\n  <meta name="robots" content="noindex">')
         .replace(main, `<script type="module" src="/docs/demo/shim.ts"></script>\n  ${main}`)
     } },
     // Resolve bare imports of the app's sources from docs/node_modules (the repository root may have none).

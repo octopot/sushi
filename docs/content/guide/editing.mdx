@@ -5,7 +5,7 @@ description: Rewrite a selection or the whole prompt with ⌘K, read the inline 
 
 # Edit and compare versions
 
-Susi edits in place. You choose what to change, the model rewrites only that, and every result stays one keystroke away from the text before it.
+Sushi edits in place. You choose what to change, the model rewrites only that, and every result stays one keystroke away from the text before it.
 
 ## Rewrite a selection
 
@@ -70,22 +70,22 @@ The line above the bar shows which steps are available. The first key that types
 | Open a library entry | It replaces an empty prompt. Otherwise, everything to the right is dropped and the entry is added as the next version. |
 | Replace all the text | Select all and type, paste or delete: a new prompt starts, with a one-version chain. **⌘Z** still brings the old text back into the editor. |
 
-The precise rules are in the [version chain specification](https://github.com/octopot/susi/blob/main/docs/specs/version-history.md).
+The precise rules are in the [version chain specification](https://github.com/octopot/sushi/blob/main/docs/specs/version-history.md).
 
 ## Copy and start again
 
 | Keys | What happens |
 | --- | --- |
-| **⌘↵** | Copies the whole prompt, hides Susi and returns to the app you came from. |
+| **⌘↵** | Copies the whole prompt, hides Sushi and returns to the app you came from. |
 | **⇧⌘↵** | Copies the same, then clears the prompt and forgets its versions. |
-| **Esc** | Hides Susi without copying. The prompt stays as it is. |
+| **Esc** | Hides Sushi without copying. The prompt stays as it is. |
 
 The **Copy** button in the bar does what **⌘↵** does. Neither works while an edit runs, while a list is open, or on an empty prompt. If the copy fails, the text stays and the panel stays open.
 
-After **⌘↵**, the next time you open Susi the whole prompt is selected. Type or dictate to start a new prompt; press **→** or click in the text to keep editing the old one. After **Esc**, nothing is selected: you hid the panel to come back to this prompt.
+After **⌘↵**, the next time you open Sushi the whole prompt is selected. Type or dictate to start a new prompt; press **→** or click in the text to keep editing the old one. After **Esc**, nothing is selected: you hid the panel to come back to this prompt.
 
 ## Your draft is kept
 
-The text, its versions and your position in the chain are saved as you work. They survive hiding the panel and quitting Susi.
+The text, its versions and your position in the chain are saved as you work. They survive hiding the panel and quitting Sushi.
 
-A very long chain can fill the space the panel has for drafts. Susi then keeps the first version and the versions from the previous one on, and saves again. If even that fails, the line above the bar shows the error and the panel does not hide on **Esc** or **⌘↵**, so the text is not lost: copy it out by hand or shorten it.
+A very long chain can fill the space the panel has for drafts. Sushi then keeps the first version and the versions from the previous one on, and saves again. If even that fails, the line above the bar shows the error and the panel does not hide on **Esc** or **⌘↵**, so the text is not lost: copy it out by hand or shorten it.

@@ -1,6 +1,6 @@
-# Susi documentation
+# Sushi documentation
 
-An English site for Susi v0.1.1: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
+An English site for Sushi v0.1.1: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
 
 ## Run locally
 
@@ -22,7 +22,7 @@ npm ci
 TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build
 ```
 
-This is everything CI needs: no install in the repository root. Static output is written to `docs/dist/`. `SITE_URL` is required; add `BASE_PATH=/susi` only when hosting under a path, as on the default `octopot.github.io/sushi/`. The build also reads the app's `../index.html`, `../src/`, `../tsconfig.json` and `../package.json`, and `specs/examples/`; `.github/workflows/cd.docs.yml` runs when any of them changes.
+This is everything CI needs: no install in the repository root. Static output is written to `docs/dist/`. `SITE_URL` is required; add `BASE_PATH=/sushi` only when hosting under a path, as on the default `octopot.github.io/sushi/`. The build also reads the app's `../index.html`, `../src/`, `../tsconfig.json` and `../package.json`, and `specs/examples/`; `.github/workflows/cd.docs.yml` runs when any of them changes.
 
 For a production server: `npm run build`, then `npm start`.
 
@@ -43,7 +43,7 @@ For a production server: `npm run build`, then `npm start`.
 | `content/**/_meta.js` | Navigation order and labels |
 | `navigation.mjs` | Release groups in the sidebar; keeps published release URLs unchanged |
 | `app/globals.css` | Shared styles, byte-identical to octopot/indexit |
-| `app/brand.css` | Susi's colour tokens over the shared styles |
+| `app/brand.css` | Sushi's colour tokens over the shared styles |
 | `app/landing.css` | The landing page, the stage and the illustrations |
 | `app/layout.jsx` | Site identity and Nextra theme |
 | `app/[[...mdxPath]]/page.jsx` | Page titles and social metadata |
@@ -56,11 +56,11 @@ The public origin in metadata comes from `SITE_URL` (see `site.mjs`). Internal l
 
 ## The interactive panel
 
-The hero runs Susi's own interface, not a copy. `npm run demo` (part of `dev` and `build`) builds the app's `../index.html` and `../src/` with Vite into `public/demo/`, which is generated and ignored by Git. `demo/vite.config.mjs` adds one script before `src/main.ts`, `demo/shim.ts`, which:
+The hero runs Sushi's own interface, not a copy. `npm run demo` (part of `dev` and `build`) builds the app's `../index.html` and `../src/` with Vite into `public/demo/`, which is generated and ignored by Git. `demo/vite.config.mjs` adds one script before `src/main.ts`, `demo/shim.ts`, which:
 
 - answers the Tauri IPC calls the app makes, as `tests/composer.test.mjs` does: settings from `docs/specs/examples/`, three sample saved prompts, copy, hide, and rewrites;
 - answers rewrites with `demo/answers.ts`: exact edits for the tour's sample prompt and simple text rules for other text, after a short pause. The page says so under the stage;
-- keeps the panel's theme in step with the site's switch, and lets the page drive it (`window.susiDemo`) without taking keyboard focus.
+- keeps the panel's theme in step with the site's switch, and lets the page drive it (`window.sushiDemo`) without taking keyboard focus.
 
 The panel runs in an iframe, so its shortcuts work only while it has focus and never on the page around it. The tour starts when the stage scrolls into view, stops at the visitor's first click, tap or key inside the panel, and replays a few times at most. With reduced motion, the stage shows a finished edit instead. Only a copy the visitor makes reaches their clipboard. Outside macOS, Ctrl stands in for ⌘.
 
@@ -73,7 +73,7 @@ When the app's frontend changes, check the tour: `components/stage.jsx` relies o
 The site is served from the custom domain `sushi.octolab.org`, recorded as `pages.cname` in [`.github/settings.json`](../.github/settings.json); `octopot.github.io/sushi/` redirects to it, keeping the path. The build bakes the domain into asset paths and metadata, and changing it in Settings → Pages triggers no rebuild. To change it:
 
 1. Change Settings → Pages → Custom domain.
-2. Update `pages.cname` to match (remove it for the default domain), and the places that spell the domain out: the cask's `homepage` in [`.github/homebrew/susi.rb`](../.github/homebrew/susi.rb), the build commands here and in `AGENTS.md`, `scripts/og.html` (then `npm run og`) and the site links in `specs/`. Push to main: a change to `.github/settings.json` runs [`cd.docs.yml`](../.github/workflows/cd.docs.yml), which rebuilds and deploys the site; otherwise run `gh workflow run cd.docs.yml -f reason="domain change"`.
+2. Update `pages.cname` to match (remove it for the default domain), and the places that spell the domain out: the cask's `homepage` in [`.github/homebrew/sushi.rb`](../.github/homebrew/sushi.rb), the build commands here and in `AGENTS.md`, `scripts/og.html` (then `npm run og`) and the site links in `specs/`. Push to main: a change to `.github/settings.json` runs [`cd.docs.yml`](../.github/workflows/cd.docs.yml), which rebuilds and deploys the site; otherwise run `gh workflow run cd.docs.yml -f reason="domain change"`.
 
 While the two disagree, `cd.docs.yml` stops before building (`release.mjs pages` compares the Pages URL with `pages.cname`), and so does `cd` on a release tag. After the deployment, the workflow smoke-tests the site: its pages and assets, the 404 page and the redirect from the default domain. The daily [doctor](../.github/workflows/doctor.yml) and `make doctor` compare the Pages domain and Enforce HTTPS with `.github/settings.json` and smoke-test the live site, so a site still built for the old domain shows up there.
 

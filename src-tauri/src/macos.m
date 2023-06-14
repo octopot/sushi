@@ -6,7 +6,7 @@
 // Window operations and these focus transitions run on AppKit's main thread.
 static NSRunningApplication *previousApplication;
 
-void susi_remember_frontmost(void) {
+void sushi_remember_frontmost(void) {
     NSRunningApplication *app = NSWorkspace.sharedWorkspace.frontmostApplication;
     if (app && app.processIdentifier != NSProcessInfo.processInfo.processIdentifier) {
         previousApplication = app;
@@ -28,10 +28,10 @@ static void refresh_shadow(NSWindow *window) {
 // The web page paints no window-shaped layer, so the glass carries the legibility tint.
 // As the glass's content view the fill is clipped to the glass's own continuous corner.
 // NSGlassEffectView.tintColor tints too faintly for body text over a busy wallpaper.
-@interface SusiTint : NSView
+@interface SushiTint : NSView
 @end
 
-@implementation SusiTint
+@implementation SushiTint
 - (BOOL)wantsUpdateLayer { return YES; }
 - (void)updateLayer {
     BOOL dark = [[self.effectiveAppearance bestMatchFromAppearancesWithNames:@[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]] isEqual:NSAppearanceNameDarkAqua];
@@ -48,8 +48,8 @@ static void tint_glass(NSWindow *window, int attempts) {
     if (!glass) return;
     for (NSView *view in window.contentView.subviews) {
         if ([view isKindOfClass:glass]) {
-            if (![[(id)view contentView] isKindOfClass:SusiTint.class]) {
-                SusiTint *tint = [[SusiTint alloc] initWithFrame:view.bounds];
+            if (![[(id)view contentView] isKindOfClass:SushiTint.class]) {
+                SushiTint *tint = [[SushiTint alloc] initWithFrame:view.bounds];
                 tint.wantsLayer = YES;
                 tint.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
                 [(id)view setContentView:tint];
@@ -101,7 +101,7 @@ static void shape_window(NSWindow *window) {
     class_addMethod(window.class, selector, imp_implementationWithBlock(^NSImage *(__unused id self) { return corner_mask(); }), method_getTypeEncoding(inherited));
 }
 
-void susi_prepare_window(void *native) {
+void sushi_prepare_window(void *native) {
     NSWindow *window = (__bridge NSWindow *)native;
     static id resized;
     if (!resized) {
@@ -119,15 +119,15 @@ void susi_prepare_window(void *native) {
     window.collectionBehavior = behavior | NSWindowCollectionBehaviorMoveToActiveSpace | NSWindowCollectionBehaviorFullScreenAuxiliary;
 }
 
-void susi_refresh_shadow(void *native) {
+void sushi_refresh_shadow(void *native) {
     refresh_shadow((__bridge NSWindow *)native);
 }
 
-void susi_activate(void) {
+void sushi_activate(void) {
     [NSApp activateIgnoringOtherApps:YES];
 }
 
-void susi_restore_frontmost(void) {
+void sushi_restore_frontmost(void) {
     if (previousApplication && !previousApplication.terminated) {
         if (@available(macOS 14.0, *)) {
             [NSApp yieldActivationToApplication:previousApplication];
@@ -137,17 +137,17 @@ void susi_restore_frontmost(void) {
         }
     } else {
         // Nobody to hand focus back to (e.g. shown by a reopen while already frontmost):
-        // hiding the app makes the system activate the next app. susi_prepare_window unhides.
+        // hiding the app makes the system activate the next app. sushi_prepare_window unhides.
         [NSApp hide:nil];
     }
     previousApplication = nil;
 }
 
-bool susi_is_active(void) {
+bool sushi_is_active(void) {
     return NSApp.active;
 }
 
-bool susi_copy(const unsigned char *bytes, size_t count) {
+bool sushi_copy(const unsigned char *bytes, size_t count) {
     @autoreleasepool {
         NSString *text = [[NSString alloc] initWithBytes:bytes length:count encoding:NSUTF8StringEncoding];
         NSPasteboard *board = NSPasteboard.generalPasteboard;
@@ -158,7 +158,7 @@ bool susi_copy(const unsigned char *bytes, size_t count) {
 
 // Where Launch Services finds the app with this bundle identifier, as the Finder would.
 // Writes a NUL-terminated path into out and returns true, or false when no app is registered.
-bool susi_app_path(const char *bundle_id, char *out, size_t size) {
+bool sushi_app_path(const char *bundle_id, char *out, size_t size) {
     @autoreleasepool {
         NSString *identifier = [NSString stringWithUTF8String:bundle_id];
         NSURL *url = identifier ? [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:identifier] : nil;
@@ -166,7 +166,7 @@ bool susi_app_path(const char *bundle_id, char *out, size_t size) {
     }
 }
 
-void susi_stage_appearance(const char *name) {
+void sushi_stage_appearance(const char *name) {
     if (!strcmp(name, "dark")) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
     else if (!strcmp(name, "light")) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
 }
@@ -198,13 +198,13 @@ static NSInteger wallpaper_level(NSRect rect) {
     return level;
 }
 
-long susi_stage_present(void *native, const char *image_path, long *backdrop_number) {
+long sushi_stage_present(void *native, const char *image_path, long *backdrop_number) {
     NSWindow *window = (__bridge NSWindow *)native;
     NSRect frame = window.frame;
     NSRect around = NSInsetRect(frame, -160, -160);
     NSInteger wallpaper = wallpaper_level(NSInsetRect(around, -80, -80));
     if (wallpaper == NSNotFound) {
-        fprintf(stderr, "SUSI_STAGE: no desktop picture covers the stage area; refusing to show windows.\n");
+        fprintf(stderr, "SUSHI_STAGE: no desktop picture covers the stage area; refusing to show windows.\n");
         return -1;
     }
     NSInteger below = wallpaper - 1;

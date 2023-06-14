@@ -1,5 +1,5 @@
 // The frames for the background capture of the real window. capture.sh puts `const FRAME = '…'` in front of it,
-// and the app in SUSI_STAGE mode runs the file after every page load.
+// and the app in SUSHI_STAGE mode runs the file after every page load.
 (async () => {
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
   // A window under the wallpaper counts as hidden, and WebKit does not advance the entry animations.

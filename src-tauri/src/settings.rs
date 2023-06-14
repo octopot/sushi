@@ -206,10 +206,10 @@ mod tests {
         assert_eq!(settings.terms.len(), 1);
         fs::write(
             dir.join("dictionary.json"),
-            r#"{"terms":[{"from":"susi","to":"Susi"}]}"#,
+            r#"{"terms":[{"from":"sushi","to":"Sushi"}]}"#,
         )
         .unwrap();
-        assert_eq!(load(dir).unwrap().terms[0].to, "Susi");
+        assert_eq!(load(dir).unwrap().terms[0].to, "Sushi");
     }
 
     #[test]

@@ -43,15 +43,15 @@ const brief = [
 ]
 const shortened = 'Follow the system appearance by default and remember the user’s last choice.'
 
-test('Susi composer', async t => {
+test('Sushi composer', async t => {
   const app = await preview({ preview: { host: '127.0.0.1', port: 0 }, logLevel: 'silent' })
   t.after(() => new Promise(resolve => app.httpServer.close(resolve)))
-  // SUSI_ENGINE=webkit runs the same scenarios in the engine the app itself uses.
-  const browser = process.env.SUSI_ENGINE === 'webkit'
+  // SUSHI_ENGINE=webkit runs the same scenarios in the engine the app itself uses.
+  const browser = process.env.SUSHI_ENGINE === 'webkit'
     ? await webkit.launch({ headless: true })
     : await chromium.launch({ channel: 'chrome', headless: true })
   t.after(() => browser.close())
-  const screens = process.env.SUSI_REVIEW_SCREENS
+  const screens = process.env.SUSHI_REVIEW_SCREENS
   if (screens) await mkdir(screens, { recursive: true })
 
   async function start(t, { scheme = 'dark', storage = {}, shortcutError = null } = {}) {
@@ -843,7 +843,7 @@ test('Susi composer', async t => {
     assert.equal(await note.isVisible(), false, 'the note goes once the cause is fixed')
   })
 
-  await t.test('only Susi\'s own messages get actions; any other text stays plain', async t => {
+  await t.test('only Sushi\'s own messages get actions; any other text stays plain', async t => {
     const page = await start(t)
     await page.keyboard.insertText('Check the logs and report back.')
     for (const hostile of [

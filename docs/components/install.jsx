@@ -22,7 +22,7 @@ function Command({ children, label }) {
 export function Install({ full = false }) {
   return (
     <div className={`install${full ? ' install-full' : ''}`}>
-      <Command label="install Susi with Homebrew">{`brew install --cask ${release.cask}`}</Command>
+      <Command label="install Sushi with Homebrew">{`brew install --cask ${release.cask}`}</Command>
       {full && <Command label="download the local model">{`ollama pull ${release.model}`}</Command>}
     </div>
   )

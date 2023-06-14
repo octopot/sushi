@@ -1,31 +1,31 @@
 ---
 title: Quick start
-description: Install Susi and its local model, write your first prompt, rewrite part of it with ⌘K, and send it to your coding agent.
+description: Install Sushi and its local model, write your first prompt, rewrite part of it with ⌘K, and send it to your coding agent.
 ---
 
 import { release } from '../release.mjs'
 
 # Quick start
 
-Install Susi and the model, then write, edit and send your first prompt. Most of the time goes to the model download.
+Install Sushi and the model, then write, edit and send your first prompt. Most of the time goes to the model download.
 
 ## What you need
 
 - A Mac with {release.chip}, running macOS {release.macos} or later.
-- [Ollama](https://ollama.com/download), the Mac app or the `ollama` command. Susi starts it when an edit needs it, and links to the download if it is missing.
+- [Ollama](https://ollama.com/download), the Mac app or the `ollama` command. Sushi starts it when an edit needs it, and links to the download if it is missing.
 - [Homebrew](https://brew.sh), for the recommended install.
 
-## 1. Install Susi
+## 1. Install Sushi
 
 ```sh
-brew install --cask octolab/tap/susi
+brew install --cask octolab/tap/sushi
 ```
 
 ### Download instead
 
-Download <code>{release.archive}</code> from the <a href={release.download}>v{release.version} release</a>, unzip it and move **Susi** to Applications.
+Download <code>{release.archive}</code> from the <a href={release.download}>v{release.version} release</a>, unzip it and move **Sushi** to Applications.
 
-This build is not notarized yet, so macOS stops the first launch and says it cannot verify Susi. Open **System Settings → Privacy & Security**, find the message about Susi near the bottom and click **Open Anyway**. macOS asks once; later launches open normally.
+This build is not notarized yet, so macOS stops the first launch and says it cannot verify Sushi. Open **System Settings → Privacy & Security**, find the message about Sushi near the bottom and click **Open Anyway**. macOS asks once; later launches open normally.
 
 ## 2. Download the model
 
@@ -33,13 +33,13 @@ This build is not notarized yet, so macOS stops the first launch and says it can
 ollama pull qwen3.5:4b-mlx
 ```
 
-Susi edits with this model only. It runs inside Ollama on your Mac, and Susi checks that it is local before it sends any text. [More about the model →](/guide/model/)
+Sushi edits with this model only. It runs inside Ollama on your Mac, and Sushi checks that it is local before it sends any text. [More about the model →](/guide/model/)
 
 ## 3. Open the panel
 
-Launch Susi. The panel appears, and the Susi icon appears in the menu bar. Susi has no Dock icon.
+Launch Sushi. The panel appears, and the Sushi icon appears in the menu bar. Sushi has no Dock icon.
 
-From now on, **⌘⇧Space** shows the panel over any app and hides it again. The menu bar icon has **Show Susi**, **Open Settings Folder** and **Quit**.
+From now on, **⌘⇧Space** shows the panel over any app and hides it again. The menu bar icon has **Show Sushi**, **Open Settings Folder** and **Quit**.
 
 If the line above the bottom bar says *Could not register ⌘⇧Space*, another app already uses the shortcut: see [Troubleshooting](/guide/troubleshooting/#the-shortcut-does-not-work).
 
@@ -52,7 +52,7 @@ Add a dark mode toggle to the settings screen.
 Please make sure that it basically follows the system appearance by default and also remembers whatever the user picked last time.
 ```
 
-Susi keeps the draft as you type: hide the panel, quit, come back later, and the text is still there.
+Sushi keeps the draft as you type: hide the panel, quit, come back later, and the text is still there.
 
 ## 5. Rewrite part of it
 
@@ -68,9 +68,9 @@ With nothing selected, an action takes the whole prompt. [Editing and versions �
 
 ## 6. Send it
 
-Press **⌘↵**. Susi copies the whole prompt, hides, and returns you to the app you came from. Paste it into your coding agent with **⌘V**.
+Press **⌘↵**. Sushi copies the whole prompt, hides, and returns you to the app you came from. Paste it into your coding agent with **⌘V**.
 
-The next time you open Susi, the prompt you sent is selected. Start typing or dictating for a new prompt, or press **→** or click in the text to keep working on it. **⇧⌘↵** copies the same way and leaves an empty prompt instead.
+The next time you open Sushi, the prompt you sent is selected. Start typing or dictating for a new prompt, or press **→** or click in the text to keep working on it. **⇧⌘↵** copies the same way and leaves an empty prompt instead.
 
 ## Next
 

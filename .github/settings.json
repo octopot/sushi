@@ -4,13 +4,13 @@
     "notes": "docs/content/changelog/{tag}.md",
     "branches": [],
     "versions": ["package.json", "src-tauri/Cargo.toml", "src-tauri/tauri.conf.json", "src-tauri/Cargo.lock", "docs/release.mjs"],
-    "app": "Susi.app",
-    "asset": "susi_{version}_darwin-arm64.zip",
+    "app": "Sushi.app",
+    "asset": "sushi_{version}_darwin-arm64.zip",
     "tap": {
       "owner": "octolab",
       "name": "homebrew-tap",
-      "cask": "Casks/susi.rb",
-      "template": ".github/homebrew/susi.rb"
+      "cask": "Casks/sushi.rb",
+      "template": ".github/homebrew/sushi.rb"
     }
   },
   "secrets": {

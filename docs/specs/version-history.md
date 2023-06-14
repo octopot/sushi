@@ -1,8 +1,8 @@
 # Prompt versions and copying
 
-**Status:** describes Susi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.1.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
-Susi keeps every edit of the prompt in one linear chain of versions. The user walks the chain one step at a time, sees each edit as an inline diff before accepting it, and copies the whole prompt from any point. This document fixes how the chain changes, what ⌘↵ copies at each position, and how the draft survives a restart. How to use these keys is explained on the [site](https://sushi.octolab.org/); this document is the contract the code and the tests keep.
+Sushi keeps every edit of the prompt in one linear chain of versions. The user walks the chain one step at a time, sees each edit as an inline diff before accepting it, and copies the whole prompt from any point. This document fixes how the chain changes, what ⌘↵ copies at each position, and how the draft survives a restart. How to use these keys is explained on the [site](https://sushi.octolab.org/); this document is the contract the code and the tests keep.
 
 ## Terms
 
@@ -45,7 +45,7 @@ Susi keeps every edit of the prompt in one linear chain of versions. The user wa
 ### Persistence
 
 - **VH-18. The draft survives a restart.** The chain, the position, review mode and the copy flag of VH-9 are stored in `localStorage['susi.draft.v3']`: shortly after each change, and at once on a copy, on hiding and when the page goes away. A stored value that does not describe a valid chain gives an empty prompt. A draft from the earlier format `susi.history.v2` is imported once, as a single version with its active text.
-- **VH-19. Storage is full.** If the draft does not fit, Susi compacts the chain once — it keeps the first version and every version from the one before the current version onwards — and writes again. If that fails too, the hint line shows `Could not save the draft: …` and the window refuses to hide on Esc or ⌘↵, so the text is not lost. A ⌘↵ in this state still puts the text on the clipboard. After a compaction, the diff from the first version to the next kept one spans every dropped edit, so if that version came from an action, its label becomes `Earlier edits`; a version opened from the Library keeps no label and no diff.
+- **VH-19. Storage is full.** If the draft does not fit, Sushi compacts the chain once — it keeps the first version and every version from the one before the current version onwards — and writes again. If that fails too, the hint line shows `Could not save the draft: …` and the window refuses to hide on Esc or ⌘↵, so the text is not lost. A ⌘↵ in this state still puts the text on the clipboard. After a compaction, the diff from the first version to the next kept one spans every dropped edit, so if that version came from an action, its label becomes `Earlier edits`; a version opened from the Library keeps no label and no diff.
 
 ## Worked examples
 
@@ -78,7 +78,7 @@ These are deliberate limits of v0.1.1, not defects. Changing any of them is a ch
 - **No branches.** The chain is linear. An action, or a Library entry, opened from an earlier position discards the versions to its right (VH-1); there is no tree of alternatives and no way to bring a discarded tail back.
 - **No pruning by count.** The chain grows without a limit on the number of versions. The only pruning is the one-time compaction of VH-19 when storage is full.
 - **Text only.** A version is plain text. Pasted images, files and rich text are not kept as such; only their plain text, if any, reaches the editor.
-- **One prompt at a time.** There is one draft. Saving the current prompt to the Library is not part of Susi; the Library only reads files (see [Local files](local-files.md)).
+- **One prompt at a time.** There is one draft. Saving the current prompt to the Library is not part of Sushi; the Library only reads files (see [Local files](local-files.md)).
 
 ## Verification
 
@@ -101,4 +101,4 @@ These are deliberate limits of v0.1.1, not defects. Changing any of them is a ch
 | VH-18 | `history.test.mjs` — JSON round trip and rejection of garbage; `composer.test.mjs` — the draft and its position survive a reload; a v2 draft is imported once | `save()`, `loadChain()`, `Chain.restore` |
 | VH-19 | `history.test.mjs` — compact keeps the first and the current pair (the merged step is labelled `Earlier edits`, a Library version stays unlabelled); `composer.test.mjs` — a full storage compacts the chain once … | `Chain.compact`, `save()`, `hide()` |
 
-Run them with `npm test`. The same browser scenarios run in WebKit with `SUSI_ENGINE=webkit node --test tests/composer.test.mjs` after `npm run build`. The scenarios replace the model and every system call with a test double; the real clipboard, focus return and window showing are checked by hand in a separate macOS session.
+Run them with `npm test`. The same browser scenarios run in WebKit with `SUSHI_ENGINE=webkit node --test tests/composer.test.mjs` after `npm run build`. The scenarios replace the model and every system call with a test double; the real clipboard, focus return and window showing are checked by hand in a separate macOS session.

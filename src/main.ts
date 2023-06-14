@@ -114,7 +114,7 @@ const ollamaActions: { message: string; phrase: string; download?: true }[] = [
 ]
 
 /**
- * Gives one of Susi's own Ollama messages its action: "Download Ollama" opens the download page through a command
+ * Gives one of Sushi's own Ollama messages its action: "Download Ollama" opens the download page through a command
  * that takes no address, a command is copied and `done` shows the confirmation. Other text comes back as it is.
  */
 function actionable(text: string, done: (message: string) => void): (Node | string)[] {
@@ -279,7 +279,7 @@ async function rewrite(instruction: string, label: string) {
   const text = full.slice(from, to)
   error = ''
   if (!text.trim()) return notify('Write a prompt first')
-  if (!desktop) return notify('Rewrites run in the Susi app')
+  if (!desktop) return notify('Rewrites run in the Sushi app')
   const id = crypto.randomUUID()
   busy = { id }
   original = editor.selections()

@@ -18,7 +18,7 @@ pub struct Entry {
 }
 
 fn directory(app: &AppHandle, kind: Option<String>) -> Result<PathBuf, String> {
-    let base = if let Some(path) = env::var_os("SUSI_LIBRARY_DIR").filter(|p| !p.is_empty()) {
+    let base = if let Some(path) = env::var_os("SUSHI_LIBRARY_DIR").filter(|p| !p.is_empty()) {
         PathBuf::from(path)
     } else {
         let data = app.path().app_data_dir().map_err(|e| e.to_string())?;

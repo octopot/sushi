@@ -129,9 +129,9 @@ jobs:
           mkdir -p "${dir}"
           for signing in adhoc developer-id; do
             node .github/scripts/release.mjs cask --version "$(node .github/scripts/release.mjs version)" \
-              --sha256 "$(printf '0%.0s' $(seq 64))" --signing "${signing}" --out "${dir}/susi.rb"
-            ruby -c "${dir}/susi.rb"
-            (cd "${dir}/.." && brew style Casks/susi.rb)
+              --sha256 "$(printf '0%.0s' $(seq 64))" --signing "${signing}" --out "${dir}/sushi.rb"
+            ruby -c "${dir}/sushi.rb"
+            (cd "${dir}/.." && brew style Casks/sushi.rb)
           done
 
   release:

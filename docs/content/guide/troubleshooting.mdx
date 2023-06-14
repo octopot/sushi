@@ -1,21 +1,21 @@
 ---
 title: Troubleshooting
-description: What Susi's messages mean and what to do about them, from the shortcut and the first launch to Ollama, the model and your settings files.
+description: What Sushi's messages mean and what to do about them, from the shortcut and the first launch to Ollama, the model and your settings files.
 ---
 
 # Troubleshooting
 
-Susi reports problems on the line just above the bottom bar, or at the bottom of the library when it is open.
+Sushi reports problems on the line just above the bottom bar, or at the bottom of the library when it is open.
 
-## macOS will not open Susi
+## macOS will not open Sushi
 
-This build is not notarized yet. If macOS says it cannot verify Susi, open **System Settings → Privacy & Security**, find the message about Susi near the bottom and click **Open Anyway**. macOS asks once.
+This build is not notarized yet. If macOS says it cannot verify Sushi, open **System Settings → Privacy & Security**, find the message about Sushi near the bottom and click **Open Anyway**. macOS asks once.
 
-Susi needs a Mac with Apple Silicon and macOS 26 or later.
+Sushi needs a Mac with Apple Silicon and macOS 26 or later.
 
 ## The shortcut does not work
 
-*Could not register ⌘⇧Space: …* means another app already uses **⌘⇧Space**. In this release the shortcut cannot be changed: free it in the other app, then quit Susi from its menu bar icon and open it again. Until then, **Show Susi** in the menu bar menu opens the panel.
+*Could not register ⌘⇧Space: …* means another app already uses **⌘⇧Space**. In this release the shortcut cannot be changed: free it in the other app, then quit Sushi from its menu bar icon and open it again. Until then, **Show Sushi** in the menu bar menu opens the panel.
 
 If the panel shows but ignores keys, click inside it: a panel that is visible but not active does not receive keys.
 
@@ -23,10 +23,10 @@ If the panel shows but ignores keys, click inside it: a panel that is visible bu
 
 | Message | What to do |
 | --- | --- |
-| *Ollama is not installed on this Mac. Download Ollama* | Susi found neither the Ollama app nor the `ollama` command. Click **Download Ollama** to open the download page, install the app, then download the model. |
+| *Ollama is not installed on this Mac. Download Ollama* | Sushi found neither the Ollama app nor the `ollama` command. Click **Download Ollama** to open the download page, install the app, then download the model. |
 | *Install the local model with ollama pull qwen3.5:4b-mlx* | Click the command to copy it, run it in Terminal, and edit again once the download finishes. |
-| *Start Ollama on this Mac and try again.* | Susi could not start Ollama in time. Open the Ollama app, wait until its icon appears in the menu bar, and edit again. |
-| *Ollama did not start. Run ollama serve and try again.* | Only the command-line tool is installed, and the server Susi started did not answer in time. Click the command to copy it, run it in Terminal and leave that window open, then edit again. |
+| *Start Ollama on this Mac and try again.* | Sushi could not start Ollama in time. Open the Ollama app, wait until its icon appears in the menu bar, and edit again. |
+| *Ollama did not start. Run ollama serve and try again.* | Only the command-line tool is installed, and the server Sushi started did not answer in time. Click the command to copy it, run it in Terminal and leave that window open, then edit again. |
 | *Editing requires the local model qwen3.5:4b-mlx.* | The model Ollama offers under this name is not a local copy, for example one forwarded to a cloud service. Remove it with `ollama rm qwen3.5:4b-mlx` and pull it again. |
 | *Select a shorter passage. The text and instruction must fit within 12 KB.* | Select the part you want to change instead of the whole prompt, or shorten your instruction. |
 | *The model reached its context limit. Select a shorter passage.* | The same: edit a shorter part. |
@@ -41,7 +41,7 @@ The first edit after Ollama starts takes longer while the model loads. Pressing 
 
 *Could not copy the text to the macOS clipboard.* The prompt stays in the panel and the panel stays open. Try **⌘↵** again.
 
-*Could not save the draft: …* The panel's draft storage is full even after Susi dropped the middle of a long version chain. The panel will not hide on **Esc** or **⌘↵**, so the text is not lost: select it, copy it with **⌘C**, then start a new prompt with **⇧⌘↵** or by replacing all the text.
+*Could not save the draft: …* The panel's draft storage is full even after Sushi dropped the middle of a long version chain. The panel will not hide on **Esc** or **⌘↵**, so the text is not lost: select it, copy it with **⌘C**, then start a new prompt with **⇧⌘↵** or by replacing all the text.
 
 ## Settings files
 
@@ -56,8 +56,8 @@ Errors in your files name the file and the entry, for example:
 | *dictionary.json: duplicate source 'mac whisper'.* | Spoken forms must differ, ignoring case. |
 | *Enter an absolute library directory in library-path.txt.* | Write a full path starting with `/`, or delete the file to use the default library. |
 
-Susi reads the files again each time the panel appears, so a fixed file takes effect the next time you open it. The message stays until then. [Library and files →](/guide/library/#your-files)
+Sushi reads the files again each time the panel appears, so a fixed file takes effect the next time you open it. The message stays until then. [Library and files →](/guide/library/#your-files)
 
 ## Report a problem
 
-[Open an issue](https://github.com/octopot/susi/issues/new) with the message, what you did just before it, and your macOS version. Leave your prompt text out unless it is needed.
+[Open an issue](https://github.com/octopot/sushi/issues/new) with the message, what you did just before it, and your macOS version. Leave your prompt text out unless it is needed.

@@ -86,7 +86,7 @@ Nothing here is stored in the repository, so a fresh repository or a fork needs 
    Application certificate exported with its key, and an App Store Connect API
    key with the Developer role.
 5. Enable the workflows that were disabled by hand, after pushing the YAML that
-   should run: `gh workflow enable <file> -R octopot/susi`. The doctor
+   should run: `gh workflow enable <file> -R octopot/sushi`. The doctor
    reports every workflow that is not active, except those that
    `workflows` in `.github/settings.json` keeps off on purpose.
 
@@ -131,7 +131,7 @@ flowchart TB
   render --> build[npm test, cargo test, tauri build] --> package[zip with ditto, codesign the unpacked copy, checksums.txt, cask]
   package --> artifact[(workflow artifact)]
   package --> release[(GitHub release: draft, then published)]
-  release --> tap[tap job: checksum from the release, render, commit through the API, stable tags only] --> cask[(Casks/susi.rb in the tap)]
+  release --> tap[tap job: checksum from the release, render, commit through the API, stable tags only] --> cask[(Casks/sushi.rb in the tap)]
   tap --> notify[notify]
 ```
 
@@ -156,7 +156,7 @@ flowchart TB
   tag pattern, maintenance branches, note path, the version files, the bundle
   and archive names, the tap and the cask template.
 - **One archive, Apple Silicon only.** `npm run bundle` (`tauri build
-  --bundles app`) builds `Susi.app`; `release.mjs package` packs it with
+  --bundles app`) builds `Sushi.app`; `release.mjs package` packs it with
   `ditto -c -k --sequesterRsrc --keepParent`, so the signature survives,
   unpacks it again and requires `codesign --verify --deep --strict` to pass on
   the unpacked copy, then writes `checksums.txt` and the cask for those bytes.
@@ -168,9 +168,9 @@ flowchart TB
   assets are there.
 - **The cask comes from the published bytes.** The `tap` job downloads
   `checksums.txt` and the archive from the release, checks one against the
-  other, renders `.github/homebrew/susi.rb` with the version and that
+  other, renders `.github/homebrew/sushi.rb` with the version and that
   `sha256`, keeping the quarantine step unless the archive holds a stapled
-  notarization ticket (`Contents/CodeResources`), and commits it to `Casks/susi.rb` through the contents API with a
+  notarization ticket (`Contents/CodeResources`), and commits it to `Casks/sushi.rb` through the contents API with a
   token minted per run by `actions/create-github-app-token` from the
   Releaser App. No author or committer is sent, so GitHub signs the commit as
   the App. The same text in the tap is a no-op; a newer version there is
@@ -184,7 +184,7 @@ flowchart TB
   hardened runtime (`signingIdentity: "-"` in `tauri.conf.json`). Gatekeeper
   refuses an ad-hoc app that carries the quarantine attribute, which Homebrew
   sets on every cask download and no longer lets users skip: the cask
-  removes it in `preflight_steps` before installing `Susi.app`. With all of
+  removes it in `preflight_steps` before installing `Sushi.app`. With all of
   them, `tauri build` signs with Developer ID, notarizes through the App Store
   Connect API and staples the ticket, `cd` requires `stapler validate` and
   `spctl --assess` to pass, and the cask is rendered without that step.

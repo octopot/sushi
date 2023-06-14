@@ -87,14 +87,14 @@ impl Places {
 }
 
 extern "C" {
-    fn susi_app_path(bundle_id: *const libc::c_char, out: *mut libc::c_char, size: usize) -> bool;
+    fn sushi_app_path(bundle_id: *const libc::c_char, out: *mut libc::c_char, size: usize) -> bool;
 }
 
 /// The Ollama app as Launch Services knows it, by bundle identifier.
 fn registered_app() -> Option<PathBuf> {
     let id = CString::new(OLLAMA_APP).ok()?;
     let mut out = vec![0 as libc::c_char; libc::PATH_MAX as usize];
-    unsafe { susi_app_path(id.as_ptr(), out.as_mut_ptr(), out.len()) }.then(|| {
+    unsafe { sushi_app_path(id.as_ptr(), out.as_mut_ptr(), out.len()) }.then(|| {
         let path = unsafe { CStr::from_ptr(out.as_ptr()) };
         PathBuf::from(path.to_string_lossy().into_owned())
     })
@@ -121,7 +121,7 @@ fn locate(registered: Option<PathBuf>, places: &Places) -> Install {
         .map_or(Install::Missing, |bin| Install::Cli(bin.clone()))
 }
 
-/// Starts the server in its own process group with no terminal, so it outlives Susi as the
+/// Starts the server in its own process group with no terminal, so it outlives Sushi as the
 /// Ollama app would. A thread waits for it, so an exit (for example, the port is already
 /// taken) leaves no zombie behind.
 fn serve(bin: &Path) -> bool {

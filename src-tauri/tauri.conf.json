@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Susi",
+  "productName": "Sushi",
   "version": "0.1.1",
-  "identifier": "me.octopot.susi",
+  "identifier": "me.octopot.sushi",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -11,7 +11,7 @@
   },
   "app": {
     "windows": [{
-      "label": "main", "title": "Susi", "width": 750, "height": 470,
+      "label": "main", "title": "Sushi", "width": 750, "height": 470,
       "minWidth": 520, "minHeight": 260, "resizable": true, "center": true, "visible": false,
       "decorations": false, "transparent": true, "shadow": true,
       "windowEffects": { "effects": ["liquidGlassRegular", "hudWindow"], "state": "active", "radius": 26 }

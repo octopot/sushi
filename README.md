@@ -1,20 +1,20 @@
-> # 🍣 Susi
+> # 🍣 Sushi
 >
 > Dead simple prompt composer.
 
 **Write the prompt here. Paste it there.**
 
-Susi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press ⌘⇧Space, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. Nothing leaves your Mac: edits run on Ollama.
+Sushi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press ⌘⇧Space, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. Nothing leaves your Mac: edits run on Ollama.
 
 ## Install
 
 On an Apple Silicon Mac with macOS 26 or later, with [Homebrew](https://brew.sh/):
 
 ```sh
-brew install --cask octolab/tap/susi
+brew install --cask octolab/tap/sushi
 ```
 
-Or download `susi_0.1.1_darwin-arm64.zip` from the [v0.1.1 release](https://github.com/octopot/susi/releases/tag/v0.1.1) and move `Susi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
+Or download `sushi_0.1.1_darwin-arm64.zip` from the [v0.1.1 release](https://github.com/octopot/sushi/releases/tag/v0.1.1) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
 
 Edits need [Ollama](https://ollama.com/) and its model:
 
@@ -26,7 +26,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 
 ## Quick start
 
-1. Launch Susi. Its icon appears in the menu bar.
+1. Launch Sushi. Its icon appears in the menu bar.
 2. Press **⌘⇧Space** and write a prompt: `Add a dark mode toggle to the settings screen and keep the existing labels.`
 3. Select a sentence, press **⌘K**, type `short` and press Enter. The edit appears as a diff: **⌘→** accepts it, **⌘←** goes back.
 4. Press **⌘↵**. The prompt is on the clipboard and focus is back in your terminal or editor.
@@ -49,7 +49,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 - [Library](docs/content/guide/library.mdx) — templates, saved prompts, the dictionary and a shared Tuna folder.
 - [Local model](docs/content/guide/model.mdx) — Ollama, warm-up, limits and troubleshooting.
 - [Keyboard](docs/content/guide/keyboard.mdx) — every key in one place.
-- [Troubleshooting](docs/content/guide/troubleshooting.mdx) — what Susi's messages mean, from the shortcut and the first launch to Ollama and your settings files.
+- [Troubleshooting](docs/content/guide/troubleshooting.mdx) — what Sushi's messages mean, from the shortcut and the first launch to Ollama and your settings files.
 - [v0.1.1 release notes](docs/content/changelog/v0.1.1.md) — a clear first step without Ollama or its model.
 - [v0.1.0 release notes](docs/content/changelog/v0.1.0.md) — the first public release.
 
@@ -61,7 +61,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 
 **Long prompts with `/goal`.** The built-in action **Turn into goal** puts `/goal ` in front of the prompt without a model call. Claude Code and Codex collapse a long paste into a placeholder and do not see a command at its start: in Claude Code paste a second time to expand it; in Codex press Ctrl+G to open the text, expanded, in an external editor.
 
-**Library and files.** There is no settings screen: everything is a file in `~/Library/Application Support/me.octopot.susi/`, opened from **Open Settings Folder** in the menu-bar menu.
+**Library and files.** There is no settings screen: everything is a file in `~/Library/Application Support/me.octopot.sushi/`, opened from **Open Settings Folder** in the menu-bar menu.
 
 | What | Where |
 | --- | --- |
@@ -74,7 +74,7 @@ To use the prompts of a Tuna assistant, write the absolute path of its `Input` f
 
 **Local model.** Edits run on Ollama at `127.0.0.1:11434` with `qwen3.5:4b-mlx`. If Ollama is not running, the first edit starts it: the app, or `ollama serve` when only the command-line tool is installed. Without Ollama or the model, the hint links to the download or offers `ollama pull` to copy; opening ⌘K says the same and asks a running Ollama to load the model in advance. The text with its instruction is limited to 12 KB, so select a passage of a long prompt.
 
-v0.1.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Susi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
+v0.1.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
 
 ## Development
 
@@ -84,19 +84,19 @@ v0.1.1 composes one prompt at a time, with a linear history of edits, a file-bas
 You need Node.js with npm, Rust and the Xcode Command Line Tools:
 
 ```sh
-git clone https://github.com/octopot/susi.git
-cd susi
+git clone https://github.com/octopot/sushi.git
+cd sushi
 npm ci
 npm run bundle
 ```
 
-The app appears in `src-tauri/target/release/bundle/macos/Susi.app`. `npm test` checks the editor, the palettes and the chain of versions in headless Chrome with the model and system calls replaced; `npm run test:local` adds the Rust tests and a real edit through a running Ollama. The working agreement for changes and screenshots of the real window is in [AGENTS.md](AGENTS.md).
+The app appears in `src-tauri/target/release/bundle/macos/Sushi.app`. `npm test` checks the editor, the palettes and the chain of versions in headless Chrome with the model and system calls replaced; `npm run test:local` adds the Rust tests and a real edit through a running Ollama. The working agreement for changes and screenshots of the real window is in [AGENTS.md](AGENTS.md).
 
 </details>
 
 ---
 
 <p align="center">
-  <sub>Susi 🍣</sub><br>
+  <sub>Sushi 🍣</sub><br>
   <sub>MIT · Built by <a href="https://github.com/octolab">OctoLab.</a></sub>
 </p>

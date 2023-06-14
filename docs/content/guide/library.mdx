@@ -35,10 +35,10 @@ The caret lands on the first empty line, ready for you to fill in a template's f
 
 ## Your files
 
-Everything in the library is a file, and there is no editing inside the panel. Choose **Open Settings Folder** in the Susi menu bar menu to open the folder:
+Everything in the library is a file, and there is no editing inside the panel. Choose **Open Settings Folder** in the Sushi menu bar menu to open the folder:
 
 ```text
-~/Library/Application Support/me.octopot.susi/
+~/Library/Application Support/me.octopot.sushi/
 ```
 
 | File | Holds |
@@ -48,7 +48,7 @@ Everything in the library is a file, and there is no editing inside the panel. C
 | `Input/*.md` | Saved prompts: each Markdown file is one prompt, named by its file name. |
 | `Input/.templates/*.md` | Templates. |
 
-On first use, Susi creates the files with examples: the six actions, one dictionary term and three templates, *Task brief*, *Bug report* and *Release review*. Your edits always win: Susi never overwrites a file, and a template you delete stays deleted.
+On first use, Sushi creates the files with examples: the six actions, one dictionary term and three templates, *Task brief*, *Bug report* and *Release review*. Your edits always win: Sushi never overwrites a file, and a template you delete stays deleted.
 
 ### Saved prompts
 
@@ -86,12 +86,12 @@ Blank lines at the start of a template are dropped when it opens.
 }
 ```
 
-The **Dictionary** section shows the terms; **Enter** on one opens `dictionary.json` in your default text editor. In this release Susi does not replace terms in dictated text: dictation tools already correct spelling themselves.
+The **Dictionary** section shows the terms; **Enter** on one opens `dictionary.json` in your default text editor. In this release Sushi does not replace terms in dictated text: dictation tools already correct spelling themselves.
 
 ### Use another library
 
-To read prompts and templates from a folder you already keep, write its absolute path, on one line, into `library-path.txt` in the settings folder. Susi then reads prompts from that folder and templates from its `.templates/` subfolder. For example, point it at the `Input` folder of a Tuna assistant.
+To read prompts and templates from a folder you already keep, write its absolute path, on one line, into `library-path.txt` in the settings folder. Sushi then reads prompts from that folder and templates from its `.templates/` subfolder. For example, point it at the `Input` folder of a Tuna assistant.
 
 Actions and the dictionary stay in the settings folder.
 
-The exact formats, with CUE schemas to check them, are in the [local files specification](https://github.com/octopot/susi/blob/main/docs/specs/local-files.md).
+The exact formats, with CUE schemas to check them, are in the [local files specification](https://github.com/octopot/sushi/blob/main/docs/specs/local-files.md).

@@ -14,12 +14,12 @@ export async function generateMetadata({ params }) {
     url: `${siteUrl}og.png`,
     width: 1733,
     height: 908,
-    alt: 'Susi — The prompt deserves an editor.',
+    alt: 'Sushi — The prompt deserves an editor.',
   }]
   return {
     ...page.metadata,
     alternates: { canonical: url },
-    openGraph: { title, description, url, siteName: 'Susi', type: 'website', images },
+    openGraph: { title, description, url, siteName: 'Sushi', type: 'website', images },
     twitter: { card: path ? 'summary' : 'summary_large_image', title, description, images },
   }
 }

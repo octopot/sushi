@@ -29,8 +29,8 @@ const DEFAULTS = {
   notes: 'docs/content/changelog/{tag}.md',
   branches: [],
   versions: ['package.json'],
-  app: 'Susi.app',
-  asset: 'susi_{version}_darwin-arm64.zip',
+  app: 'Sushi.app',
+  asset: 'sushi_{version}_darwin-arm64.zip',
   tap: null,
 }
 const BUNDLE_DIR = 'src-tauri/target/release/bundle/macos'
@@ -364,7 +364,7 @@ function pack(opts) {
   rmSync(zip, { force: true })
   execFileSync('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', app, zip], { stdio: 'inherit' })
 
-  const scratch = mkdtempSync(join(tmpdir(), 'susi-unpack-'))
+  const scratch = mkdtempSync(join(tmpdir(), 'sushi-unpack-'))
   try {
     execFileSync('ditto', ['-x', '-k', zip, scratch], { stdio: 'inherit' })
     const unpacked = join(scratch, basename(app))
@@ -439,7 +439,7 @@ function tap(file, opts) {
   const decision = tapAction(current, next)
   if (decision.action === 'refuse') throw new Error(`tap: ${decision.reason}`)
   if (decision.action === 'skip') { console.log(`tap: ${owner}/${name} ${path}: ${decision.reason}`); return }
-  const body = { message: `Brew cask update for susi version v${version}`, content: Buffer.from(next).toString('base64'), ...(sha ? { sha } : {}) }
+  const body = { message: `Brew cask update for sushi version v${version}`, content: Buffer.from(next).toString('base64'), ...(sha ? { sha } : {}) }
   const res = JSON.parse(gh('api', '-X', 'PUT', endpoint, '--input', '-', { input: JSON.stringify(body) }))
   console.log(`tap: ${owner}/${name} ${path} ${decision.action}d in ${res.commit.sha}, verified: ${res.commit.verification?.verified ?? 'unknown'}`)
 }

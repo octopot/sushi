@@ -12,9 +12,9 @@ export const release = {
   macos: '26',
   chip: 'Apple Silicon',
   model: 'qwen3.5:4b-mlx',
-  cask: 'octolab/tap/susi',
-  archive: 'susi_0.1.1_darwin-arm64.zip',
-  repo: 'https://github.com/octopot/susi',
+  cask: 'octolab/tap/sushi',
+  archive: 'sushi_0.1.1_darwin-arm64.zip',
+  repo: 'https://github.com/octopot/sushi',
 }
 release.download = `${release.repo}/releases/tag/${release.tag}`
 release.specs = `${release.repo}/blob/main/docs/specs`
