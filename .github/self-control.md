@@ -8,6 +8,38 @@ is proven or moved into an issue; a release adds the checks it leaves open
 
 ## Watch
 
+### After v0.2.0
+
+v0.2.0 renames Susi to Sushi and moves the panel to Caps Lock. Before the tag
+the upgrade was rehearsed on Homebrew 7.0.15 with throwaway tokens and bundle
+identifiers: a trusted tap migrates on `brew update`; a tap trusted cask by
+cask needs `brew upgrade --cask octolab/tap/sushi` by its full name; install
+steps cannot launch the app from Homebrew's sandbox; the first launch moved the
+settings, the library and the draft; the Caps Lock mapping was set and removed
+on this Mac.
+
+- [ ] **A week after v0.2.0**: both other users run Sushi. Proven when each
+  confirms the panel opens on Caps Lock with their old prompt; if one is stuck,
+  walk them through the release note's five steps and fix what the note missed
+  in the next patch.
+- [ ] **The tap commit of v0.2.0**: the first commit through
+  `createCommitOnBranch` must be verified as the Releaser App. If it is not,
+  the next release returns to the contents API for the cask and does the
+  rename cleanup as a second, verified commit.
+- [ ] **`brew list --cask` after the upgrade** still names `susi` next to
+  `sushi` (a symlink or an empty receipt). Harmless as far as seen; watch for
+  `brew upgrade` or `brew doctor` complaining about it, and never suggest
+  `brew uninstall --cask susi`: it removes Sushi.
+- [ ] **An external keyboard** connected while Sushi runs gets the Caps Lock
+  mapping. Not tried: this Mac had only the built-in keyboard. If Caps Lock
+  does not show the panel on a keyboard connected later, the IOKit
+  notification in `macos.m` is the place to look.
+- [ ] **v0.3.0 removes the move from Susi**: `src-tauri/src/migrate.rs`,
+  `sushi_quit_app` in `macos.m`, the `susi.draft.v3` fallback in `src/main.ts`,
+  LF-17 and the Susi part of VH-18, their tests, `x-release.tap.renamed_from`
+  in `.github/settings.json`. The tap keeps `cask_renames.json` and the cask's
+  `zap` keeps Susi's folders.
+
 ### After v0.1.1
 
 v0.1.0 and v0.1.1 were released on 2026-11-18: `cd` published both releases,
@@ -21,11 +53,11 @@ opened it again with the signature intact.
   the download page, and ⌘K must show the same note. With only the
   command-line tool, the first edit must start `ollama serve`, and the server
   must outlive Susi. If any of these fails, fix it in the next patch.
-- [ ] **On the next `brew upgrade`**: Homebrew reopens Susi without
-  `--hidden` (seen in the process arguments after 0.1.0 → 0.1.1), so the
-  panel is expected to show after an upgrade. Confirm it on screen and decide
-  whether Susi should start hidden when Homebrew relaunches it.
-- [ ] **On every upgrade until Developer ID**: Homebrew warns that "susi's
+- [ ] **On the next `brew upgrade` of Sushi** (the first after v0.2.0):
+  Homebrew reopens the app without `--hidden` (seen after 0.1.0 → 0.1.1), so
+  the panel is expected to show after an upgrade. Confirm it on screen and
+  decide whether Sushi should start hidden when Homebrew relaunches it.
+- [ ] **On every upgrade until Developer ID**: Homebrew warns that "sushi's
   signer changed so macOS may prompt at next launch": every ad-hoc build has a
   new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
   right away; whether macOS showed a prompt was not observed.
@@ -49,7 +81,7 @@ opened it again with the signature intact.
   step by itself. Proven when a tag's run passes `stapler validate` and
   `spctl --assess`, and the tap's cask has no `preflight_steps`.
 - [ ] **The minimum macOS.** `minimumSystemVersion` and the cask say macOS 26,
-  the only version Susi has run on. The code has fallbacks for older systems
+  the only version Sushi has run on. The code has fallbacks for older systems
   (the untinted Visual Effect window without `NSGlassEffectView`, focus
   hand-off without macOS 14 APIs), and the web bundle targets Safari 16.4,
   so macOS 13.3 is the floor the code itself sets. Lower it only after
