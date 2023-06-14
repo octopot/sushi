@@ -18,18 +18,20 @@ steps cannot launch the app from Homebrew's sandbox; the first launch moved the
 settings, the library and the draft; the Caps Lock mapping was set and removed
 on this Mac.
 
+On 2026-11-19 `cd` published v0.2.0; the tap commit through
+`createCommitOnBranch` added `Casks/sushi.rb`, deleted `Casks/susi.rb` and
+added `cask_renames.json`, verified as the Releaser App. This Mac upgraded by
+the release note: `brew update` migrated the cask, the upgrade replaced
+`Susi.app`, Homebrew's reopen of `me.octopot.susi` failed as expected, and
+`open -a Sushi` brought over the draft byte for byte and the settings
+unchanged. The `susi` record left in the Caskroom (a symlink here, an empty
+receipt when only the cask was trusted) is removed with `rm -rf` without
+touching Sushi; the note says so.
+
 - [ ] **A week after v0.2.0**: both other users run Sushi. Proven when each
   confirms the panel opens on Caps Lock with their old prompt; if one is stuck,
   walk them through the release note's five steps and fix what the note missed
   in the next patch.
-- [ ] **The tap commit of v0.2.0**: the first commit through
-  `createCommitOnBranch` must be verified as the Releaser App. If it is not,
-  the next release returns to the contents API for the cask and does the
-  rename cleanup as a second, verified commit.
-- [ ] **`brew list --cask` after the upgrade** still names `susi` next to
-  `sushi` (a symlink or an empty receipt). Harmless as far as seen; watch for
-  `brew upgrade` or `brew doctor` complaining about it, and never suggest
-  `brew uninstall --cask susi`: it removes Sushi.
 - [ ] **An external keyboard** connected while Sushi runs gets the Caps Lock
   mapping. Not tried: this Mac had only the built-in keyboard. If Caps Lock
   does not show the panel on a keyboard connected later, the IOKit
