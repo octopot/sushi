@@ -1,6 +1,8 @@
 mod hotkey;
 mod library;
 mod migrate;
+mod model;
+mod openrouter;
 mod rewrite;
 mod settings;
 

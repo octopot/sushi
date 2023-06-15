@@ -1,6 +1,6 @@
 # Local files
 
-**Status:** describes Sushi v0.2.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.2.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 Everything Sushi knows besides the current draft lives in plain files on the Mac: the actions, the dictation dictionary, saved prompts and templates. Sushi has no screen for editing them; the user edits the files in any text editor, and Sushi reads them again the next time it needs them. This document fixes where the files live, their formats, how they are validated and what Sushi does on first run. The formats are also given as [CUE definitions](files.cue), and the [examples](examples/) are the files Sushi ships and seeds.
 
@@ -32,6 +32,10 @@ Everything Sushi knows besides the current draft lives in plain files on the Mac
 
 - **LF-18. Caps Lock or a combination.** `hotkey.json` holds `capsLock` (true or false) and `shortcut`, a combination of at least one modifier (`Control`, `Option`, `Shift`, `Command`) and one key joined with `+`; unknown fields are errors, and an invalid file is reported (`hotkey.json: …`) while Sushi uses the [example](examples/hotkey.json): Caps Lock with `Control+Shift+Space`. The file is read at launch and when **Use Caps Lock** is switched in the menu bar menu; the switch writes `capsLock` back and keeps `shortcut`.
 - **LF-19. Caps Lock.** With `capsLock` true, Sushi maps Caps Lock to F18 in the `UserKeyMapping` of every keyboard, including one connected later, keeps the other entries, and registers F18 as its hotkey; quitting Sushi removes its entry. Sushi does not take Caps Lock when macOS switches input sources with it (`TISRomanSwitchState`) or another entry already maps it: it registers `shortcut` and says why. With `capsLock` false it registers `shortcut` and removes an entry a crashed run left. Holding the key toggles the panel once.
+
+### `model.json` — the model
+
+- **LF-20. Provider and key.** `model.json` is optional and Sushi never creates it; without it edits run on Ollama. It holds `provider`, `"ollama"` or `"openrouter"`, and an optional `openrouter` section, required when the provider is `openrouter`: `key` (an OpenRouter API key), `model` (an OpenRouter model ID such as `openai/gpt-6-luna`), and optionally `reasoning` (`none`, `minimal`, `low`, `medium`, `high` or `xhigh`) and `tier` (`default`, `flex`, `fast` or `ultrafast`). `key` and `model` must contain something besides whitespace; unknown fields and other values are errors that name the field (`model.json: openrouter.tier must be one of default, flex, fast, ultrafast.`). The file is read for every edit and every ⌘K. What Sushi does with it is fixed in [the model specification](model.md); the [example](examples/model.json) is not seeded.
 
 ### Library: prompts and templates
 
@@ -79,6 +83,7 @@ The Library lists it as **Handover note**. Opening it puts `## What is done⏎�
 cue vet docs/specs/files.cue docs/specs/examples/rules.json -d '#Rules'
 cue vet docs/specs/files.cue docs/specs/examples/dictionary.json -d '#Dictionary'
 cue vet docs/specs/files.cue docs/specs/examples/hotkey.json -d '#Hotkey'
+cue vet docs/specs/files.cue docs/specs/examples/model.json -d '#Model'
 for t in task-brief bug-report release-review; do
   awk 'NR == 1 {next} /^---$/ {exit} {print}' docs/specs/examples/$t.md |
     cue vet docs/specs/files.cue yaml: - -d '#Template'
@@ -89,14 +94,14 @@ Replace the example paths with the files in your settings folder or library. The
 
 ## Not supported or switched off
 
-These are deliberate limits of v0.2.0, not defects. Changing any of them is a change of this specification.
+These are deliberate limits of v0.2.1, not defects. Changing any of them is a change of this specification.
 
 - **Dictionary replacement is switched off.** When on, Sushi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
-- **No editing inside Sushi.** Rules, terms, prompts and templates are edited as files. Sushi does not save the current prompt to the Library or create prompt files; the only files it writes are the first-run copies of LF-3, LF-16 and LF-18, the marker `.initialized-v1`, `capsLock` in `hotkey.json` (LF-18) and the move from Susi (LF-17), besides creating missing directories.
+- **No editing inside Sushi.** Rules, terms, prompts and templates are edited as files. Sushi does not save the current prompt to the Library or create prompt files; it never writes `model.json`; the only files it writes are the first-run copies of LF-3, LF-16 and LF-18, the marker `.initialized-v1`, `capsLock` in `hotkey.json` (LF-18) and the move from Susi (LF-17), besides creating missing directories.
 - **Text only.** Prompts and templates are read as text. Images and other attachments are not supported; an image link stays a line of Markdown.
 - **No template variables.** Template frontmatter carries only `title`; there are no placeholders, descriptions or per-template aliases.
 - **One flat library.** One directory at a time, without subdirectories.
-- **Model settings are not files.** The model `qwen3.5:4b-mlx`, the Ollama address `127.0.0.1:11434` and the 12 KB limit on text with its instruction are fixed in `src-tauri/src/rewrite.rs`.
+- **The local model is fixed.** The model `qwen3.5:4b-mlx`, the Ollama address `127.0.0.1:11434` and the 12 KB limit on text with its instruction are fixed in `src-tauri/src/rewrite.rs`; `model.json` (LF-20) chooses only between Ollama and OpenRouter.
 
 ## Verification
 
@@ -117,6 +122,7 @@ These are deliberate limits of v0.2.0, not defects. Changing any of them is a ch
 | LF-16 | `library::tests::templates_read_titles_and_preserve_legacy_markdown` (removal, earlier libraries) | `ensure_templates` |
 | LF-17 | `migrate::tests::*` (copy, the mark, a folder without the mark, a failed copy, a fresh install); the WebKit copy read under a new identifier: manual, with throwaway identifiers in stage mode | `run`, `migrate`, `replace_with_copy` in `src-tauri/src/migrate.rs`; `sushi_quit_app` in `src-tauri/src/macos.m` |
 | LF-18 | `hotkey::tests::*` (seeding, saving the switch, invalid files, symbols); `cue vet` on the example | `load`, `save`, `apply`, `toggle_caps_lock` in `src-tauri/src/hotkey.rs`; `files.cue` |
+| LF-20 | `model::tests::reads_the_choice`, `rejects_invalid_files`; `cue vet` on the example | `Config`, `load` in `src-tauri/src/model.rs`; `files.cue` |
 | LF-19 | `hotkey::tests::a_held_key_toggles_once`; the mapping itself: manual, on a Mac whose keyboard may be remapped (see AGENTS.md) | `sushi_caps_take`, `sushi_caps_release` in `src-tauri/src/macos.m`; `apply` |
 
 Run the Rust tests with `cargo test --manifest-path src-tauri/Cargo.toml --release` and the browser tests with `npm test`. Both work in temporary directories and profiles and never touch the real settings folder.

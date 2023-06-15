@@ -36,5 +36,17 @@ import "strings"
 	shortcut!: string & =~"^((Control|Ctrl|Option|Alt|Shift|Command|Cmd|Super|Meta)\\+)+[A-Za-z0-9]+$"
 }
 
+// model.json: optional; without it, or with "ollama", edits run on Ollama.
+#Model: {
+	provider!: "ollama" | "openrouter"
+	openrouter?: {
+		key!:       #Text
+		model!:     #Text
+		reasoning?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
+		tier?:      "default" | "flex" | "fast" | "ultrafast"
+	}
+	if provider == "openrouter" {openrouter!: _}
+}
+
 // The YAML frontmatter of a template: a title and nothing else.
 #Template: {title!: #Text}

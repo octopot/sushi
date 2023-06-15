@@ -100,8 +100,11 @@ test('Sushi composer', async t => {
             case 'rewrite':
               state.requests.push(args)
               if (state.failure) throw state.failure
-              if (state.delay) return new Promise(resolve => { state.finish = resolve })
-              return state.replies.shift()
+              // The app answers with the edit and the model that made it; a test may queue either.
+              const answer = reply => typeof reply === 'string' ? { text: reply, model: args.local ? 'qwen3.5:4b-mlx' : state.model ?? 'qwen3.5:4b-mlx' } : reply
+              if (state.delay) return new Promise(resolve => { state.finish = reply => resolve(answer(reply)) })
+              if (state.failures?.length && !args.local) throw state.failures.shift()
+              return answer(state.replies.shift())
             case 'cancel_rewrite': state.cancelled.push(args.requestId); return
             case 'library_list':
               if (args.kind === 'templates' && state.slowTemplates)
@@ -196,7 +199,7 @@ test('Sushi composer', async t => {
     await actionsInput(page).press('Enter')
     await page.locator('.cm-diff-ins').first().waitFor()
     assert.equal(await page.evaluate(() => window.fixture.requests[0].text), brief[1])
-    assert.match(await hint(page).textContent(), /^Shorten · \d+\.\d s · 4 changes · ⌘← Back · ⌘→ Accept$/, 'the time and the changed places (SUSI-5)')
+    assert.match(await hint(page).textContent(), /^Shorten · qwen3\.5:4b-mlx · \d+\.\d s · 4 changes · ⌘← Back · ⌘→ Accept$/, 'the model, the time and the changed places (SUSI-5, MD-8)')
     await capture(page, '04-diff')
 
     const original = brief.join('\n')
@@ -350,7 +353,7 @@ test('Sushi composer', async t => {
     const request = await page.evaluate(() => window.fixture.requests[0])
     assert.equal(request.instruction, 'Say it like a pirate')
     assert.equal(request.text, '  Check the logs and report back.\n')
-    assert.match(await hint(page).textContent(), /^Say it like a pirate · \d+\.\d s · 1 change · /)
+    assert.match(await hint(page).textContent(), /^Say it like a pirate · qwen3\.5:4b-mlx · \d+\.\d s · 1 change · /)
     await copy(page, '  Check the logs.\n')
     await page.keyboard.press('Meta+k')
     await actionsInput(page).fill('Shorten')
@@ -732,6 +735,56 @@ test('Sushi composer', async t => {
     assert.equal(prevented, false, 'the system context menu is not suppressed')
     assert.equal(await actionsInput(page).count(), 0, 'the actions stay closed')
     assert.equal(await page.evaluate(() => getSelection().toString()), brief[1], 'the selection stays')
+  })
+
+  await t.test('an OpenRouter failure offers Edit with Ollama on the same text (MD-6, MD-8, MD-9)', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText(brief.join('\n'))
+    await select(page, brief[1])
+    // A hosted model's reply names it in the hint.
+    await page.evaluate(() => { window.fixture.model = 'gpt-6-luna' })
+    await act(page, 'Shorten', shortened)
+    assert.match(await hint(page).textContent(), /^Shorten · gpt-6-luna · \d+\.\d s · 4 changes · /)
+    await page.keyboard.press('Meta+ArrowLeft')
+    await page.keyboard.press('Meta+ArrowLeft')
+    await select(page, brief[1])
+
+    const offline = 'OpenRouter is not reachable. Edit with Ollama'
+    await page.evaluate(offline => { window.fixture.failures = [offline] }, offline)
+    await page.evaluate(reply => { window.fixture.replies.push(reply) }, 'Follow the system appearance.')
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await actionsInput(page).press('Enter')
+    await hint(page).getByRole('button', { name: 'Edit with Ollama' }).waitFor()
+    assert.equal(await hint(page).textContent(), offline)
+    assert.equal(await editorText(page), brief.join('\n'), 'the chain does not change')
+    await capture(page, '23-openrouter-failed')
+    await hint(page).getByRole('button', { name: 'Edit with Ollama' }).click()
+    await page.locator('#hint', { hasText: 'qwen3.5:4b-mlx' }).waitFor()
+    const [first, again] = await page.evaluate(() => window.fixture.requests.slice(-2))
+    assert.deepEqual([again.instruction, again.text, again.local], [first.instruction, brief[1], true], 'the same edit, locally')
+    assert.equal(first.local, false)
+    assert.match(await hint(page).textContent(), /^Shorten · qwen3\.5:4b-mlx · /)
+
+    // A changed text is not edited behind the user's back.
+    await page.keyboard.press('Meta+ArrowLeft')
+    await select(page, brief[2])
+    await page.evaluate(() => { window.fixture.failures = ['OpenRouter is busy right now. Edit with Ollama'] })
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await actionsInput(page).press('Enter')
+    await hint(page).getByRole('button', { name: 'Edit with Ollama' }).waitFor()
+    await page.keyboard.press('Home')
+    await page.keyboard.insertText('Also: ')
+    await hint(page).getByRole('button', { name: 'Edit with Ollama' }).click()
+    await page.locator('#hint', { hasText: 'The text has changed.' }).waitFor()
+    assert.equal((await page.evaluate(() => window.fixture.requests)).filter(r => r.local).length, 1)
+
+    // ⌘K says at once when model.json would fail the edit; other text stays plain.
+    await page.evaluate(() => { window.fixture.note = 'model.json: openrouter.key is empty.' })
+    await page.keyboard.press('Meta+k')
+    await page.locator('.actions .note', { hasText: 'model.json: openrouter.key is empty.' }).waitFor()
+    assert.equal(await page.locator('.actions .note button').count(), 0)
   })
 
   await t.test('a free-form instruction leads when no action matches well', async t => {

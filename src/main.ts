@@ -105,8 +105,9 @@ function fail(e: unknown) {
  * (typing, ⌘← ⌘→, ⌘K, ⌘L), so a refusal is not mistaken for a lost request (SUSI-5).
  */
 let unchanged = false
-/** How long the model took for each version it produced; kept in memory only. */
+/** How long the model took for each version it produced, and which model it was; kept in memory only. */
 const took = new WeakMap<Version, number>()
+const madeBy = new WeakMap<Version, string>()
 /** The number of changed places of each diff, counted once. */
 const places = new WeakMap<Version, number>()
 function summary(): string {
@@ -114,8 +115,9 @@ function summary(): string {
   if (before === undefined) return ''
   let count = places.get(version)
   if (count === undefined) places.set(version, count = changedPlaces(before, version.text))
-  const seconds = took.get(version)
-  return (seconds === undefined ? '' : `${seconds.toFixed(1)} s · `) + (count === 1 ? '1 change' : `${count} changes`)
+  const seconds = took.get(version), model = madeBy.get(version)
+  return (model === undefined ? '' : `${model} · `) + (seconds === undefined ? '' : `${seconds.toFixed(1)} s · `) +
+    (count === 1 ? '1 change' : `${count} changes`)
 }
 function notify(message: string) {
   clearTimeout(noticeTimer)
@@ -138,6 +140,15 @@ const ollamaActions: { message: string; phrase: string; download?: true }[] = [
  * that takes no address, a command is copied and `done` shows the confirmation. Other text comes back as it is.
  */
 function actionable(text: string, done: (message: string) => void): (Node | string)[] {
+  // A failed OpenRouter edit ends with this phrase (docs/specs/model.md, MD-6); the button repeats it locally.
+  if (retry && text.endsWith(EDIT_WITH_OLLAMA) && /^(OpenRouter|model\.json)\b/u.test(text)) {
+    const button = el('button', 'link', EDIT_WITH_OLLAMA.trim())
+    button.type = 'button'
+    button.title = 'Run the same edit on the same text with the local model'
+    button.addEventListener('mousedown', event => event.preventDefault())
+    button.addEventListener('click', () => editLocally())
+    return [text.slice(0, -EDIT_WITH_OLLAMA.length), ' ', button]
+  }
   const known = ollamaActions.find(action => action.message === text)
   if (!known) return [text]
   const { phrase, download } = known
@@ -294,12 +305,30 @@ function prepend(prefix: string, label: string) {
   show(prefix.length)
 }
 
-async function rewrite(instruction: string, label: string) {
+/** The phrase that ends an OpenRouter failure; a Rust test keeps it in step with src-tauri/src/openrouter.rs. */
+const EDIT_WITH_OLLAMA = ' Edit with Ollama'
+/** The last edit that failed, so that Edit with Ollama repeats it on the same text. */
+let retry: { instruction: string; label: string; from: number; to: number; text: string } | undefined
+
+function editLocally() {
+  const last = retry
+  if (!last || busy) return
+  if (editor.text().slice(last.from, last.to) !== last.text) {
+    error = ''
+    retry = undefined
+    return notify('The text has changed. Press ⌘K to edit it again.')
+  }
+  target = { from: last.from, to: last.to }
+  void rewrite(last.instruction, last.label, true)
+}
+
+async function rewrite(instruction: string, label: string, local = false) {
   actions.close()
   const full = editor.text()
   const { from, to } = target
   const text = full.slice(from, to)
   error = ''
+  retry = undefined
   if (!text.trim()) return notify('Write a prompt first')
   if (!desktop) return notify('Rewrites run in the Sushi app')
   const id = crypto.randomUUID()
@@ -308,20 +337,21 @@ async function rewrite(instruction: string, label: string) {
   editor.lock({ from, to })
   update()
   const started = performance.now()
-  let raw: string
+  let raw: { text: string; model: string }
   try {
-    raw = await invoke<string>('rewrite', { instruction, text, requestId: id })
+    raw = await invoke<{ text: string; model: string }>('rewrite', { instruction, text, requestId: id, local })
   } catch (e) {
-    if (busy?.id === id) { settle(); fail(e) }
+    if (busy?.id === id) { retry = { instruction, label, from, to, text }; settle(); fail(e) }
     return
   }
   if (busy?.id !== id) return
   settle(false)
-  const reply = String(raw).replace(/\r\n?/g, '\n').trim()
+  const reply = String(raw.text).replace(/\r\n?/g, '\n').trim()
   if (!reply) return settle(), fail(new Error('The model returned an empty edit.'))
   const lead = /^\s*/u.exec(text)![0], trail = /\s*$/u.exec(text)![0]
   if (chain.apply(full.slice(0, from) + lead + reply + trail + full.slice(to), label)) {
     took.set(chain.current, (performance.now() - started) / 1000)
+    madeBy.set(chain.current, raw.model)
     show(from + lead.length + reply.length)
   } else { unchanged = true; settle() }
 }

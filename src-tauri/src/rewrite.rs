@@ -1,5 +1,7 @@
+use crate::model::{self, Choice};
+use crate::openrouter;
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     collections::HashMap,
@@ -10,7 +12,7 @@ use std::{
     sync::{LazyLock, Mutex},
     time::Duration,
 };
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::oneshot;
 
 const MODEL: &str = "qwen3.5:4b-mlx";
@@ -228,7 +230,8 @@ struct Message {
 
 // No worked example on purpose: a small model copies an example's language and, on
 // meaningless input, its content. The tags keep the text apart from the instruction.
-const SYSTEM: &str = "You edit a fragment of a prompt that a person wrote for a coding agent. \
+pub(crate) const SYSTEM: &str =
+    "You edit a fragment of a prompt that a person wrote for a coding agent. \
 Apply the instruction to the text inside <text> tags and reply with the edited text only: \
 no tags, no quotes, no comments, no explanations. Write in the same language as the text, \
 whatever language the instruction is in. Keep every fact, number, name, negation, prohibition, \
@@ -246,19 +249,24 @@ fn untag(reply: &str) -> &str {
         .map_or(reply, str::trim)
 }
 
-async fn infer(
-    instruction: &str,
-    text: &str,
-    start_ollama_if_offline: bool,
-) -> Result<String, String> {
-    // A byte bound also covers tokenizers' worst case for unfamiliar scripts and code.
-    // Leave room in the 16K context for message framing and the edited result.
+/// The user message for either provider. A byte bound also covers tokenizers' worst case for
+/// unfamiliar scripts and code, and leaves room in the 16K context for framing and the result.
+fn content(instruction: &str, text: &str) -> Result<String, String> {
     let content = format!("Instruction: {instruction}\n\n<text>\n{text}\n</text>");
     if content.len() > 12_000 {
         return Err(
             "Select a shorter passage. The text and instruction must fit within 12 KB.".into(),
         );
     }
+    Ok(content)
+}
+
+async fn infer(
+    instruction: &str,
+    text: &str,
+    start_ollama_if_offline: bool,
+) -> Result<String, String> {
+    let content = content(instruction, text)?;
     let client = client()?;
     if !online(client, Duration::from_secs(1)).await {
         if !start_ollama_if_offline {
@@ -323,9 +331,15 @@ async fn infer(
 /// starts Ollama. Returns a note only when an edit is bound to fail: Ollama is not installed,
 /// or the model is not downloaded. Other problems are left for a real edit to explain.
 #[tauri::command]
-pub async fn warm_model() -> Option<String> {
+pub async fn warm_model(app: AppHandle) -> Option<String> {
     if crate::staged() {
         return None;
+    }
+    // A hosted model needs no warm-up; only a file that would fail the edit is worth a note (MD-9).
+    match settings_dir(&app).and_then(|dir| model::load(&dir)) {
+        Err(error) => return Some(error),
+        Ok(Choice::OpenRouter(_)) => return None,
+        Ok(Choice::Ollama) => (),
     }
     let client = client().ok()?;
     if !online(client, Duration::from_millis(500)).await {
@@ -345,13 +359,56 @@ pub async fn warm_model() -> Option<String> {
     None
 }
 
+fn settings_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_data_dir().map_err(|e| e.to_string())
+}
+
+/// An edit and the model that made it, as the hint names it (MD-8).
+#[derive(Serialize)]
+pub struct Edit {
+    text: String,
+    model: String,
+}
+
+/// Runs one edit on the provider `model.json` names, or on Ollama when `local` is set:
+/// Edit with Ollama after an OpenRouter failure (MD-6).
+async fn edit(
+    dir: Result<PathBuf, String>,
+    instruction: &str,
+    text: &str,
+    local: bool,
+) -> Result<Edit, String> {
+    let choice = if local {
+        Choice::Ollama
+    } else {
+        dir.and_then(|dir| model::load(&dir))
+            .map_err(|error| error + openrouter::EDIT_WITH_OLLAMA)?
+    };
+    match choice {
+        Choice::Ollama => Ok(Edit {
+            text: infer(instruction, text, true).await?,
+            model: MODEL.into(),
+        }),
+        Choice::OpenRouter(settings) => {
+            let content = content(instruction, text)?;
+            let reply = openrouter::edit(openrouter::API, &settings, SYSTEM, &content).await?;
+            Ok(Edit {
+                text: untag(&reply).to_string(),
+                model: settings.name().into(),
+            })
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn rewrite(
+    app: AppHandle,
     state: State<'_, Requests>,
     instruction: String,
     text: String,
     request_id: String,
-) -> Result<String, String> {
+    local: Option<bool>,
+) -> Result<Edit, String> {
     if crate::staged() {
         return Err("Stage mode does not contact Ollama.".into());
     }
@@ -367,7 +424,7 @@ pub async fn rewrite(
         requests.insert(request_id.clone(), Some(send));
     }
     let result = tokio::select! {
-        reply = infer(&instruction, &text, true) => reply,
+        reply = edit(settings_dir(&app), &instruction, &text, local == Some(true)) => reply,
         _ = cancel => Err("Edit canceled.".into()),
     };
     state
@@ -525,6 +582,8 @@ mod tests {
         for message in [NOT_INSTALLED, CLI_DID_NOT_START, &missing_model()] {
             assert!(page.contains(&format!("'{message}'")), "{message}");
         }
+        // OpenRouter failures end with a phrase the page turns into a button (MD-6).
+        assert!(page.contains(&format!("'{}'", openrouter::EDIT_WITH_OLLAMA)));
     }
 
     #[test]
