@@ -162,7 +162,6 @@ const editor = createEditor($('editor'), {
     update()
     save()
   },
-  onContext: () => openActions(),
   transformPaste: APPLY_DICTIONARY ? replaceTerms : undefined,
 })
 

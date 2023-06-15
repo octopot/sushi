@@ -704,6 +704,20 @@ test('Sushi composer', async t => {
     assert.equal(await page.locator('#previous').isHidden(), true, 'typing over the selection starts a new chain')
   })
 
+  await t.test('a right click on a selection leaves the system menu and opens no actions', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText(brief.join('\n'))
+    await select(page, brief[1])
+    const prevented = await page.locator('.cm-content').evaluate(node => {
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })
+      node.dispatchEvent(event)
+      return event.defaultPrevented
+    })
+    assert.equal(prevented, false, 'the system context menu is not suppressed')
+    assert.equal(await actionsInput(page).count(), 0, 'the actions stay closed')
+    assert.equal(await page.evaluate(() => getSelection().toString()), brief[1], 'the selection stays')
+  })
+
   await t.test('a free-form instruction leads when no action matches well', async t => {
     const page = await start(t)
     await page.keyboard.insertText(brief.join('\n'))

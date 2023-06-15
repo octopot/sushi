@@ -112,7 +112,6 @@ export interface Change {
 
 export interface EditorOptions {
   onChange: (change: Change) => void
-  onContext: () => void
   transformPaste?: (text: string) => string
 }
 
@@ -125,14 +124,6 @@ export function createEditor(parent: HTMLElement, options: EditorOptions) {
     options.transformPaste ? EditorView.clipboardInputFilter.of(options.transformPaste) : [],
     keymap.of([...historyKeymap, ...defaultKeymap]),
     locked.of([]),
-    EditorView.domEventHandlers({
-      contextmenu(event, view) {
-        if (view.state.selection.main.empty) return false
-        event.preventDefault()
-        options.onContext()
-        return true
-      },
-    }),
     EditorView.updateListener.of(update => {
       if (!update.docChanged) return
       let replacedAll = false

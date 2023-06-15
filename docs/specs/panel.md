@@ -25,7 +25,7 @@ Sushi's window is an overlay, like Spotlight's: it comes up over whatever the us
 ## Not supported or switched off
 
 - **The display to show on** is the active one; the panel does not remember a display or a position.
-- **MacWhisper's recording bubble** shows at the top left of the screen, not at the caret, as it does over Raycast.
+- **MacWhisper's recording bubble** goes to the bottom left corner of the focused text field's whole frame, not to the caret, in every app. The panel's field is the editor's full text, which scrolls inside the panel: with a short prompt the bubble shows under the text, with a prompt taller than the panel it goes below the screen, out of sight. The dictated text lands in the editor either way. Over Raycast the field is one line high, so the bubble sits right under it.
 - **Stage Manager and a second display** follow from PN-1 but have not been checked.
 
 ## Regression scenarios
@@ -35,8 +35,8 @@ Window showing, Spaces, focus and dictation go through the window server and oth
 | ID | Steps | Expected | Rules |
 | --- | --- | --- | --- |
 | PR-1 | Put a terminal in full screen (⌃⌘F). Press Caps Lock. | The panel shows over the terminal; no Space animation; the terminal stays in full screen. | PN-1, PN-2 |
-| PR-2 | In PR-1, type a phrase, press ⌘A, ⌘C, ⌘V, ⌘Z, open the right-click menu, run ⌘K with Shorten, open ⌘L. | Each works as on a desktop Space. | PN-2 |
-| PR-3 | In PR-1, dictate into the editor with MacWhisper. | The recording bubble shows while recording; the text lands in the editor. | PN-2 |
+| PR-2 | In PR-1, type a phrase, press ⌘A, ⌘C, ⌘V, ⌘Z, right-click a selection, run ⌘K with Shorten, open ⌘L. | Each works as on a desktop Space; the right click opens the macOS context menu (VH-10). | PN-2 |
+| PR-3 | In PR-1, dictate into the editor with MacWhisper, once with a short prompt and once with a prompt taller than the panel. | The text lands in the editor both times. The recording bubble shows under a short prompt; under a tall one it is out of sight (see Not supported). | PN-2 |
 | PR-4 | In PR-1, press Esc. Show the panel again, press ⌘↵, then ⌘V. | After Esc the terminal has the keyboard on its full-screen Space; ⌘V pastes the prompt into it. | PN-4 |
 | PR-5 | Show the panel, click in another app's window, then on the desktop. | The panel hides on the first click; focus is in the clicked app. Caps Lock shows the panel with the draft. | PN-5 |
 | PR-6 | Show the panel on a desktop Space and open Mission Control; then App Exposé; then hold ⌘Tab. | The panel is in none of them, and ⌘Tab has no Sushi. | PN-3 |
@@ -47,6 +47,8 @@ Window showing, Spaces, focus and dictation go through the window server and oth
 | Date | Build | Passed | Failed or not run |
 | --- | --- | --- | --- |
 | 2026-11-19 | 30f8f36 (before PN-5) | PR-1, PR-4, PR-6; PR-3: text lands, the bubble did not show in the first try and showed 3 of 3 in a recorded rerun | PR-5: a click elsewhere left the panel open, fixed by PN-5; PR-2 not run as a whole; PR-7 not run, no second display |
+| 2026-11-19 | 4c3b076 | PR-1, PR-4, PR-5, PR-6; PR-2: typing and the edit keys | PR-2: a right click on a selection opened the actions instead of the macOS menu, changed in VH-10; PR-3: the text lands, but MacWhisper showed no bubble again, while it does over Raycast; PR-7 not run, no second display |
+| 2026-11-19 | 4c3b076 and the VH-10 change | PR-2: a right click opens the macOS menu; PR-3 explained: with a 1,843 px tall prompt the bubble window opened 5 times of 5 at y = 2169 on a 1117 px screen, the bottom of the field's frame | — |
 
 Add a row for every run: the commit of the build, the scenarios that passed, and what failed or was not run, with the reason.
 

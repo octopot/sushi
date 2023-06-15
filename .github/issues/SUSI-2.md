@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-19T13:16:28Z
-updatedAt: 2026-11-19T13:16:28Z
-lastEditedAt: null
+updatedAt: 2026-11-19T14:51:20Z
+lastEditedAt: 2026-11-19T14:51:12Z
 closedAt: null
 ---
 
@@ -64,7 +64,7 @@ The panel is an overlay on the Space the user is in, like Spotlight. Caps Lock s
 
 The key that shows the panel (SUSI-1), the panel's size and position. Placing MacWhisper's bubble at the caret: over Raycast it also shows at the top left of the screen.
 
-<!-- 2026-11-19T14:00Z
+<!-- 2026-11-19T14:00Z https://github.com/octopot/sushi/issues/3#issuecomment-7012617959
 Checked by hand on macOS 27 with the build of 30f8f36, a full-screen terminal underneath:
 
 | Check | Result |
@@ -76,4 +76,48 @@ Checked by hand on macOS 27 with the build of 30f8f36, a full-screen terminal un
 | Second display, Stage Manager | Not checked: no second display at hand. |
 
 The recording, taken every 0.3 s: with Raycast and with Sushi open, the frontmost app stays the terminal and the accessibility focus moves to the panel's app. Raycast's window sits at level 8, Sushi's at 0.
+-->
+
+<!-- 2026-11-19T15:00Z https://github.com/octopot/sushi/issues/3#issuecomment-7012618948
+## Research: MacWhisper's recording bubble over the panel
+
+**Rechecked** with the build of 4c3b076: a click elsewhere hides the panel (PR-5), focus returns (PR-4), Mission Control leaves the panel out (PR-6). Dictation always lands in the editor, but MacWhisper's recording bubble, which shows over Raycast, stayed out of sight over Sushi in three of four runs.
+
+**How it was looked at.** Three passive probes on the working Mac, reading the window list every 0.2–0.3 s and asking accessibility only where noted; then one dump of the panel's accessibility geometry while it was open. Nothing was pressed or shown by the probes.
+
+| Probe | What it showed |
+| --- | --- |
+| Frontmost app and accessibility focus, with Raycast and with Sushi | Both behave alike: the app underneath (the terminal) stays frontmost, the accessibility focus moves to the panel's app. Raycast's window sits at level 8, Sushi's at 0. |
+| Accessibility left cold until the second show | The bubble window opens on every dictation over Sushi, cold or not; one query on the second show answered `AXTextArea` in 34 ms. A cold accessibility tree is not the cause. |
+| Bubble and caret positions | Over Raycast: caret at (539, 354), bubble at (539, 368). Over Sushi: caret at (1199, 420), inside the panel, bubble at (527, 2169) on a screen 1117 px high: below its edge. |
+| Panel geometry | The focused element, the editor's content, is at (527, 366) and 674 × 1843: the whole prompt, which scrolls inside the 470 px panel. `AXBoundsForRange` of the caret gives (1199, 556), `AXBoundsForTextMarkerRange` of the selection (527, 559): both inside the panel. |
+
+**Findings.**
+
+- MacWhisper puts its bubble at the bottom left corner of the focused element's frame, not at the caret: 366 + 1843 − 40 = 2169 for Sushi; for Raycast's one-line field, about 59 px high, the same rule gives 368.
+- The frame is the editor's full text, as WebKit reports for a field that scrolls inside its container. With a short prompt the bubble shows under the text, which is what the first check saw; with a prompt taller than the panel it goes below the screen.
+- The non-activating panel is not involved, and Sushi reports the caret correctly through both ways of asking. The same would happen in v0.2.0 with a long prompt, and in any app whose text field is taller than the visible part.
+
+**Conclusion.** Not a defect of Sushi: written down under "Not supported" in `docs/specs/panel.md`, with PR-3 now covering a short and a tall prompt. The fix belongs to MacWhisper: placing the bubble at the caret, or clipping the field's frame to what is on screen. The note below is the text for its developer.
+-->
+
+<!-- 2026-11-19T15:05Z https://github.com/octopot/sushi/issues/3#issuecomment-7012619977
+## For the MacWhisper developer
+
+Subject: The recording bubble goes off-screen in text fields taller than their window
+
+Hello! I build Sushi, a small macOS prompt composer: a panel with a WebKit (WKWebView) text editor, shown like Spotlight over other apps. MacWhisper works well with it, and the dictated text always lands. But the recording bubble often never appears, and users take that for MacWhisper not listening.
+
+What happens: the bubble window opens, at the bottom left corner of the focused element's accessibility frame. The editor's text scrolls inside the panel, so that frame is the whole text: in my case the element is at (527, 366) and 674 × 1843 points, while the panel is 470 points high. The bubble opens at (527, 2169), below the bottom of a 1117-point screen. With a short text it shows under the text; over Raycast's one-line field it sits right under the field.
+
+The caret itself is reported correctly: `AXBoundsForRange` with `AXSelectedTextRange` gives (1199, 556, 2, 21), and `AXBoundsForTextMarkerRange` with `AXSelectedTextMarkerRange` gives (527, 559, 2, 21), both inside the panel.
+
+Two ways MacWhisper could keep the bubble visible here, and in any app with a long text field, such as a long document in TextEdit or a long message in a web editor:
+
+1. Place the bubble at the caret from `AXBoundsForRange` (or the text-marker variant for web content), falling back to the element's frame when neither answers.
+2. Clip the element's frame to its window and to the screen before placing the bubble.
+
+To reproduce: any text field that scrolls and holds more text than fits, with the caret in the visible part; start dictation and look at the window list: the bubble window exists, off-screen.
+
+Thank you for MacWhisper!
 -->

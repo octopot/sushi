@@ -37,7 +37,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 | Copy the prompt and hide | ⌘↵ |
 | Copy, clear the field and hide | ⇧⌘↵ |
 | Hide without copying, or cancel a running edit | Esc |
-| Actions on the selection or the whole prompt | ⌘K, or a right click on a selection |
+| Actions on the selection or the whole prompt | ⌘K |
 | Step back or forward through versions | ⌘← ⌘→ right after an edit, or the arrows at the sides |
 | Library of templates, prompts and dictionary | ⌘L; then T, P or D for a section, 1–9 for an item |
 
