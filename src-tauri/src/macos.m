@@ -107,8 +107,35 @@ static void shape_window(NSWindow *window) {
     class_addMethod(window.class, selector, imp_implementationWithBlock(^NSImage *(__unused id self) { return corner_mask(); }), method_getTypeEncoding(inherited));
 }
 
+// The panel is an overlay, as Spotlight is: a non-activating NSPanel takes the keyboard without
+// activating Sushi, so macOS neither leaves a full-screen app's Space nor brings Sushi forward,
+// and the app underneath keeps being the one the user returns to.
+@interface SushiPanel : NSPanel
+@end
+
+@implementation SushiPanel
+- (BOOL)canBecomeKeyWindow { return YES; }
+@end
+
+// Tao creates the window as its own NSWindow subclass. NSPanel adds no instance variables, so
+// the window becomes a panel in place, the way tauri-nspanel converts Tauri windows; tao's
+// own state stays where it was allocated.
+static NSPanel *as_panel(NSWindow *window) {
+    if (![window isKindOfClass:NSPanel.class]) {
+        if (class_getInstanceSize(NSPanel.class) != class_getInstanceSize(NSWindow.class)) return nil;
+        object_setClass(window, SushiPanel.class);
+    }
+    return (NSPanel *)window;
+}
+
 void sushi_prepare_window(void *native) {
     NSWindow *window = (__bridge NSWindow *)native;
+    NSPanel *panel = as_panel(window);
+    if (panel) {
+        panel.styleMask |= NSWindowStyleMaskNonactivatingPanel;
+        panel.hidesOnDeactivate = NO;
+        panel.becomesKeyOnlyIfNeeded = NO;
+    }
     static id resized;
     if (!resized) {
         resized = [NSNotificationCenter.defaultCenter addObserverForName:NSWindowDidResizeNotification object:window queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
@@ -120,17 +147,26 @@ void sushi_prepare_window(void *native) {
     // Borderless windows have no shadow unless asked for one.
     window.hasShadow = YES;
     tint_glass(window, 40);
+    // Shown on the Space the user is in, full screen included; Mission Control leaves it out
+    // (transient) and window cycling skips it.
     NSWindowCollectionBehavior behavior = window.collectionBehavior;
-    behavior &= ~(NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorFullScreenNone);
-    window.collectionBehavior = behavior | NSWindowCollectionBehaviorMoveToActiveSpace | NSWindowCollectionBehaviorFullScreenAuxiliary;
+    behavior &= ~(NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorFullScreenNone |
+                  NSWindowCollectionBehaviorManaged | NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorParticipatesInCycle);
+    window.collectionBehavior = behavior | NSWindowCollectionBehaviorMoveToActiveSpace | NSWindowCollectionBehaviorFullScreenAuxiliary |
+                                NSWindowCollectionBehaviorTransient | NSWindowCollectionBehaviorIgnoresCycle;
 }
 
 void sushi_refresh_shadow(void *native) {
     refresh_shadow((__bridge NSWindow *)native);
 }
 
-void sushi_activate(void) {
-    [NSApp activateIgnoringOtherApps:YES];
+// Brings the panel up and gives it the keyboard without activating Sushi. A window that could
+// not become a panel falls back to activating the app, as before.
+void sushi_present(void *native) {
+    NSWindow *window = (__bridge NSWindow *)native;
+    [window orderFrontRegardless];
+    [window makeKeyWindow];
+    if (![window isKindOfClass:NSPanel.class]) [NSApp activateIgnoringOtherApps:YES];
 }
 
 void sushi_restore_frontmost(void) {

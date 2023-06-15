@@ -22,7 +22,7 @@ extern "C" {
     fn sushi_remember_frontmost();
     fn sushi_prepare_window(window: *mut std::ffi::c_void);
     fn sushi_refresh_shadow(window: *mut std::ffi::c_void);
-    fn sushi_activate();
+    fn sushi_present(window: *mut std::ffi::c_void);
     fn sushi_restore_frontmost();
     fn sushi_is_active() -> bool;
     fn sushi_copy(bytes: *const u8, count: usize) -> bool;
@@ -59,26 +59,29 @@ fn startup_notes(state: State<'_, StartupNotes>) -> Option<String> {
     (!notes.is_empty()).then(|| notes.join(" "))
 }
 
-// Dispatch window and NSApplication calls together so that focus capture precedes activation.
+// Dispatch window and NSApplication calls together so that focus capture precedes showing.
+// The panel takes the keyboard without activating Sushi: no Space switch, and the app
+// underneath stays frontmost (SUSI-2).
 fn show_launcher(app: &AppHandle, toggle: bool) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Some(window) = handle.get_webview_window("main") {
-            if toggle && unsafe { sushi_is_active() } && window.is_focused().unwrap_or(false) {
+            if toggle
+                && window.is_visible().unwrap_or(false)
+                && window.is_focused().unwrap_or(false)
+            {
                 let _ = hide(&handle);
                 return;
             }
             unsafe { sushi_remember_frontmost() };
-            let native = window.ns_window().ok();
-            if let Some(native) = native {
-                unsafe { sushi_prepare_window(native) };
-            }
-            let _ = window.unminimize();
+            let Ok(native) = window.ns_window() else {
+                return;
+            };
+            unsafe { sushi_prepare_window(native) };
             let _ = window.show();
-            unsafe { sushi_activate() };
-            let _ = window.set_focus();
-            if let Some(native) = native {
-                unsafe { sushi_refresh_shadow(native) };
+            unsafe {
+                sushi_present(native);
+                sushi_refresh_shadow(native);
             }
             let _ = window.emit("launcher-shown", ());
         }
