@@ -43,7 +43,7 @@ Run commands from the repository root. In a fresh checkout install the dependenc
 | A change to the instruction, the model or its call | `npm run test:local` | The browser scenario and the Rust tests, including a real Russian edit through an already running Ollama. If the server is off, the test says so. |
 | Everything the pre-push hook and ci check | `make verify` | `tsc`, `cargo fmt --check`, `cargo clippy -D warnings`, `npm test`, the Rust tests, the release helper tests, `cue vet` of `.github/settings.json` and `actionlint`. |
 | A change to packaging or preparing a build | `make dist`, then `codesign --verify --deep --strict src-tauri/target/release/bundle/macos/Sushi.app` | The bundle, `artifacts/sushi_<version>_darwin-arm64.zip`, `checksums.txt` and the cask for those bytes, as `cd` builds them, without launching the app or publishing anything. |
-| The hotkey, Space, dictation or returning focus | `npm run app` inside a separate macOS graphical session | Open a test document in the source app, invoke Sushi, type a known phrase, copy and paste it back. Check the text and the app that received focus. |
+| The hotkey, Space, dictation or returning focus | `npm run app` inside a separate macOS graphical session | The [regression scenarios](docs/specs/panel.md#regression-scenarios) of the panel: full screen, dictation, focus after hiding, a click elsewhere, Mission Control. Add a row to its runs with the build and the result. |
 
 ### Background capture of the real window
 

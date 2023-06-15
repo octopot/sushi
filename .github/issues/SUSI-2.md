@@ -52,12 +52,28 @@ The panel is an overlay on the Space the user is in, like Spotlight. Caps Lock s
 
 - [ ] Over an app in full screen, Caps Lock shows the panel on top of it with no Space animation; the app stays in full screen behind the panel.
 - [ ] Esc, Caps Lock, ⌘↵ and ⇧⌘↵ hide the panel and keyboard focus is back in the full-screen app on the same Space; after ⌘↵, ⌘V pastes the prompt there.
+- [ ] A click in another app, another window or on the desktop hides the panel, as Spotlight and Raycast do; focus stays where the user clicked, and the draft is kept.
 - [ ] The same on a desktop Space, on a second display (the panel shows on the display the user works on), and with Stage Manager on.
 - [ ] Mission Control and App Exposé do not show the panel, whether it is open or hidden.
 - [ ] Everything inside the panel works as before: typing and IME, dictation into the editor and the action field, ⌘K, ⌘L, ⌘← ⌘→, ⌘C ⌘V ⌘X ⌘Z ⇧⌘Z ⌘A, the right-click menu, the glass and its shadow.
+- [ ] Dictation tools see the panel's text field: MacWhisper shows its recording bubble while the panel is open, as it does over Raycast, and the text lands in the editor.
 - [ ] Showing the panel from the menu bar menu (**Show Sushi**) behaves the same way.
-- [ ] Checked in a separate macOS session or on a separate Mac, as AGENTS.md asks for keys, Spaces and focus; the steps of the PoC are the check, written down with the result.
+- [ ] Checked by hand, as AGENTS.md asks for keys, Spaces and focus. The checks become regression scenarios in `docs/specs/panel.md`, each run written down with its date, build and result.
 
 ## Out of scope
 
-What happens on a click outside the panel or on a switch to another Space while it is open: today the panel stays until hidden, and changing that is a separate decision. The key that shows the panel (SUSI-1), the panel's size and position.
+The key that shows the panel (SUSI-1), the panel's size and position. Placing MacWhisper's bubble at the caret: over Raycast it also shows at the top left of the screen.
+
+<!-- 2026-11-19T14:00Z
+Checked by hand on macOS 27 with the build of 30f8f36, a full-screen terminal underneath:
+
+| Check | Result |
+| --- | --- |
+| Caps Lock over a full-screen app | Works: the panel shows on top, no Space switch. |
+| Dictation with MacWhisper | Text lands in the editor. In the first run MacWhisper showed no recording bubble, so dictation looked broken while it worked; in a recorded rerun the bubble showed 3 times of 3, at the top left, where it shows over Raycast too. |
+| Esc and ⌘↵ return focus | Works. A click in another app does not hide the panel, while Raycast and Spotlight hide: now a criterion. |
+| Mission Control | Works: the panel is not listed. |
+| Second display, Stage Manager | Not checked: no second display at hand. |
+
+The recording, taken every 0.3 s: with Raycast and with Sushi open, the frontmost app stays the terminal and the accessibility focus moves to the panel's app. Raycast's window sits at level 8, Sushi's at 0.
+-->

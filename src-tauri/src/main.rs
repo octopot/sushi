@@ -279,11 +279,17 @@ fn main() {
             }
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
+        .on_window_event(|window, event| match event {
+            WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _ = hide(window.app_handle());
             }
+            // As with Spotlight, a click in another app or on the desktop hides the panel;
+            // focus stays where the user clicked (SUSI-2).
+            WindowEvent::Focused(false) if window.is_visible().unwrap_or(false) => {
+                let _ = hide(window.app_handle());
+            }
+            _ => (),
         })
         .invoke_handler(tauri::generate_handler![
             hide_launcher,
