@@ -14,6 +14,7 @@ Sushi is a local prompt composer for macOS with an icon in the menu bar. Caps Lo
 | Library sections, Tab, the T/P/D sequences and 1–9 | [src/library.ts](src/library.ts). |
 | ⌘K actions, starting and cancelling an edit, the hint above the bottom line, keys, the draft in `localStorage` | [src/main.ts](src/main.ts) ties together the editor, the palettes and the Tauri commands. |
 | Window look, keycaps, colors on glass | [src/style.css](src/style.css), markup in [index.html](index.html), icons in [src/icons.ts](src/icons.ts). |
+| A command's arguments or reply, an event between Rust and the page | [src/ipc.ts](src/ipc.ts) — the command and event map; replies and payload types come from `src/bindings/`, generated from Rust by [src-tauri/src/bindings.rs](src-tauri/src/bindings.rs). After changing a Rust type or a command's return type run `make bindings`, then fix what `tsc` reports in `src/` and in [docs/demo/shim.ts](docs/demo/shim.ts). |
 | Edit quality and speed, warm-up and cancelling the model request | [src-tauri/src/rewrite.rs](src-tauri/src/rewrite.rs) — finding and starting Ollama, the local model check, the system instruction, the Ollama call. |
 | Reading Markdown, template titles, choosing the Tuna folder | [src-tauri/src/library.rs](src-tauri/src/library.rs). For a separate library set `SUSHI_LIBRARY_DIR`. |
 | Action and dictionary files | [src-tauri/src/settings.rs](src-tauri/src/settings.rs), [examples and CUE schemas](docs/specs/local-files.md). |

@@ -11,8 +11,9 @@ on:
       # docs/specs/examples/** too: the panel's settings and saved prompts
       - 'docs/**'
       # the landing page embeds the panel, built by docs/demo from the app's
-      # index.html and src/, compiled with its tsconfig.json; the build stops
-      # when the app's package.json dependencies differ from docs/package.json
+      # index.html and src/ (ci type-checks its stub against src/ipc.ts); the
+      # build stops when the app's package.json dependencies differ from
+      # docs/package.json
       - 'index.html'
       - 'package.json'
       - 'src/**'
@@ -28,8 +29,9 @@ on:
       # docs/specs/examples/** too: the panel's settings and saved prompts
       - 'docs/**'
       # the landing page embeds the panel, built by docs/demo from the app's
-      # index.html and src/, compiled with its tsconfig.json; the build stops
-      # when the app's package.json dependencies differ from docs/package.json
+      # index.html and src/ (ci type-checks its stub against src/ipc.ts); the
+      # build stops when the app's package.json dependencies differ from
+      # docs/package.json
       - 'index.html'
       - 'package.json'
       - 'src/**'

@@ -15,6 +15,8 @@ on:
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
       - 'docs/specs/files.cue'
+      # the site's demo stub is type-checked against src/ipc.ts
+      - 'docs/demo/**'
       - 'src-tauri/**'
       - 'tests/**'
       - 'package.json'
@@ -36,6 +38,8 @@ on:
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
       - 'docs/specs/files.cue'
+      # the site's demo stub is type-checked against src/ipc.ts
+      - 'docs/demo/**'
       - 'src-tauri/**'
       - 'tests/**'
       - 'package.json'

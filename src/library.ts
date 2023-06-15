@@ -2,9 +2,10 @@ import { Palette, type Item, type Row } from './palette'
 import { rank } from './fuzzy'
 import { el, keys } from './icons'
 
-export type Kind = 'templates' | 'documents'
-export interface Entry { name: string; title?: string; updatedAt?: number | null }
-export interface Term { from: string; to: string }
+import type { Entry } from './bindings/Entry'
+import type { Kind } from './bindings/Kind'
+import type { Term } from './bindings/Term'
+export type { Entry, Kind, Term }
 export interface LibrarySource {
   list: (kind: Kind) => Promise<Entry[]>
   terms: () => Promise<Term[]>

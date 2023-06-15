@@ -48,6 +48,7 @@ setup: git-hooks deps
 
 lint:
 	$(AT) npx --no-install tsc --noEmit
+	$(AT) npx --no-install tsc --noEmit -p docs/demo
 	$(AT) cargo fmt $(MANIFEST) --check
 	$(AT) cargo clippy $(MANIFEST) --release --all-targets -- -D warnings
 .PHONY: lint
@@ -57,6 +58,11 @@ test:
 	$(AT) npm test
 	$(AT) cargo test $(MANIFEST) --release
 .PHONY: test
+
+# src/bindings/ from the Rust types the commands return; the Rust tests fail while it is stale.
+bindings:
+	$(AT) SUSHI_WRITE_BINDINGS=1 cargo test $(MANIFEST) --release bindings::
+.PHONY: bindings
 
 release-helpers-test:
 	$(AT) node --test .github/scripts/*.test.mjs

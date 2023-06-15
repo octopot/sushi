@@ -12,9 +12,9 @@ const hour = 3_600_000
 const library = {
   // As library_list returns them: sorted by file name.
   templates: [
-    { name: 'bug-report', title: 'Bug report' },
-    { name: 'release-review', title: 'Release review' },
-    { name: 'task-brief', title: 'Task brief' },
+    { name: 'bug-report', title: 'Bug report', updatedAt: null },
+    { name: 'release-review', title: 'Release review', updatedAt: null },
+    { name: 'task-brief', title: 'Task brief', updatedAt: null },
   ],
   documents: [
     { name: 'Release notes 2.4', ago: 26 * hour },
@@ -100,7 +100,8 @@ test('Sushi composer', async t => {
             case 'rewrite':
               state.requests.push(args)
               if (state.failure) throw state.failure
-              // The app answers with the edit and the model that made it; a test may queue either.
+              // The app answers with an Edit (src/bindings/Edit.ts); a string is queued as its text,
+              // any other value goes back as it is, to test replies that break the contract.
               const answer = reply => typeof reply === 'string' ? { text: reply, model: args.local ? 'qwen3.5:4b-mlx' : state.model ?? 'qwen3.5:4b-mlx' } : reply
               if (state.delay) return new Promise(resolve => { state.finish = reply => resolve(answer(reply)) })
               if (state.failures?.length && !args.local) throw state.failures.shift()
@@ -376,6 +377,19 @@ test('Sushi composer', async t => {
     await page.locator('#hint', { hasText: 'No changes' }).waitFor()
     await page.keyboard.insertText(' Now.')
     assert.equal(await hint(page).textContent(), '', 'typing clears it')
+  })
+
+  await t.test('a reply without text is an error, never the word "undefined" in the prompt', async t => {
+    // The site's stub kept answering with a bare string after the app began to expect { text, model }.
+    const page = await start(t)
+    await page.keyboard.insertText(shortened)
+    await page.evaluate(() => { window.fixture.replies.push({ model: 'qwen3.5:4b-mlx' }) })
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await actionsInput(page).press('Enter')
+    await page.locator('#hint', { hasText: 'The edit came back without text.' }).waitFor()
+    assert.equal(await page.locator('.cm-content').textContent(), shortened)
+    assert.equal(await page.locator('.cm-diff-ins, .cm-diff-del').count(), 0)
   })
 
   await t.test('pasting a spoken rule name runs it; typing never does', async t => {

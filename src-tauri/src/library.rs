@@ -9,15 +9,26 @@ use std::{
 use tauri::{AppHandle, Manager};
 
 #[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
     title: Option<String>,
     updated_at: Option<u64>,
 }
 
-fn directory(app: &AppHandle, kind: Option<String>) -> Result<PathBuf, String> {
+/// A library collection: the prompts in the folder itself, or the templates in its `.templates`.
+#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    Documents,
+    Templates,
+}
+
+fn directory(app: &AppHandle, kind: Kind) -> Result<PathBuf, String> {
     let base = if let Some(path) = env::var_os("SUSHI_LIBRARY_DIR").filter(|p| !p.is_empty()) {
         PathBuf::from(path)
     } else {
@@ -34,11 +45,10 @@ fn directory(app: &AppHandle, kind: Option<String>) -> Result<PathBuf, String> {
             Err(err) => return Err(format!("Could not read library-path.txt: {err}")),
         }
     };
-    match kind.as_deref().unwrap_or("documents") {
-        "documents" => Ok(base),
-        "templates" => Ok(base.join(".templates")),
-        _ => Err("Unknown library collection.".into()),
-    }
+    Ok(match kind {
+        Kind::Documents => base,
+        Kind::Templates => base.join(".templates"),
+    })
 }
 
 fn list(dir: &Path, templates: bool) -> io::Result<Vec<Entry>> {
@@ -218,8 +228,8 @@ fn section(text: &str, templates: bool) -> io::Result<&str> {
 }
 
 #[tauri::command]
-pub async fn library_list(app: AppHandle, kind: Option<String>) -> Result<Vec<Entry>, String> {
-    let templates = kind.as_deref() == Some("templates");
+pub async fn library_list(app: AppHandle, kind: Kind) -> Result<Vec<Entry>, String> {
+    let templates = kind == Kind::Templates;
     let dir = directory(&app, kind)?;
     if templates {
         ensure_templates(&dir).map_err(|e| e.to_string())?;
@@ -228,12 +238,8 @@ pub async fn library_list(app: AppHandle, kind: Option<String>) -> Result<Vec<En
 }
 
 #[tauri::command]
-pub async fn library_read(
-    app: AppHandle,
-    kind: Option<String>,
-    name: String,
-) -> Result<String, String> {
-    let templates = kind.as_deref() == Some("templates");
+pub async fn library_read(app: AppHandle, kind: Kind, name: String) -> Result<String, String> {
+    let templates = kind == Kind::Templates;
     let text = read(&directory(&app, kind)?, &name)
         .map_err(|e| format!("Could not read '{name}': {e}"))?;
     section(&text, templates)

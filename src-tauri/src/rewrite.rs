@@ -365,6 +365,7 @@ fn settings_dir(app: &AppHandle) -> Result<PathBuf, String> {
 
 /// An edit and the model that made it, as the hint names it (MD-8).
 #[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
 pub struct Edit {
     text: String,
     model: String,

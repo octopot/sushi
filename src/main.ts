@@ -1,17 +1,14 @@
-import { invoke, isTauri } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
+import { isTauri } from '@tauri-apps/api/core'
 import shipped from '../docs/specs/examples/rules.json'
 import './style.css'
 import { Chain, type Version } from './history'
 import { changedPlaces, createEditor } from './editor'
 import { Palette, type Row } from './palette'
-import { Library, type Entry, type Kind, type Term } from './library'
+import { Library, type Entry, type Kind } from './library'
 import { instructionFirst, phrase, rank } from './fuzzy'
 import { el, icon, keys } from './icons'
+import { call, on, type Edit, type Rule, type Settings } from './ipc'
 
-/** A model edit (`instruction`) or a local edit that prepends `prefix` to the whole prompt. */
-interface Rule { id: string; name: string; instruction?: string; prefix?: string; aliases: string[] }
-interface Settings { rules: Rule[]; terms: Term[] }
 
 // Dictation tools post-process text themselves; flip to re-enable dictionary replacement on paste.
 const APPLY_DICTIONARY = false
@@ -68,7 +65,7 @@ let settings: Settings = { rules: desktop ? [] : shipped.rules, terms: [] }
 async function loadSettings(): Promise<Settings> {
   if (!desktop) return settings
   try {
-    settings = await invoke<Settings>('settings_load')
+    settings = await call('settings_load')
     settingsError = ''
   } catch (e) {
     settingsError = message(e)
@@ -159,8 +156,8 @@ function actionable(text: string, done: (message: string) => void): (Node | stri
   button.addEventListener('mousedown', event => event.preventDefault())
   button.addEventListener('click', async () => {
     try {
-      if (download) return await invoke('ollama_download')
-      await (desktop ? invoke('copy_text', { text: phrase }) : navigator.clipboard.writeText(phrase))
+      if (download) return await call('ollama_download')
+      await (desktop ? call('copy_text', { text: phrase }) : navigator.clipboard.writeText(phrase))
       done('Copied. Run it in Terminal, then try again.')
     } catch (e) { fail(e) }
   })
@@ -282,7 +279,7 @@ function openActions() {
   const ticket = ++warming
   const note = (...parts: (Node | string)[]) => actions.footer.replaceChildren(...parts.length ? [el('span', 'note', ...parts)] : [])
   note()
-  if (desktop) invoke<string | null>('warm_model')
+  if (desktop) call('warm_model')
     .then(text => {
       if (ticket !== warming || !actions.isOpen) return
       if (!text) return note()
@@ -337,16 +334,18 @@ async function rewrite(instruction: string, label: string, local = false) {
   editor.lock({ from, to })
   update()
   const started = performance.now()
-  let raw: { text: string; model: string }
+  let raw: Edit
   try {
-    raw = await invoke<{ text: string; model: string }>('rewrite', { instruction, text, requestId: id, local })
+    raw = await call('rewrite', { instruction, text, requestId: id, local })
   } catch (e) {
     if (busy?.id === id) { retry = { instruction, label, from, to, text }; settle(); fail(e) }
     return
   }
   if (busy?.id !== id) return
   settle(false)
-  const reply = String(raw.text).replace(/\r\n?/g, '\n').trim()
+  // A reply of another shape is a broken contract, never text: String() would turn it into "undefined".
+  if (typeof raw?.text !== 'string') return settle(), fail(new Error('The edit came back without text.'))
+  const reply = raw.text.replace(/\r\n?/g, '\n').trim()
   if (!reply) return settle(), fail(new Error('The model returned an empty edit.'))
   const lead = /^\s*/u.exec(text)![0], trail = /\s*$/u.exec(text)![0]
   if (chain.apply(full.slice(0, from) + lead + reply + trail + full.slice(to), label)) {
@@ -370,19 +369,19 @@ function cancel() {
   if (!busy) return
   const { id } = busy
   settle()
-  invoke('cancel_rewrite', { requestId: id }).catch(fail)
+  call('cancel_rewrite', { requestId: id }).catch(fail)
 }
 
 // ——— Library (⌘L) ———
 
 let reading = 0
 const library = new Library(windowRoot, {
-  list: kind => desktop ? invoke<Entry[]>('library_list', { kind }) : Promise.resolve([]),
+  list: kind => desktop ? call('library_list', { kind }) : Promise.resolve([]),
   terms: async () => (await loadSettings()).terms,
   async open(kind: Kind, entry: Entry) {
     const ticket = ++reading
     try {
-      let text = (await invoke<string>('library_read', { kind, name: entry.name })).replace(/\r\n?/g, '\n')
+      let text = (await call('library_read', { kind, name: entry.name })).replace(/\r\n?/g, '\n')
       if (kind === 'templates') text = text.replace(/^(?:[ \t]*\n)+/, '')
       if (ticket !== reading || !library.isOpen) return
       chain.open(text)
@@ -392,7 +391,7 @@ const library = new Library(windowRoot, {
       show(blank ? blank.index : text.length)
     } catch (e) { fail(e) }
   },
-  openDictionary: () => { invoke('dictionary_open').catch(fail) },
+  openDictionary: () => { call('dictionary_open').catch(fail) },
   onClose: closed,
 })
 
@@ -424,7 +423,7 @@ function closed() {
 async function hide(copied = false) {
   // Hiding without a copy means the user kept this prompt: the next launch must not select it again.
   chain.copied = copied
-  if (save(true) && desktop) await invoke('hide_launcher').catch(fail)
+  if (save(true) && desktop) await call('hide_launcher').catch(fail)
 }
 
 /** Copies the whole prompt. A copy on a diff accepts the edit; `clear` then starts an empty prompt. */
@@ -434,7 +433,7 @@ async function copy(clear = false) {
   library.close()
   error = ''
   try {
-    if (desktop) await invoke('copy_text', { text: chain.text })
+    if (desktop) await call('copy_text', { text: chain.text })
     else await navigator.clipboard.writeText(chain.text)
   } catch (e) { return fail(e) }
   if (clear) chain.reset('')
@@ -512,11 +511,11 @@ editor.focus()
 selectAfterCopy(false)
 if (desktop) {
   void loadSettings()
-  void listen('launcher-shown', () => {
+  void on('launcher-shown', () => {
     selectAfterCopy(true)
     refocus()
     void loadSettings()
   })
-  invoke<string | null>('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
-  void listen<string>('startup-notes', event => fail(event.payload))
+  call('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
+  void on('startup-notes', fail)
 }

@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod bindings;
 mod hotkey;
 mod library;
 mod migrate;

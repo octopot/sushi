@@ -12,20 +12,24 @@ const RULES: &str = include_str!("../../docs/specs/examples/rules.json");
 const DICTIONARY: &str = include_str!("../../docs/specs/examples/dictionary.json");
 
 #[derive(Deserialize, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
     id: String,
     name: String,
     /// A model edit. Exactly one of `instruction` and `prefix` is present.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
     instruction: Option<String>,
     /// A local edit that prepends this text to the whole prompt, kept verbatim (it may end with a space).
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
     prefix: Option<String>,
     aliases: Vec<String>,
 }
 
 #[derive(Deserialize, Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(deny_unknown_fields)]
 pub struct Term {
     from: String,
@@ -44,6 +48,7 @@ struct Dictionary {
 }
 
 #[derive(Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
 pub struct Settings {
     rules: Vec<Rule>,
     terms: Vec<Term>,

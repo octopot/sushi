@@ -9,8 +9,15 @@ import taskBrief from '../specs/examples/task-brief.md?raw'
 import bugReport from '../specs/examples/bug-report.md?raw'
 import releaseReview from '../specs/examples/release-review.md?raw'
 import { answer } from './answers'
+import type { Commands, Events } from '../../src/ipc'
 
-type Detail = { type: string; [key: string]: unknown }
+/** What the panel tells the page around it (docs/components/stage.jsx), by `type`. */
+type Detail =
+  | { type: 'ready' } | { type: 'interact' } | { type: 'hide' }
+  | { type: 'notice'; text: string }
+  | { type: 'copy'; text: string; tour: boolean }
+  | { type: 'rewrite'; instruction: string }
+  | ReturnType<typeof snapshot>
 const emit = (detail: Detail) => window.frameElement?.dispatchEvent(new CustomEvent('sushi', { detail }))
 
 // Every visit starts with an empty prompt; the visitor's draft lives only as long as the page.
@@ -61,50 +68,59 @@ const documents: Record<string, { ago: number; text: string }> = {
   'Review onboarding copy': { ago: 9 * 24 * hour, text: 'Read the onboarding screens and list every sentence longer than 20 words.\nSuggest a shorter version for each, without changing the steps.' },
 }
 const callbacks: ((payload: unknown) => void)[] = []
-const listeners: Record<string, (payload: unknown) => void> = {}
+const listeners: Partial<Record<keyof Events, (message: unknown) => void>> = {}
+/** Delivers an event from the native side, with the payload src/ipc.ts declares for it. */
+/** Every event of src/ipc.ts; one the page listens for but the demo never sends stops it here. */
+const events: string[] = Object.keys({ 'launcher-shown': true, 'startup-notes': true } satisfies Record<keyof Events, true>)
+const fire = <K extends keyof Events>(event: K, payload: Events[K]) => listeners[event]?.({ event, payload })
 const pending = new Map<string, () => void>()
+
+/** The model the demo's hint names: the one the app runs locally by default. */
+const model = 'qwen3.5:4b-mlx'
+type Handlers = { [K in keyof Commands]: (args: Commands[K]['args']) => Commands[K]['reply'] | Promise<Commands[K]['reply']> }
+// Typed against src/ipc.ts: `npm run build` type-checks this file, so a reply the app reads differently fails there.
+const commands: Handlers = {
+  settings_load: () => ({ rules, terms: dictionary.terms }),
+  startup_notes: () => null,
+  warm_model: () => null,
+  ollama_download: () => (emit({ type: 'notice', text: 'In the app, this opens the Ollama download page in your browser.' }), null),
+  async copy_text({ text }) {
+    // Only a copy the visitor asked for reaches the real clipboard; the tour never does.
+    if (!tour) await navigator.clipboard?.writeText(text).catch(() => {})
+    emit({ type: 'copy', text, tour })
+    return null
+  },
+  hide_launcher: () => (emit({ type: 'hide' }), null),
+  rewrite({ instruction, text, requestId }) {
+    const { reply, known } = answer(instruction, text, rules)
+    if (!known) emit({ type: 'notice', text: 'The demo knows a few instructions. In the app, every instruction goes to the local model.' })
+    emit({ type: 'rewrite', instruction })
+    const wait = speed * Math.min(2200, 650 + text.length * 6)
+    return new Promise(resolve => {
+      const timer = setTimeout(() => { pending.delete(requestId); resolve({ text: reply, model }) }, wait)
+      pending.set(requestId, () => clearTimeout(timer))
+    })
+  },
+  cancel_rewrite({ requestId }) { pending.get(requestId)?.(); pending.delete(requestId); return null },
+  library_list: ({ kind }) => kind === 'templates'
+    ? Object.entries(templates).map(([name, text]) => ({ name, title: title(text), updatedAt: null }))
+    : Object.entries(documents).map(([name, { ago }]) => ({ name, updatedAt: Date.now() - ago })),
+  library_read: ({ kind, name }) => kind === 'templates' ? body(templates[name] ?? '') : documents[name]?.text ?? '',
+  dictionary_open: () => (emit({ type: 'notice', text: 'In the app, this opens dictionary.json in your text editor.' }), null),
+}
 
 declare global { interface Window { isTauri?: boolean; __TAURI_INTERNALS__?: unknown; sushiDemo?: typeof api } }
 window.isTauri = true
 window.__TAURI_INTERNALS__ = {
   transformCallback: (callback: (payload: unknown) => void) => callbacks.push(callback),
   async invoke(command: string, args: Record<string, any> = {}) {
-    switch (command) {
-      case 'settings_load': return { rules, terms: dictionary.terms }
-      case 'startup_notes': return null
-      case 'warm_model': return
-      case 'ollama_download':
-        emit({ type: 'notice', text: 'In the app, this opens the Ollama download page in your browser.' })
-        return
-      case 'copy_text':
-        // Only a copy the visitor asked for reaches the real clipboard; the tour never does.
-        if (!tour) await navigator.clipboard?.writeText(args.text).catch(() => {})
-        emit({ type: 'copy', text: args.text, tour })
-        return
-      case 'hide_launcher': emit({ type: 'hide' }); return
-      case 'rewrite': {
-        const { reply, known } = answer(args.instruction, args.text, rules)
-        if (!known) emit({ type: 'notice', text: 'The demo knows a few instructions. In the app, every instruction goes to the local model.' })
-        emit({ type: 'rewrite', instruction: args.instruction })
-        const wait = speed * Math.min(2200, 650 + args.text.length * 6)
-        return new Promise(resolve => {
-          const timer = setTimeout(() => { pending.delete(args.requestId); resolve(reply) }, wait)
-          pending.set(args.requestId, () => clearTimeout(timer))
-        })
-      }
-      case 'cancel_rewrite': pending.get(args.requestId)?.(); pending.delete(args.requestId); return
-      case 'library_list':
-        return args.kind === 'templates'
-          ? Object.entries(templates).map(([name, text]) => ({ name, title: title(text) }))
-          : Object.entries(documents).map(([name, { ago }]) => ({ name, updatedAt: Date.now() - ago }))
-      case 'library_read':
-        return args.kind === 'templates' ? body(templates[args.name] ?? '') : documents[args.name]?.text ?? ''
-      case 'dictionary_open':
-        emit({ type: 'notice', text: 'In the app, this opens dictionary.json in your text editor.' })
-        return
-      case 'plugin:event|listen': listeners[args.event] = callbacks[args.handler - 1]; return 1
-      default: throw new Error('Unexpected IPC call: ' + command)
+    if (command === 'plugin:event|listen') {
+      if (!events.includes(args.event)) throw new Error('Unexpected event: ' + args.event)
+      listeners[args.event as keyof Events] = callbacks[args.handler - 1]
+      return 1
     }
+    if (!Object.hasOwn(commands, command)) throw new Error('Unexpected IPC call: ' + command)
+    return (commands[command as keyof Commands] as (args: unknown) => unknown)(args)
   },
 }
 /** 1 is real time for the canned rewrites; reduced motion and tests can make them instant. */
@@ -147,7 +163,7 @@ const openPalette = () => document.querySelector<HTMLElement>('.palette:not([hid
 function snapshot() {
   const palette = openPalette()
   return {
-    type: 'state',
+    type: 'state' as const,
     text: view().state.doc.toString(),
     selection: !view().state.selection.main.empty,
     canBack: !document.getElementById('previous')!.hidden,
@@ -173,7 +189,7 @@ const api = {
   setSpeed(value: number) { speed = value },
   state: snapshot,
   /** The launcher was shown again, as after Caps Lock: the app selects a copied prompt. */
-  show() { listeners['launcher-shown']?.({ event: 'launcher-shown', payload: null }); report() },
+  show() { fire('launcher-shown', null); report() },
   focus() { if (!openPalette()) view().focus() },
   /** A key as the app receives it; ⌘ by default. */
   key(code: string, { meta = true, shift = false } = {}) {

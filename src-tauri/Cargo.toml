@@ -19,3 +19,6 @@ tempfile = "3"
 libc = "0.2"
 reqwest = { version = "0.13", default-features = false, features = ["json", "native-tls"] }
 tokio = { version = "1", features = ["macros", "time", "sync"] }
+
+[dev-dependencies]
+ts-rs = { version = "12", features = ["serde-compat"] }
