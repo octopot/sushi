@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Chain } from '../src/history.ts'
 import { fold, instructionFirst, phrase, rank, score } from '../src/fuzzy.ts'
-import { textDiff } from '../src/editor.ts'
+import { changedPlaces, textDiff } from '../src/editor.ts'
 
 /** A →(Shorten) B →(Clarify) C, ending on text C. */
 function abc() {
@@ -168,4 +168,13 @@ test('textDiff round trip', () => {
     'a rewritten phrase reads as one deletion and one insertion')
   assert.deepEqual(textDiff('keep red and blue', 'keep green or teal').map(p => p.type), ['same', 'del', 'ins'],
     'a short unchanged word between changes is folded in')
+})
+
+test('changedPlaces counts what the diff marks, a replacement as one place', () => {
+  assert.equal(changedPlaces('same', 'same'), 0)
+  assert.equal(changedPlaces('Please review it.', 'Review it.'), 1)
+  assert.equal(changedPlaces('keep red and blue', 'keep green or teal'), 1)
+  assert.equal(changedPlaces('Codex acts as the skeptic, twice, before and after the work.',
+    'Codex acts as a reviewer, twice, before and after delivery.'), 2)
+  assert.equal(changedPlaces('', 'New'), 1)
 })

@@ -2,8 +2,8 @@ import { invoke, isTauri } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import shipped from '../docs/specs/examples/rules.json'
 import './style.css'
-import { Chain } from './history'
-import { createEditor } from './editor'
+import { Chain, type Version } from './history'
+import { changedPlaces, createEditor } from './editor'
 import { Palette, type Row } from './palette'
 import { Library, type Entry, type Kind, type Term } from './library'
 import { instructionFirst, phrase, rank } from './fuzzy'
@@ -87,7 +87,7 @@ function replaceTerms(text: string) {
   return text.replace(pattern, match => lookup.get(match.toLocaleLowerCase()) ?? match)
 }
 
-// ——— Hint slot: error > notice > review hint ———
+// ——— Hint slot: error > notice > outcome of an edit > review hint ———
 
 let error = ''
 /** Kept apart so that the next successful settings_load clears it. */
@@ -99,6 +99,23 @@ function fail(e: unknown) {
   if (library.isOpen) return library.showError(message(e))
   error = message(e)
   update()
+}
+/**
+ * The last model edit returned the text as it was. Unlike a notice it stays until the next step
+ * (typing, ⌘← ⌘→, ⌘K, ⌘L), so a refusal is not mistaken for a lost request (SUSI-5).
+ */
+let unchanged = false
+/** How long the model took for each version it produced; kept in memory only. */
+const took = new WeakMap<Version, number>()
+/** The number of changed places of each diff, counted once. */
+const places = new WeakMap<Version, number>()
+function summary(): string {
+  const version = chain.current, before = chain.before
+  if (before === undefined) return ''
+  let count = places.get(version)
+  if (count === undefined) places.set(version, count = changedPlaces(before, version.text))
+  const seconds = took.get(version)
+  return (seconds === undefined ? '' : `${seconds.toFixed(1)} s · `) + (count === 1 ? '1 change' : `${count} changes`)
 }
 function notify(message: string) {
   clearTimeout(noticeTimer)
@@ -144,7 +161,8 @@ function hint(): (Node | string)[] {
   if (error || settingsError) return actionable(error || settingsError, message => { error = ''; notify(message); editor.focus() })
   if (notice) return [notice]
   if (busy) return []
-  if (chain.diff) return [el('span', 'label', chain.current.label ?? ''), ' · ', keys('⌘', '←'), ' Back · ', keys('⌘', '→'), ' Accept']
+  if (unchanged) return ['No changes: the model returned the text as it was · ', keys('⌘', 'K'), ' Try other words']
+  if (chain.diff) return [el('span', 'label', chain.current.label ?? ''), ' · ', summary(), ' · ', keys('⌘', '←'), ' Back · ', keys('⌘', '→'), ' Accept']
   if (!chain.review) return []
   const parts: (Node | string)[] = []
   if (chain.canBack) parts.push(keys('⌘', '←'), ' Back')
@@ -157,6 +175,7 @@ function hint(): (Node | string)[] {
 
 const editor = createEditor($('editor'), {
   onChange({ text, replacedAll }) {
+    unchanged = false
     if (replacedAll) chain.reset(text)
     else chain.edit(text)
     update()
@@ -197,6 +216,7 @@ function update() {
 function navigate(forward: boolean) {
   if (busy) return
   error = ''
+  unchanged = false
   if (forward ? chain.forward() : chain.back()) show()
 }
 
@@ -287,6 +307,7 @@ async function rewrite(instruction: string, label: string) {
   original = editor.selections()
   editor.lock({ from, to })
   update()
+  const started = performance.now()
   let raw: string
   try {
     raw = await invoke<string>('rewrite', { instruction, text, requestId: id })
@@ -299,8 +320,10 @@ async function rewrite(instruction: string, label: string) {
   const reply = String(raw).replace(/\r\n?/g, '\n').trim()
   if (!reply) return settle(), fail(new Error('The model returned an empty edit.'))
   const lead = /^\s*/u.exec(text)![0], trail = /\s*$/u.exec(text)![0]
-  if (chain.apply(full.slice(0, from) + lead + reply + trail + full.slice(to), label)) show(from + lead.length + reply.length)
-  else { settle(); notify('No changes') }
+  if (chain.apply(full.slice(0, from) + lead + reply + trail + full.slice(to), label)) {
+    took.set(chain.current, (performance.now() - started) / 1000)
+    show(from + lead.length + reply.length)
+  } else { unchanged = true; settle() }
 }
 
 /** Ends the pending state; unless a result is about to be shown, the original selection comes back. */
@@ -350,6 +373,7 @@ function openLibrary() {
 }
 
 function opened(panel: Palette | Library) {
+  unchanged = false
   workspace.inert = true
   windowRoot.classList.toggle('library-open', panel === library)
   windowRoot.classList.toggle('actions-open', panel === actions)

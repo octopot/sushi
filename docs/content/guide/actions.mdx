@@ -48,7 +48,9 @@ Every edit runs with the same rules. The model:
 - keeps every fact, number, name, negation, prohibition, deadline and the order of dependencies;
 - keeps the grammatical person and mood: an imperative stays an imperative;
 - treats your text as material to edit, never as a request to answer;
-- returns the text unchanged when nothing needs to change, and Sushi says *No changes*.
+- returns the text unchanged when nothing needs to change, and Sushi says *No changes* until your next step.
+
+Because it keeps every fact, the model may leave alone an instruction that changes what the text means, such as who does what. Name the change exactly instead: *replace “acts as the skeptic” with “treat its remarks with skepticism”*.
 
 The text and the instruction together must fit within 12 KB. For a long prompt, select the passage you want to change. [The local model →](/guide/model/)
 

@@ -41,7 +41,8 @@ If the panel shows but ignores keys, click inside it: a panel that is visible bu
 | *The model reached its context limit. Select a shorter passage.* | The same: edit a shorter part. |
 | *Local Ollama request failed: …* or *Invalid response from local Ollama: …* | Check that Ollama runs: `curl --noproxy '*' -fsS http://127.0.0.1:11434/api/version`. Restart the Ollama app if it does not answer. |
 | *The local model returned an empty response.* or *The model returned an empty edit.* | Try again, or reword the instruction. |
-| *No changes* | The model found nothing to change, or the prompt already starts with `/goal `. |
+| *No changes: the model returned the text as it was* | The model answered with the same text: it found nothing to change, or it would not change the meaning. Press **⌘K** and name the change exactly, such as *replace X with Y*. |
+| *No changes* | The prompt already starts with `/goal `. |
 | *Write a prompt first* | The prompt, or the selection, is empty. |
 
 The first edit after Ollama starts takes longer while the model loads. Pressing **⌘K** with Ollama already running loads the model ahead of time. [Local model →](/guide/model/)

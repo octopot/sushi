@@ -23,7 +23,7 @@ Whitespace around the selection stays where it was: the model's answer goes betw
 - The **Action** button in the bottom bar turns into **Rewriting…**; **Esc** or a click on it cancels. Your selection comes back as it was.
 - **Library** and **Copy** wait until the edit is done.
 
-If the model returns the same text, nothing changes and the line above the bar says *No changes*.
+If the model returns the same text, nothing changes and the line above the bar says *No changes: the model returned the text as it was*. It stays until you type or press a key that does something else, so you can tell it from a request still running. Try the edit again in other words, for example *replace X with Y*: a small model may leave a change of meaning alone.
 
 ## Read the diff
 
@@ -32,7 +32,7 @@ The answer appears in your text as a diff:
 - added and changed words on a green background;
 - removed words struck through, just before them.
 
-The line above the bottom bar names the edit and the next steps: **Shorten · ⌘← Back · ⌘→ Accept**. Removed words are only drawn: they are not part of the text, and selecting or copying never picks them up.
+The line above the bottom bar names the edit, how long the model took, how many places changed, and the next steps: **Shorten · 2.6 s · 4 changes · ⌘← Back · ⌘→ Accept**. A count of *1 change* in a long paragraph tells you to look closely. Removed words are only drawn: they are not part of the text, and selecting or copying never picks them up.
 
 ## The version chain
 

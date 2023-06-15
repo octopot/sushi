@@ -33,6 +33,16 @@ export function textDiff(before: string, after: string): DiffPart[] {
   return merge(parts)
 }
 
+/** How many places of `before` the diff marks: a deletion next to an insertion is one place. */
+export function changedPlaces(before: string, after: string): number {
+  let count = 0, inside = false
+  for (const part of textDiff(before, after)) {
+    if (part.type !== 'same' && !inside) count++
+    inside = part.type !== 'same'
+  }
+  return count
+}
+
 /** Changes separated only by whitespace or one short token read better as "old phrase → new phrase". */
 function merge(parts: DiffPart[]): DiffPart[] {
   const result: DiffPart[] = []

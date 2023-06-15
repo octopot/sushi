@@ -18,7 +18,7 @@ Sushi keeps every edit of the prompt in one linear chain of versions. The user w
 - **VH-1. Linear chain.** The chain is a list of versions and an index. A new version is always added right after the current one, and everything that was to the right of the current version is discarded first.
 - **VH-2. Positions.** For A →(Shorten) B →(Clarify) C there are five positions: text A, diff(A, B), text B, diff(B, C), text C. A version opened from the Library and the first version have no diff position.
 - **VH-3. One step at a time.** ⌘← (Back) and ⌘→ (Forward) move exactly one position. Forward from a diff accepts it: the editor shows the text of the same version without marks. Back from a diff shows the text of the previous version. A step past either end does nothing.
-- **VH-4. Inline diff.** On a diff position the editor holds the right-hand text: inserted words are highlighted, deleted words are drawn struck through between them and cannot be edited. The hint line above the bottom bar reads `<label> · ⌘← Back · ⌘→ Accept`.
+- **VH-4. Inline diff.** On a diff position the editor holds the right-hand text: inserted words are highlighted, deleted words are drawn struck through between them and cannot be edited. The hint line above the bottom bar reads `<label> · <time> · <places> · ⌘← Back · ⌘→ Accept`: how long the model took, such as `2.6 s`, and how many places the diff marks, such as `1 change` or `4 changes`, where a deletion next to an insertion is one place. The time is kept in memory only: it is absent for a prefix action (VH-12) and for versions restored after a restart.
 
 ### Copying
 
@@ -30,7 +30,7 @@ Sushi keeps every edit of the prompt in one linear chain of versions. The user w
 
 ### What changes the chain
 
-- **VH-10. An action.** ⌘K opens the actions; a right click opens the system context menu, as anywhere else in macOS. An action targets the selection, or the whole prompt when nothing is selected. On a diff position it targets the right-hand text. The result replaces the target in the full prompt and becomes a new version (VH-1) shown as a diff. If the result equals the current text, the chain does not change and the hint line says `No changes`. With an empty or blank prompt, ⌘K only says `Write a prompt first`.
+- **VH-10. An action.** ⌘K opens the actions; a right click opens the system context menu, as anywhere else in macOS. An action targets the selection, or the whole prompt when nothing is selected. On a diff position it targets the right-hand text. The result replaces the target in the full prompt and becomes a new version (VH-1) shown as a diff. If the model returns the current text, the chain does not change and the hint line says `No changes: the model returned the text as it was · ⌘K Try other words`. It stays until the next step: typing, ⌘← ⌘→, ⌘K or ⌘L. With an empty or blank prompt, ⌘K only says `Write a prompt first`.
 - **VH-11. A model reply.** Line breaks in the reply are normalised to `\n` and the reply is trimmed; the leading and trailing whitespace of the target is put back around it, so an edit never glues lines together. An empty reply is an error and changes nothing.
 - **VH-12. A prefix action.** A rule with `prefix` (the built-in **Turn into goal** adds `/goal `) does not call the model. It puts the prefix at the very beginning of the whole prompt, whatever is selected, and shows the result as a diff with the caret after the prefix. A prompt that already starts with the prefix stays as it is: `No changes`.
 - **VH-13. Typing.** Typing, pasting, dictating or deleting changes the current version in place; all other versions stay. A change on a diff position accepts the edit first. An edit that replaces or deletes the whole non-empty text (select all, then type, paste, drop or delete) starts a new prompt: the chain becomes that single version. The editor's own ⌘Z then brings the previous text back into the editor as an edit of that single version; the discarded versions do not come back.
@@ -86,12 +86,12 @@ These are deliberate limits of v0.2.0, not defects. Changing any of them is a ch
 | --- | --- | --- |
 | VH-1 | `history.test.mjs` — apply shows its diff, drops the tail and ignores identical text | `Chain.append` in `src/history.ts` |
 | VH-2, VH-3 | `history.test.mjs` — five positions, one step at a time; opening a library entry … appends without a diff position | `Chain.back`, `Chain.forward`, `hasDiff` |
-| VH-4 | `composer.test.mjs` — rewrite a selection, read the diff … (hint text) | `textDiff`, `diffDecorations` in `src/editor.ts`; `hint()` in `src/main.ts` |
+| VH-4 | `composer.test.mjs` — rewrite a selection, read the diff … (hint text with time and places); `history.test.mjs` — changedPlaces counts what the diff marks | `textDiff`, `changedPlaces`, `diffDecorations` in `src/editor.ts`; `hint()`, `summary()` in `src/main.ts` |
 | VH-5, VH-6 | `composer.test.mjs` — copy takes A, B, B, C, C across a two-action chain; a copy on a diff accepts it | `copy()` in `src/main.ts` |
 | VH-7 | `composer.test.mjs` — ⌘⇧↵ copies what ⌘↵ would and starts an empty prompt | `copy(true)` |
 | VH-8 | `composer.test.mjs` — ⌘⇧↵ keeps the text when the copy fails or a palette is open; Library selects the first template … (⌘↵ with the Library open) | `copy()`, keydown handler |
 | VH-9 | `composer.test.mjs` — after a copy the next launch selects all; the draft and its position survive a reload (copy flag) | `selectAfterCopy()`, `hide()` |
-| VH-10 | `composer.test.mjs` — copy takes A, B, B, C, C (action on a diff); custom instruction, whole-prompt target …; a free-form instruction leads … | `openActions()`, `rewrite()`, `Chain.apply` |
+| VH-10 | `composer.test.mjs` — copy takes A, B, B, C, C (action on a diff); custom instruction, whole-prompt target … (an unchanged reply stays past three seconds, a step or typing clears it); a free-form instruction leads … | `openActions()`, `rewrite()`, `Chain.apply`, `unchanged` in `src/main.ts` |
 | VH-11 | `composer.test.mjs` — custom instruction, whole-prompt target and whitespace preservation; pasting a spoken rule name … (CRLF) | `rewrite()` |
 | VH-12 | `composer.test.mjs` — Turn into goal prepends /goal locally and can be stepped back | `prepend()` |
 | VH-13 | `history.test.mjs` — typing edits in place …; `composer.test.mjs` — after a copy the next launch selects all … | `Chain.edit`, `Chain.reset`, `replacedAll` in `src/editor.ts` |
