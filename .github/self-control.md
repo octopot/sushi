@@ -8,6 +8,25 @@ is proven or moved into an issue; a release adds the checks it leaves open
 
 ## Watch
 
+### After v0.2.1
+
+On 2026-11-19 `cd` published v0.2.1; the tap commit `Brew cask update for
+sushi version v0.2.1` is verified as the Releaser App and the cask's `sha256`
+matches `checksums.txt`. This Mac upgraded through the cask: 0.2.1, not
+quarantined, the signature intact.
+
+- [ ] **The owner's check in the installed app**: the menu bar icon, Caps Lock
+  shows the panel over a full-screen app, a click elsewhere hides it, ⌘K edits
+  a short phrase (through OpenRouter on this Mac, `model.json`), ⌘↵ pastes into
+  the previous app, ⌘L lists the prompts. If one fails, file it for the next
+  patch.
+- [ ] **A week after v0.2.1**: the user who reported the full-screen, click-away
+  and Ollama-window bugs confirms they are gone on their Mac. If one is not,
+  reopen its issue (#3, #5) with what they see.
+- [ ] **On a second display or with Stage Manager**: run PR-7 of the
+  [panel scenarios](../docs/specs/panel.md#regression-scenarios) and add a row
+  to its runs. Not run: this Mac has one display.
+
 ### After v0.2.0
 
 v0.2.0 renames Susi to Sushi and moves the panel to Caps Lock. Before the tag
@@ -60,10 +79,12 @@ opened it again with the signature intact.
   the download page, and ⌘K must show the same note. With only the
   command-line tool, the first edit must start `ollama serve`, and the server
   must outlive Susi. If any of these fails, fix it in the next patch.
-- [ ] **On the next `brew upgrade` of Sushi** (the first after v0.2.0):
-  Homebrew reopens the app without `--hidden` (seen after 0.1.0 → 0.1.1), so
-  the panel is expected to show after an upgrade. Confirm it on screen and
-  decide whether Sushi should start hidden when Homebrew relaunches it.
+- [ ] **On the next `brew upgrade` of Sushi**: Homebrew reopens the app
+  without `--hidden` (seen after 0.1.0 → 0.1.1), so the panel is expected to
+  show after an upgrade. Confirm it on screen and decide whether Sushi should
+  start hidden when Homebrew relaunches it. Not seen on 0.2.0 → 0.2.1: Sushi
+  was not running after the upgrade, and whether it ran before was not
+  recorded; note it before the next upgrade.
 - [ ] **On every upgrade until Developer ID**: Homebrew warns that "sushi's
   signer changed so macOS may prompt at next launch": every ad-hoc build has a
   new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
