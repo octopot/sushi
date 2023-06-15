@@ -14,7 +14,7 @@ On an Apple Silicon Mac with macOS 26 or later, with [Homebrew](https://brew.sh/
 brew install --cask octolab/tap/sushi
 ```
 
-Or download `sushi_0.2.0_darwin-arm64.zip` from the [v0.2.0 release](https://github.com/octopot/sushi/releases/tag/v0.2.0) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
+Or download `sushi_0.2.1_darwin-arm64.zip` from the [v0.2.1 release](https://github.com/octopot/sushi/releases/tag/v0.2.1) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
 
 Edits need [Ollama](https://ollama.com/) and its model:
 
@@ -75,7 +75,7 @@ To use the prompts of a Tuna assistant, write the absolute path of its `Input` f
 
 **Local model.** Edits run on Ollama at `127.0.0.1:11434` with `qwen3.5:4b-mlx`. If Ollama is not running, the first edit starts it in the background: the app, without its window, or `ollama serve` when only the command-line tool is installed. Without Ollama or the model, the hint links to the download or offers `ollama pull` to copy; opening ⌘K says the same and asks a running Ollama to load the model in advance. The text with its instruction is limited to 12 KB, so select a passage of a long prompt.
 
-v0.2.0 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
+v0.2.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
 
 ## Development
 

@@ -192,13 +192,38 @@ A prerelease note, `vX.Y.Z-rcN.md`, is short and self-contained: what to try,
 what to report, and links only to pages already on the site. Hide it from the
 sidebar as [docs/README.md](docs/README.md) describes.
 
-Then, in the same release commit, update the version and the archive name
-wherever the site and the README state them: `docs/release.mjs`, `README.md`
-and the pages [docs/README.md](docs/README.md) lists. Whether the social
-preview image needs regenerating is described in [docs/README.md](docs/README.md).
+Then, in the same release commit, change exactly these places. A prerelease
+changes none of them: it adds only its own hidden note.
+
+- The version files that `make release-check` compares with the tag
+  (`x-release.versions` in [.github/settings.json](.github/settings.json)):
+  `"version"` in `package.json` and `src-tauri/tauri.conf.json`, `version` in
+  `src-tauri/Cargo.toml`, and in `docs/release.mjs` `version`, `tag`,
+  `archive` and `slogan`. The lock files follow by command, never by hand:
+  `npm install --package-lock-only --ignore-scripts` for `package-lock.json`,
+  `cargo update -p sushi --offline --manifest-path src-tauri/Cargo.toml` for
+  `src-tauri/Cargo.lock`.
+- `docs/content/changelog/_meta.js`: the new entry on top,
+  `'vX.Y.Z': 'vX.Y.Z — Slogan.'`.
+- `docs/content/changelog/index.mdx`: a new card `vX.Y.Z · LATEST` on top
+  with the slogan as its heading and two short paragraphs; the previous card
+  becomes `· STABLE`.
+- `docs/content/index.mdx`: `Documentation for Sushi vX.Y.Z.` in the
+  description and the release pill's link `/changelog/vX.Y.Z/` (its label
+  reads `release.mjs`).
+- `README.md`: the archive name and the release link in Install, and
+  `vX.Y.Z composes one prompt at a time` in the scope paragraph.
+- `docs/README.md`: `An English site for Sushi vX.Y.Z`, the content table (the
+  new note becomes *The latest release notes*, the previous one gets a row of
+  its own) and `not notarized in vX.Y.Z` while builds are not notarized.
+- `docs/specs/`: the status line of each specification whose rules changed
+  in this release, and its row in `docs/specs/README.md`, name `vX.Y.Z`;
+  so does *These are deliberate limits of …* in the specifications that have it.
+- The social preview `docs/public/og.png` has no version label and stays as
+  it is.
 
 ```sh
-grep -rn 'X\.Y\.W' README.md docs --exclude-dir=node_modules --exclude-dir=dist  # only old notes and "since" facts may remain
+grep -rn 'X\.Y\.W' README.md docs --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=out --exclude=package-lock.json  # only old notes, cards and "since" facts may remain
 node .github/scripts/release.mjs version                                         # X.Y.Z, or the files disagree
 node .github/scripts/release.mjs render vX.Y.Z --site-url https://sushi.octolab.org/ --out "$(mktemp -d)/notes.md"
 (cd docs && npm ci && TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build)

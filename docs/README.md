@@ -1,6 +1,6 @@
 # Sushi documentation
 
-An English site for Sushi v0.2.0: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
+An English site for Sushi v0.2.1: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
 
 ## Run locally
 
@@ -38,7 +38,8 @@ For a production server: `npm run build`, then `npm start`.
 | `content/quick-start.mdx` | Install, first prompt, first edit, sending it |
 | `content/guide/` | Editing and versions, actions, voice, `/goal`, library and files, the model, keys, troubleshooting |
 | `content/changelog/index.mdx` | Release overview |
-| `content/changelog/v0.2.0.md` | The latest release notes, also the GitHub release body |
+| `content/changelog/v0.2.1.md` | The latest release notes, also the GitHub release body |
+| `content/changelog/v0.2.0.md` | Release notes of v0.2.0: the rename from Susi and the upgrade steps |
 | `content/changelog/v0.1.1.md` | Release notes of Susi v0.1.1 |
 | `content/changelog/v0.1.0.md` | First release notes, as Susi |
 | `content/**/_meta.js` | Navigation order and labels |
@@ -88,12 +89,14 @@ The app is the source of truth: check every claim against `src/`, `src-tauri/src
 - add it on top of `content/changelog/_meta.js`, and a card `vX.Y.Z · LATEST` to `content/changelog/index.mdx`, the previous one becoming `· STABLE`;
 - update `release.mjs`, the release pill and the description in `content/index.mdx`, and the content table above.
 
+The full list of places a release changes, the app's version files included, is in [Releasing](../AGENTS.md#1-changelog).
+
 ```sh
-grep -rn '0\.1\.0' content release.mjs README.md  # only old notes and cards may keep the old version
+grep -rn 'X\.Y\.W' content release.mjs README.md  # only old notes, cards and "since" facts may keep the old version
 TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build
 ```
 
-Lead installation with Homebrew. The manual download is not notarized in v0.2.0, and the quick start says how to open it; change that paragraph once a notarized build ships.
+Lead installation with Homebrew. The manual download is not notarized in v0.2.1, and the quick start says how to open it; change that paragraph once a notarized build ships.
 
 `package.json` pins Zod to `4.1.12` under `nextra-theme-docs` and overrides `@xmldom/xmldom` for `speech-rule-engine`, as in the indexit docs; see its README for the reasons and when to drop them.
 
