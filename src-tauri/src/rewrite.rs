@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::json;
 use std::{
     collections::HashMap,
-    ffi::{CStr, CString},
+    ffi::{CStr, CString, OsString},
     os::unix::process::CommandExt,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -119,6 +119,17 @@ fn locate(registered: Option<PathBuf>, places: &Places) -> Install {
                 .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
         })
         .map_or(Install::Missing, |bin| Install::Cli(bin.clone()))
+}
+
+/// `open` arguments that start the Ollama app as Ollama's own command line does
+/// (`cmd/start_darwin.go`): `-j` launches it hidden, which the app reads as "no window", and
+/// `--fast-startup` skips the update and the offer to move it to Applications. `-g` keeps it
+/// behind, so the panel keeps the keyboard and stays open (SUSI-4).
+fn launch_app(app: &Path) -> Vec<OsString> {
+    let mut args: Vec<OsString> = ["-g", "-j", "-a"].map(OsString::from).into();
+    args.push(app.into());
+    args.extend(["--args", "--fast-startup"].map(OsString::from));
+    args
 }
 
 /// Starts the server in its own process group with no terminal, so it outlives Sushi as the
@@ -257,8 +268,7 @@ async fn infer(
             Install::Missing => return Err(NOT_INSTALLED.into()),
             Install::App(app) => {
                 let _ = Command::new("/usr/bin/open")
-                    .args(["-g", "-a"])
-                    .arg(app)
+                    .args(launch_app(&app))
                     .status();
                 APP_DID_NOT_START
             }
@@ -472,6 +482,23 @@ mod tests {
         assert_eq!(
             locate(Some(elsewhere.clone()), &places),
             Install::App(elsewhere)
+        );
+    }
+
+    #[test]
+    fn starts_the_app_hidden_and_behind() {
+        // Without -j Ollama opens its window and takes the focus, which hides the panel.
+        let app = Path::new("/Applications/Ollama.app");
+        assert_eq!(
+            launch_app(app),
+            [
+                "-g",
+                "-j",
+                "-a",
+                "/Applications/Ollama.app",
+                "--args",
+                "--fast-startup"
+            ]
         );
     }
 

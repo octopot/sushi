@@ -22,6 +22,10 @@ Sushi's window is an overlay, like Spotlight's: it comes up over whatever the us
 - **PN-4. Back where the user was.** Caps Lock, Esc, ⌘↵ and ⇧⌘↵ hide the panel. Keyboard focus is back in the app underneath, on the same Space, so ⌘V right after ⌘↵ pastes the prompt there.
 - **PN-5. A click elsewhere hides.** When the panel loses the keyboard, by a click in another app, another window or on the desktop, it hides, and focus stays where the user clicked. The same happens when an action of the panel opens another app: **Open in Editor** for the dictionary, **Open Settings Folder**, the link to download Ollama. Hiding keeps the draft and what the panel showed: an open Library is still open on the next show.
 
+### Apps Sushi starts
+
+- **PN-6. Ollama starts behind the panel.** When an edit starts the Ollama app (it is installed and not running), the app starts hidden, as Ollama's own command line starts it: its menu bar icon appears, its window does not, and it does not take the keyboard, so the panel stays open under PN-5 and the edit arrives in it. `ollama serve`, started when only the command-line tool is installed, has no window.
+
 ## Not supported or switched off
 
 - **The display to show on** is the active one; the panel does not remember a display or a position.
@@ -30,7 +34,7 @@ Sushi's window is an overlay, like Spotlight's: it comes up over whatever the us
 
 ## Regression scenarios
 
-Window showing, Spaces, focus and dictation go through the window server and other apps, so no automated test reaches them. Run these by hand before a release that touches `show_launcher`, `hide` or the window code in `src-tauri/src/macos.m`, in a separate macOS session or on a separate Mac, or on the working Mac when its owner runs them. Start the build under test with `open -g <path>/Sushi.app --args --hidden` after quitting the installed one.
+Window showing, Spaces, focus and dictation go through the window server and other apps, so no automated test reaches them. Run these by hand before a release that touches `show_launcher`, `hide`, the window code in `src-tauri/src/macos.m` or the way `src-tauri/src/rewrite.rs` starts Ollama, in a separate macOS session or on a separate Mac, or on the working Mac when its owner runs them. Start the build under test with `open -g <path>/Sushi.app --args --hidden` after quitting the installed one.
 
 | ID | Steps | Expected | Rules |
 | --- | --- | --- | --- |
@@ -41,6 +45,7 @@ Window showing, Spaces, focus and dictation go through the window server and oth
 | PR-5 | Show the panel, click in another app's window, then on the desktop. | The panel hides on the first click; focus is in the clicked app. Caps Lock shows the panel with the draft. | PN-5 |
 | PR-6 | Show the panel on a desktop Space and open Mission Control; then App Exposé; then hold ⌘Tab. | The panel is in none of them, and ⌘Tab has no Sushi. | PN-3 |
 | PR-7 | With a second display, show the panel on each one; with Stage Manager on, show it over a stage. | It shows on the display the user works on, over the stage, and hides back to it. | PN-1, PN-4 |
+| PR-8 | Quit Ollama from its menu bar icon, with the Ollama app and the model installed. Show the panel over a terminal, type a phrase, run ⌘K with Shorten. | Ollama's menu bar icon appears and no Ollama window opens; the panel stays open with the keyboard and shows the diff; the menu bar keeps the terminal's menus. | PN-6, PN-2 |
 
 ### Runs
 
@@ -49,6 +54,7 @@ Window showing, Spaces, focus and dictation go through the window server and oth
 | 2026-11-19 | 30f8f36 (before PN-5) | PR-1, PR-4, PR-6; PR-3: text lands, the bubble did not show in the first try and showed 3 of 3 in a recorded rerun | PR-5: a click elsewhere left the panel open, fixed by PN-5; PR-2 not run as a whole; PR-7 not run, no second display |
 | 2026-11-19 | 4c3b076 | PR-1, PR-4, PR-5, PR-6; PR-2: typing and the edit keys | PR-2: a right click on a selection opened the actions instead of the macOS menu, changed in VH-10; PR-3: the text lands, but MacWhisper showed no bubble again, while it does over Raycast; PR-7 not run, no second display |
 | 2026-11-19 | 4c3b076 and the VH-10 change | PR-2: a right click opens the macOS menu; PR-3 explained: with a 1,843 px tall prompt the bubble window opened 5 times of 5 at y = 2169 on a 1117 px screen, the bottom of the field's frame | — |
+| 2026-11-19 | fa2c689 and the PN-6 change | PR-8: with Ollama quit, ⌘K Shorten started Ollama with its menu bar icon only, no window; the panel stayed open and showed the diff | — |
 
 Add a row for every run: the commit of the build, the scenarios that passed, and what failed or was not run, with the reason.
 
@@ -61,5 +67,6 @@ Add a row for every run: the commit of the build, the scenarios that passed, and
 | PN-3 | PR-6 by hand | the transient and ignores-cycle behaviour in `sushi_prepare_window` |
 | PN-4 | PR-4 by hand; `composer.test.mjs` checks that Esc, ⌘↵ and ⇧⌘↵ ask to hide | `hide` in `src-tauri/src/main.rs`; `sushi_restore_frontmost` for the fallback of PN-2 |
 | PN-5 | PR-5 by hand | the `WindowEvent::Focused(false)` handler in `src-tauri/src/main.rs` |
+| PN-6 | PR-8 by hand; `starts_the_app_hidden_and_behind` in `src-tauri/src/rewrite.rs` fixes the `open` arguments | `launch_app` in `src-tauri/src/rewrite.rs` |
 
 The stage capture (`tests/stage/capture.sh`) renders the panel on glass after it has become an NSPanel, so a change here that breaks the glass, the corners or the shadow shows in its frames.
