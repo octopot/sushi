@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T09:17:05Z
-updatedAt: 2026-11-23T10:50:44Z
-lastEditedAt: 2026-11-23T10:50:44Z
+updatedAt: 2026-11-24T10:57:41Z
+lastEditedAt: 2026-11-24T10:57:00Z
 closedAt: null
 ---
 
@@ -36,7 +36,7 @@ Error trackers such as Sentry solve this for developers: stack traces, breadcrum
 ## PoC
 
 ```text
-Menu bar menu → Report a Problem…
+Menu bar menu → Report a problem…
 
 1. "What went wrong?"            the user types or dictates a few sentences
 2. Up to three follow-up questions optional; locally with Ollama, with consent for a hosted provider:
@@ -53,8 +53,8 @@ Menu bar menu → Report a Problem…
 
 ## Acceptance criteria
 
-- [ ] **Starting.** **Report a Problem…** in the menu bar menu starts the flow. Starting it records nothing and sends nothing, and its first step is the description. The user can leave at any step. Sushi never sends the report. The messages in the panel that link to the flow are listed in the specification.
-- [ ] **Reachable when the panel fails.** The flow can be started, the recording finished and the report copied or saved when the panel does not show or does not stay open, as in [[SUSI-7]]. Without the panel, **Report a Problem…** saves the report and the recording from the menu and shows them in Finder; the user opens the saved text, adds the description and edits it there before sending. While a recording runs, the menu bar menu has the item that finishes it.
+- [ ] **Starting.** **Report a problem…** in the menu bar menu starts the flow. Starting it records nothing and sends nothing, and its first step is the description. The user can leave at any step. Sushi never sends the report. The messages in the panel that link to the flow are listed in the specification.
+- [ ] **One way in.** The flow lives in the panel; the menu bar menu has one row for it and no second route. While a recording runs, the menu bar menu has the item that finishes it. When the panel does not show or does not stay open, as in [[SUSI-7]], the user still gets what support needs without a terminal: the build info and the diagnostic log from the settings window ([[SUSI-12]]).
 - [ ] **Describing.** The user describes the problem in free text, typed or dictated. Follow-up questions are optional, at most three, in the language of the description, and the user can skip them. The model receives only the description and the answers, never the snapshot or the recording. With Ollama the questions run locally. With a hosted provider ([[SUSI-6]], [[SUSI-10]], [[SUSI-11]]), Sushi names the provider the description will go to and asks first; declining falls back to three fixed questions: what you did, what you expected, whether it repeats. The same fixed questions are used without a working model. `docs/specs/model.md` gains the rule.
 - [ ] **Recording.** When the user chooses to reproduce, Sushi records what the diagnostic mode of [[SUSI-7]] records, in the same format, for the duration, with its notice. This switch lives in memory: Sushi still never creates the diagnostic file. This issue makes the recording a permanent part of Sushi, so it lifts the Cargo feature of [[SUSI-7]]. The recording turns off by itself when the user finishes it, leaves the flow or quits Sushi.
 - [ ] **Snapshot.** The report carries:
@@ -104,4 +104,8 @@ Where reports could go: candidates, not a decision.
 - **Sentry:** not a candidate. It adds a third party or a heavy server and still leaves the friendly form to build.
 
 To check before choosing: the URL length GitHub accepts, how issue-form fields map to query parameters, and attachments through the sharing service with mail clients other than Mail.
+-->
+
+<!-- 2026-11-24T15:00Z https://github.com/octopot/sushi/issues/13#issuecomment-7129470617
+The owner's decision after seeing the menu of #17: **Report a problem…** is one row, and the route that saved a report without the panel is removed. The criterion *Reachable when the panel fails* became *One way in*. When the panel does not show or does not stay open, as in #11, the user sends the build info and the diagnostic log from Settings ▸ About; the report with its questions and snapshot needs the panel.
 -->

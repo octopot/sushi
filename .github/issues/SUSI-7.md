@@ -18,7 +18,7 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T08:40:41Z
-updatedAt: 2026-11-23T10:50:39Z
+updatedAt: 2026-11-24T10:57:06Z
 lastEditedAt: 2026-11-23T09:17:27Z
 closedAt: null
 ---
@@ -89,4 +89,44 @@ Plan to verify.
    - For Writing Tools: opt out in the panel's web view with `WKWebViewConfiguration.writingToolsBehavior`. It has to be set before the web view exists, and wry creates the configuration unless one is passed in. So the window has to be built in code with `WebviewWindowBuilder::with_webview_configuration` instead of `tauri.conf.json`. The property has no binding in `objc2-web-kit`, so set it in `macos.m` or through `msg_send`.
    - For anything that takes the keyboard briefly: decide one run-loop turn after the loss, by what took the keyboard and not by where the pointer is. tao reports the loss from `windowDidResignKey:`, before the new key window is known. PN-5 has to keep holding for a click elsewhere and for apps the panel opens.
 5. **Regression.** Add a scenario to `docs/specs/panel.md` with its precondition, for example: "With Apple Intelligence and Writing Tools on: show the panel, ⌘A, wait 2 s; ⌘↵, Caps Lock". Tie it to PN-2 and PN-5, and record a run on the Mac where it reproduced.
+-->
+
+<!-- 2026-11-23T16:00Z https://github.com/octopot/sushi/issues/11#issuecomment-7129457134
+Cause, confirmed on the affected Mac for one path: **⌘A → Writing Tools → Summary**. macOS attaches the Summary result to the panel as a sheet; the sheet takes the keyboard, `WindowEvent::Focused(false)` hides the panel and the sheet with it, and each later show makes the panel key, AppKit hands the keyboard back to the sheet, and the panel hides again: the flicker. The affected user's diagnostic build on v0.2.1 logged it: `begin sheet` on the panel, `_NSAlertPanel` became key, `focus_lost`, hide; on **Show Sushi** the panel became key and the same sheet took it again 10 ms later.
+
+Not confirmed yet:
+
+- A hide after ⌘A alone. In the same report the panel stayed open after ⌘A; the hide needed the Summary sheet. Whether the original PoC opened such a window by itself is open.
+- The Caps Lock flicker. Caps Lock was off in the diagnostic copy, so the runs used **Show Sushi**; hypothesis 4 is not ruled out.
+- The fix on a live sheet: in the user's last run of their patched build the sheet did not appear, so the patched branch never ran.
+
+Dropped: turning Writing Tools off in the web view (step 4 of the plan). The Writing Tools button kept appearing with `NSWritingToolsBehaviorNone` set.
+
+Fix, in M2 (PN-8 in `docs/specs/panel.md`):
+
+- Losing the keyboard is decided one run-loop turn later, by the window that took it: the panel's own sheet keeps it open; anything else hides it, as PN-5 says. A sheet that loses the keyboard goes through the same decision, so a click in another app with the sheet in front still hides the panel.
+- The hotkey hides the panel while its sheet has the keyboard, and a show with a sheet attached gives the keyboard back to the sheet instead of the editor.
+- The focus record of the diagnostic log names an attached sheet, and a kept loss is logged.
+- `SUSHI_TEST_SHEET=1` attaches a test sheet on every show, for the regression scenario PR-10 on any Mac. PR-9 adds the Summary path for the affected Mac.
+
+To close: PR-10 on a separate Mac or session, and PR-9 on the affected Mac with Caps Lock on.
+-->
+
+<!-- 2026-11-24T13:30Z https://github.com/octopot/sushi/issues/11#issuecomment-7129458016
+The affected user confirmed by hand, on the Mac where it reproduces, that a sheet-aware check fixes the Summary path: their patch against v0.2.1 keeps the panel when it loses the keyboard while `attachedSheet` is set or the key window's `sheetParent` is the panel, and **Show Sushi** over an open sheet raises the panel and makes the sheet key.
+
+Taken from it:
+
+- The panel's own loss of the keyboard is decided at once, by their condition (`sushi_panel_keeps`). `attachedSheet` is set when the sheet begins, before it takes the keyboard, and tao reports the loss only when the run-loop turn ends, after the key window changed; their log shows both (`begin sheet`, then `_NSAlertPanel` key, then `focused=false`). The one-turn wait we had on this path added nothing.
+- **Show Sushi** over an open sheet: the same raise, already in ours.
+
+Beyond it, because their patch leaves these open:
+
+- A click in another app, another window or on the desktop with the sheet in front hides the panel (PN-5). Only the sheet loses the keyboard then, and tao does not report it, so with their patch the panel and the sheet stay over the other app. One observer of `NSWindowDidResignKeyNotification` for the panel's sheets decides one turn later, when the new key window is known.
+- The hotkey hides the panel while its sheet has the keyboard (PN-4); with their patch Caps Lock only shows it again.
+- When the sheet closes and no window has the keyboard, the panel takes it, so typing lands in the editor. Normally AppKit gives the keyboard back to the parent and this does nothing.
+
+Simplified on our side: the deferred decision for the panel's own loss and its `from_panel` branch, the `kept` callback, and the observer's second callback are gone. Without a sheet the panel hides exactly as in v0.2.1. `SUSHI_TEST_SHEET=1` stays for PR-10, but attaches its sheet on the first show only, so PR-4 and PR-5 can follow in the same run. Kept: the walk up `sheetParent` and `deepest_sheet`, which the settings window shares.
+
+Not confirmed yet: none of our code has run against a live sheet. To close: PR-9 on the affected Mac, now with Caps Lock on, and PR-10 in a separate session, each recorded in the runs of `docs/specs/panel.md`.
 -->
