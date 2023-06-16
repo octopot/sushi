@@ -4,30 +4,32 @@ id: I_kwDOVy11Hs8AAAABhsWBEw
 databaseId: 6556057875
 number: 13
 url: https://github.com/octopot/sushi/issues/13
-title: "app: report a problem from the menu, with an anonymized snapshot"
+title: "app: report a problem from the menu as a text the user can edit and send"
 issueType: Feature
 labels:
   - "impact: high"
   - "scope: code"
 assignees:
   - kamilsk
-milestone: null
+milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
 state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T09:17:05Z
-updatedAt: 2026-11-23T09:17:15Z
-lastEditedAt: null
+updatedAt: 2026-11-23T10:50:44Z
+lastEditedAt: 2026-11-23T10:50:44Z
 closedAt: null
 ---
 
-# app: report a problem from the menu, with an anonymized snapshot
+# app: report a problem from the menu as a text the user can edit and send
 
 ## Motivation
 
-When Sushi misbehaves for a user, today the only path to a fix is a developer conversation: the user is handed terminal commands, scripts that watch focus and system logs, and is asked for versions and settings. [[SUSI-7]] went that way: hours spent, and still no answer to what took focus away. Users of a prompt composer are not expected to debug a macOS app. Reporting a problem should be part of Sushi itself: the user starts it from the menu, says what happened in their own words, Sushi collects what support needs to reproduce it, removes everything personal, shows exactly what will leave the Mac, and sends it where it belongs in one step.
+When Sushi misbehaves for a user, today the only path to a fix is a developer conversation: the user is handed terminal commands, scripts that watch focus and system logs, and is asked for versions and settings. [[SUSI-7]] went that way: hours spent, and still no answer to what took focus away. Users of a prompt composer are not expected to debug a macOS app. Reporting a problem should be part of Sushi itself: the user starts it from the menu, says what happened in their own words, Sushi collects what support needs to reproduce it, removes everything personal, and hands the user a ready report as text: they read it, edit it and send it themselves, the way they already talk to the developer.
+
+The first users are beta testers who are in touch with the developer, so a text they paste into a chat or an email is enough. Sending from Sushi itself, to GitHub or a service of ours, is a later decision, taken once this text shows what a good report holds.
 
 Error trackers such as Sentry solve this for developers: stack traces, breadcrumbs, dashboards. Here the reporter is the user, so the flow has to be friendly first and complete second, and it must keep Sushi's promise that nothing leaves the Mac without the user's say.
 
@@ -37,22 +39,23 @@ Error trackers such as Sentry solve this for developers: stack traces, breadcrum
 Menu bar menu → Report a Problem…
 
 1. "What went wrong?"            the user types or dictates a few sentences
-2. Up to three follow-up questions optional; locally with Ollama, with consent for OpenRouter:
+2. Up to three follow-up questions optional; locally with Ollama, with consent for a hosted provider:
                                  what were you doing, what did you expect, does it repeat
 3. "Reproduce it now?"           optional: turns on the diagnostic recording of SUSI-7,
                                  the user repeats the steps, then finishes it, from the
                                  panel or from the menu bar menu
-4. Preview                       the report exactly as it will be sent, and who can read it:
-                                 description, answers, build info (SUSI-8), state snapshot,
-                                 the recording; built only from listed fields
-5. Send                          one click; the user gets a link or a reference to follow up
+4. The report                    one editable text: description, answers, build info
+                                 (SUSI-8), state snapshot; the recording as a file next to it;
+                                 built only from listed fields
+5. Copy · Save                   Copy puts the text on the clipboard; Save writes the text
+                                 and the recording to a folder and shows it in Finder
 ```
 
 ## Acceptance criteria
 
-- [ ] **Starting.** **Report a Problem…** in the menu bar menu starts the flow. Starting it records nothing and sends nothing, and its first step is the description. The user can leave at any step without anything being sent. The messages in the panel that link to the flow are listed in the specification.
-- [ ] **Reachable when the panel fails.** The flow can be started, the recording finished and the report sent when the panel does not show or does not stay open, as in [[SUSI-7]]. While a recording runs, the menu bar menu has the item that finishes it.
-- [ ] **Describing.** The user describes the problem in free text, typed or dictated. Follow-up questions are optional, at most three, in the language of the description, and the user can skip them. The model receives only the description and the answers, never the snapshot or the recording. With Ollama the questions run locally. With OpenRouter, Sushi says that the description will go to OpenRouter and asks first; declining falls back to three fixed questions: what you did, what you expected, whether it repeats. The same fixed questions are used without a working model. `docs/specs/model.md` gains the rule.
+- [ ] **Starting.** **Report a Problem…** in the menu bar menu starts the flow. Starting it records nothing and sends nothing, and its first step is the description. The user can leave at any step. Sushi never sends the report. The messages in the panel that link to the flow are listed in the specification.
+- [ ] **Reachable when the panel fails.** The flow can be started, the recording finished and the report copied or saved when the panel does not show or does not stay open, as in [[SUSI-7]]. Without the panel, **Report a Problem…** saves the report and the recording from the menu and shows them in Finder; the user opens the saved text, adds the description and edits it there before sending. While a recording runs, the menu bar menu has the item that finishes it.
+- [ ] **Describing.** The user describes the problem in free text, typed or dictated. Follow-up questions are optional, at most three, in the language of the description, and the user can skip them. The model receives only the description and the answers, never the snapshot or the recording. With Ollama the questions run locally. With a hosted provider ([[SUSI-6]], [[SUSI-10]], [[SUSI-11]]), Sushi names the provider the description will go to and asks first; declining falls back to three fixed questions: what you did, what you expected, whether it repeats. The same fixed questions are used without a working model. `docs/specs/model.md` gains the rule.
 - [ ] **Recording.** When the user chooses to reproduce, Sushi records what the diagnostic mode of [[SUSI-7]] records, in the same format, for the duration, with its notice. This switch lives in memory: Sushi still never creates the diagnostic file. This issue makes the recording a permanent part of Sushi, so it lifts the Cargo feature of [[SUSI-7]]. The recording turns off by itself when the user finishes it, leaves the flow or quits Sushi.
 - [ ] **Snapshot.** The report carries:
   - the build info block of [[SUSI-8]];
@@ -62,19 +65,17 @@ Menu bar menu → Report a Problem…
   - the hotkey setup and the conflicts Sushi detected, the keyboard input source and the appearance;
   - the model provider, whether it is reachable, the Ollama version and whether the model is present;
   - the recording, if one was made.
-- [ ] **Anonymizing.** The report is built only from the fields the specification lists; nothing else can enter it. It never holds:
+- [ ] **Anonymizing.** The snapshot and the recording Sushi collects are built only from the fields the specification lists; nothing else can enter them. They never hold:
   - prompt text, drafts, library names or contents, dictionary terms or action names;
   - API keys or file paths;
   - the user or computer name;
   - other apps' window titles.
 
-  Bundle IDs of other apps stay, and the preview says so. The description and the answers are the user's words and are sent as written. A test plants a unique marker in every source of state and finds none in the report. The sources are the draft, each version of the chain, library files and their names, the dictionary, `rules.json`, the key in `model.json`, `library-path.txt`, a window title and the home folder name.
-- [ ] **Preview and consent.** The user sees the whole report as it will be sent and who will be able to read it. They can edit the description and remove any attached part, and nothing leaves the Mac until they press Send. The report can also be saved as a file instead. The user may add a contact, empty by default; without one, the reference is the only way back.
-- [ ] **Format and size.** A report has a versioned format in the specification, readable by a person and by an agent. It has a size limit that fits the destination. A recording over the limit is cut from the start, and the preview says so.
-- [ ] **Sending.** One click delivers the report and gives the user a link or a reference. A report that can't be sent (no network, the service down) stays on the Mac and can be sent, saved or deleted later. The list of files Sushi writes in `docs/specs/local-files.md` gains the unsent reports.
-- [ ] **Destination.** A comment on this issue compares the candidates and names the choice. The criteria are the effort for the user, whether a server or a secret of ours is needed, abuse, and who can read a report.
-- [ ] **The promise stays true.** The site, the README and `docs/specs/` say what a report contains, where it goes and who can read it. *Nothing leaves your Mac* and *no server of ours* are reworded if the chosen destination needs it. The destination comparison counts a server of ours as a cost.
-- [ ] **Specification and tests.** The flow is a specification in `docs/specs/`, with browser scenarios for each step run with the sending stubbed; the stage build never sends. A guide page on the site replaces the manual steps of *Report a problem* in `docs/content/guide/troubleshooting.mdx`. The flow's own text is English, as the rest of Sushi.
+  Bundle IDs of other apps stay, and the report says so. The description and the answers are the user's words and are kept as written. A test plants a unique marker in every source of state and finds none in the report. The sources are the draft, each version of the chain, library files and their names, the dictionary, `rules.json`, the keys of connected providers (`model.json` and the Keychain), `library-path.txt`, a window title and the home folder name.
+- [ ] **The report as text.** In the panel, the user sees the whole report as one text before they copy or save it, and can edit any part of it, the snapshot included, or remove a part; the recording is listed with its size and can be left out. **Copy** puts the text on the clipboard; **Save** writes the text and the recording to a folder and shows it in Finder. Sushi never sends the report. Hosted follow-up questions send only the description and the answers, with explicit consent; the flow makes no other network request.
+- [ ] **Format and size.** A report has a versioned format in the specification, readable by a person and by an agent. The text fits a chat message or an email; the recording goes as a separate file. A recording over the size limit is cut from the start, and the report says so.
+- [ ] **The promise stays true.** The site, the README and `docs/specs/` say what a report contains and that the user sends it themselves; *nothing leaves your Mac without your say* stays true.
+- [ ] **Specification and tests.** The flow is a specification in `docs/specs/`, with browser scenarios for each step and a check that the flow makes no network request apart from the agreed follow-up questions. A guide page on the site replaces the manual steps of *Report a problem* in `docs/content/guide/troubleshooting.mdx`. The flow's own text is English, as the rest of Sushi.
 
 Builds on [[SUSI-7]] (the recording) and [[SUSI-8]] (the build info).
 
@@ -82,7 +83,7 @@ Builds on [[SUSI-7]] (the recording) and [[SUSI-8]] (the build info).
 
 - Crash reporting and automatic error collection without the user's action.
 - Analytics and usage telemetry.
-- Sending anything without the preview.
+- Sending from Sushi: a prefilled GitHub issue, an email draft or a service of ours. The comment below keeps the candidates for that later decision.
 - Support's side of the flow: triage and replies.
 - Screenshots: a picture of the panel would carry the prompt.
 
