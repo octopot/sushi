@@ -1,15 +1,19 @@
 ---
-title: Local model
-description: How Sushi uses Ollama and qwen3.5:4b-mlx on your Mac, what it checks before sending text, and the limits of one edit.
+title: Model
+description: Sushi edits with qwen3.5:4b-mlx through Ollama on your Mac by default; OpenRouter, OpenAI or Claude connect in Settings when the local model is not enough.
 ---
 
 import { release } from '../../release.mjs'
 
-# Local model
+# Model
 
-Sushi edits with one model, <code>{release.model}</code>, through [Ollama](https://ollama.com) on your Mac. There is no account, no API key and no server of ours: the text you rewrite goes to Ollama at `127.0.0.1` and nowhere else.
+By default Sushi edits with one model, <code>{release.model}</code>, through [Ollama](https://ollama.com) on your Mac. There is no account, no API key and no server of ours: the text you rewrite goes to Ollama at `127.0.0.1` and nowhere else.
 
-## Set it up
+When the local model cannot make an edit, for example one that changes what a passage means, you can connect a hosted model in [Settings ▸ Model](/guide/settings/#model): OpenRouter, OpenAI or Claude. Nothing goes to them until you connect one and keep it chosen.
+
+## The local model
+
+### Set it up
 
 1. Install the [Ollama app](https://ollama.com/download). The `ollama` command-line tool alone works too, for example from `brew install ollama`.
 2. Download the model once:
@@ -20,19 +24,61 @@ ollama pull qwen3.5:4b-mlx
 
 That is all. Sushi talks to Ollama at `http://127.0.0.1:11434` directly, bypassing any proxy settings.
 
-## What Sushi does for you
+### What Sushi does for you
 
 - **Starts Ollama.** If Ollama is not running, the first edit starts it in the background and waits up to about twelve seconds: the Ollama app, with its menu bar icon and without its window, or `ollama serve` when only the command-line tool is installed. The panel stays open while it starts. A server Sushi starts keeps running after you quit Sushi, as the Ollama app does.
 - **Says what is missing.** Without Ollama, the edit stops at once, and **Download Ollama** on the line above the bottom bar opens the download page in your browser. Without the model, that line shows `ollama pull qwen3.5:4b-mlx`: click it to copy the command, then run it in Terminal. **⌘K** shows the same note above its field before you choose an action, and **Turn into goal** still works, since it needs no model. From the keyboard, **Tab** moves to the link or the command and **Enter** uses it.
 - **Loads the model early.** When you press **⌘K** and Ollama is already running, Sushi asks it to load the model into memory, so the edit itself starts sooner. This sends no text.
 - **Checks that the model is local.** Before it sends any text, Sushi asks Ollama about the model. If the model is missing, or Ollama would forward it to a cloud service, Sushi stops with a message instead of sending your text.
 
+## A hosted model
+
+| | What you need | Who pays | Model |
+| --- | --- | --- | --- |
+| **OpenRouter** | An OpenRouter account. You sign in through the browser; there is no key to copy. | Your OpenRouter credits | `gpt-6-luna` |
+| **OpenAI** | An API key from [platform.openai.com](https://platform.openai.com/api-keys), pasted once. | Your OpenAI API credits, not a ChatGPT subscription | `gpt-6-luna` |
+| **Claude** | An API key from the [Claude Console](https://platform.claude.com/settings/keys), pasted once. | Your Anthropic API credits, not a Claude subscription | `claude-opus-5-5` |
+
+### Connect one
+
+1. Open **Settings…** in the Sushi menu bar menu, or press **⌘,** in the panel, and choose **Model**. **Model ▸ Model settings…** in the menu bar menu goes straight there. Click the provider's row, then **Connect…**.
+2. Read the screen that opens on the Settings window: it says what goes to the provider, who pays and which model answers. Nothing has been sent yet.
+3. For OpenRouter, click **Connect**: your browser opens, you sign in and approve a key for Sushi, and the browser sends you back. The key is created on your own OpenRouter account, where its keys page lets you set a limit or delete it. For OpenAI and Claude, paste the key and click **Connect**; Sushi checks it at once and says what is wrong if it does not work.
+4. Sushi says *Connected* and edits now go to that provider. The hint after an edit names the model that answered, for example `Shorten · gpt-6-luna · 2.9 s · 2 changes`.
+
+### What leaves your Mac
+
+An edit sends Sushi's instruction to the model, the action or your own instruction, and the selected text, or the whole prompt when nothing is selected. Nothing else of the prompt, its earlier versions, your library or your settings goes out. OpenRouter passes the edit only to providers that do not train on it, though they may keep it for a while; OpenAI is asked not to store it.
+
+The key lives in your login keychain, as *Sushi: OpenRouter*, *Sushi: OpenAI* or *Sushi: Claude*. It never reaches the panel or a message, and after an upgrade Sushi reads it without asking for your password.
+
+### Switch and disconnect
+
+- **Model** in the menu bar menu names the model in use and lists Ollama and your connected providers, with a check mark on the one in use. Choose **Ollama · qwen3.5:4b-mlx (on this Mac)** to edit locally again; the provider stays connected for later. **Use for edits** in Settings ▸ Model does the same.
+- In Settings ▸ Model, a connected provider's **Model ID** chooses its model, and *Advanced* its reasoning effort, service tier or effort. **Use Sushi's default** goes back to the model in the table above.
+- **Disconnect…** in Settings ▸ Model asks first, then removes the key from your keychain. The key itself keeps working until you delete it on the provider's keys page, which the last screen offers to open with **Open the keys page**. Disconnecting the model in use makes Ollama the model again.
+
+### When a hosted edit fails
+
+The prompt stays as it was, and the line above the bottom bar says why, ending with **Edit with Ollama**, which runs the same edit on the same text locally. Sushi never switches to Ollama without that click.
+
+| Message | What to do |
+| --- | --- |
+| *OpenRouter is not reachable.* | Check your network, or click **Edit with Ollama**. |
+| *OpenRouter did not accept the key. Connect again* | The key was deleted or limited. Click **Connect again**. |
+| *OpenRouter is not connected. Connect again* | OpenRouter is chosen, but its key is gone from your keychain. Click **Connect again**. |
+| *OpenRouter: the account is out of credits.* | Add credits on the provider's site, or edit with Ollama. |
+| *OpenRouter is busy right now.* or *Claude is overloaded right now.* | Wait a moment and try again. |
+| *Claude declined to edit this text.* | Edit with Ollama, or reword the instruction. |
+
+The same messages name OpenAI or Claude when they are in use.
+
 ## Limits of one edit
 
 - The text and the instruction together must fit within **12 KB**. For a long prompt, select the passage to change.
 - If the answer runs into the model's context limit, Sushi reports it and changes nothing.
-- An edit gives up after about two and a half minutes. **Esc** cancels it any time before that.
-- The model runs with temperature 0, so it does not add randomness of its own.
+- A local edit gives up after about two and a half minutes, a hosted one after a minute. **Esc** cancels it any time before that.
+- The local model runs with temperature 0, so it does not add randomness of its own.
 
 [What the model keeps in your text →](/guide/actions/#what-the-model-keeps)
 

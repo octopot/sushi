@@ -4,7 +4,7 @@
 
 **Write the prompt here. Paste it there.**
 
-Sushi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press Caps Lock, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. Nothing leaves your Mac: edits run on Ollama.
+Sushi is a glass panel for writing prompts to coding agents, one keystroke away on your Mac. Press Caps Lock, type or dictate the task, select a passage and press ⌘K: a local model rewrites it, and you read the change as a diff right in the text. Step back and forth through every version, take a template from your library, then press ⌘↵ — the whole prompt is on the clipboard and you are back in the app you came from. By default nothing leaves your Mac: edits run on Ollama, and OpenRouter, OpenAI or Claude get your text only after you connect one in Settings.
 
 ## Install
 
@@ -16,7 +16,7 @@ brew install --cask octolab/tap/sushi
 
 Or download `sushi_0.2.1_darwin-arm64.zip` from the [v0.2.1 release](https://github.com/octopot/sushi/releases/tag/v0.2.1) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
 
-Edits need [Ollama](https://ollama.com/) and its model:
+Local edits, the default, need [Ollama](https://ollama.com/) and its model:
 
 ```sh
 ollama pull qwen3.5:4b-mlx
@@ -47,7 +47,8 @@ See the [installation steps](docs/content/quick-start.mdx).
 - [Voice](docs/content/guide/voice.mdx) — dictate the prompt and the action, for example «make it shorter».
 - [Long prompts with /goal](docs/content/guide/goal.mdx) — turn a prompt into a `/goal` command and make sure Claude Code or Codex sees it.
 - [Library](docs/content/guide/library.mdx) — templates, saved prompts, the dictionary and a shared Tuna folder.
-- [Local model](docs/content/guide/model.mdx) — Ollama, warm-up, limits and troubleshooting.
+- [Model](docs/content/guide/model.mdx) — Ollama, warm-up and limits; connecting OpenRouter, OpenAI or Claude.
+- [Report a problem](docs/content/guide/report.mdx) — a report you read, edit and send yourself.
 - [Keyboard](docs/content/guide/keyboard.mdx) — every key in one place.
 - [Troubleshooting](docs/content/guide/troubleshooting.mdx) — what Sushi's messages mean, from the shortcut and the first launch to Ollama and your settings files.
 - [v0.2.0 release notes](docs/content/changelog/v0.2.0.md) — Susi is now Sushi, Caps Lock shows the panel; the upgrade path step by step.
@@ -62,7 +63,7 @@ See the [installation steps](docs/content/quick-start.mdx).
 
 **Long prompts with `/goal`.** The built-in action **Turn into goal** puts `/goal ` in front of the prompt without a model call. Claude Code and Codex collapse a long paste into a placeholder and do not see a command at its start: in Claude Code paste a second time to expand it; in Codex press Ctrl+G to open the text, expanded, in an external editor.
 
-**Library and files.** There is no settings screen: everything is a file in `~/Library/Application Support/me.octopot.sushi/`, opened from **Open Settings Folder** in the menu-bar menu.
+**Settings and files.** Everything is a file in `~/Library/Application Support/me.octopot.sushi/`. **Settings…** in the menu bar menu, or ⌘, in the panel, opens a window over those files: the key that shows Sushi, the model, the actions, the library folder and the dictionary, saved as you change them. Hand edits keep working, and the window shows them when it gets focus. The rules are in the [settings window specification](docs/specs/settings.md).
 
 | What | Where |
 | --- | --- |
@@ -71,11 +72,15 @@ See the [installation steps](docs/content/quick-start.mdx).
 | Saved prompts | `Input/*.md` |
 | Templates | `Input/.templates/*.md`, with a `title` in the frontmatter |
 
-To use the prompts of a Tuna assistant, write the absolute path of its `Input` folder as the single line of `library-path.txt` next to `rules.json`. Formats, validation and CUE schemas are in the [local files specification](docs/specs/local-files.md).
+To use the prompts of a Tuna assistant, choose its `Input` folder with **Choose folder…** in Settings ▸ Library, or write its absolute path as the single line of `library-path.txt` next to `rules.json`. Formats, validation and CUE schemas are in the [local files specification](docs/specs/local-files.md).
 
 **Local model.** Edits run on Ollama at `127.0.0.1:11434` with `qwen3.5:4b-mlx`. If Ollama is not running, the first edit starts it in the background: the app, without its window, or `ollama serve` when only the command-line tool is installed. Without Ollama or the model, the hint links to the download or offers `ollama pull` to copy; opening ⌘K says the same and asks a running Ollama to load the model in advance. The text with its instruction is limited to 12 KB, so select a passage of a long prompt.
 
-v0.2.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing the library inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
+**A hosted model.** Settings ▸ Model connects OpenRouter by signing in through the browser, or OpenAI and Claude with an API key pasted once, after saying what leaves the Mac and who pays. Keys live in the login keychain; choosing Ollama again is one click in **Model** in the menu bar menu, and a failed hosted edit offers **Edit with Ollama**. The rules are in the [model specification](docs/specs/model.md).
+
+**Reporting a problem.** **Report a problem…** in the menu bar menu turns your description, a few answers and an anonymized snapshot of Sushi into a text you edit and send yourself; **Copy build info** in Settings ▸ About copies which build runs, as `sushi version` prints it. See the [report](docs/specs/report.md) and [build info](docs/specs/build-info.md) specifications.
+
+v0.2.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing prompts and templates inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
 
 ## Development
 

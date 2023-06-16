@@ -1,6 +1,6 @@
 ---
 title: Actions and instructions
-description: The six built-in actions, how the ⌘K list matches what you type or say, instructions in your own words, and how to add actions of your own in rules.json.
+description: The six built-in actions, how the ⌘K list matches what you type or say, instructions in your own words, and how to add actions of your own in Settings or in rules.json.
 ---
 
 # Actions and instructions
@@ -18,7 +18,7 @@ description: The six built-in actions, how the ⌘K list matches what you type o
 | **Shorten** | Make the text concise. Keep all essential conditions. | make shorter |
 | **Structure** | Organize the text into logical sections and order its requirements. | organize |
 
-Each action also has Russian aliases, such as *сделай короче* for Shorten and *в цель* for Turn into goal. The list and every instruction live in `rules.json`, which you can [change](#add-your-own-actions).
+Each action also has Russian aliases, such as *сделай короче* for Shorten and *в цель* for Turn into goal. The list and every instruction live in `rules.json`, which you can [change](#add-your-own-actions) in Settings or by hand.
 
 ## Find an action
 
@@ -60,7 +60,17 @@ The text and the instruction together must fit within 12 KB. For a long prompt, 
 
 ## Add your own actions
 
-Actions live in `rules.json` in the settings folder: choose **Open Settings Folder** in the Sushi menu bar menu. Each entry has:
+Open **Settings…** in the Sushi menu bar menu, or press **⌘,** in the panel, and choose **Actions**:
+
+- **Add action** creates one: give it a **Name**, choose **Edit with the model** and write the instruction, or **Insert before the prompt** and write the text to put at the start of the prompt. Add **Phrases** that should also find it, typed or dictated, with Return after each.
+- **Duplicate** starts from an existing action. **Move up**, **Move down**, dragging, or **⌥↑** and **⌥↓** change the order of the **⌘K** list.
+- Deleting shows **Undo**, which stays until your next change to the list; **⌘Z** outside a text field undoes the latest deletion too.
+
+Each change is saved at once, and **⌘K** shows it the next time the panel appears. [Settings →](/guide/settings/#actions)
+
+### In the file
+
+Actions live in `rules.json` in the settings folder, which you can also edit by hand: **Show in Finder** under the Actions pane, or **Open settings folder** in Settings ▸ About, takes you there. Each entry has:
 
 | Field | Meaning |
 | --- | --- |
@@ -76,6 +86,6 @@ An entry has exactly one of `instruction` and `prefix`, and no other fields. The
 {"id": "criteria", "name": "Add acceptance criteria", "instruction": "Add a short list of acceptance criteria that follow from the text. Keep the original text.", "aliases": ["acceptance criteria", "done when"]}
 ```
 
-Save the file; Sushi reads it again the next time the panel appears. If an entry is wrong, the line above the bar names the file and the entry, such as *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.*, until you fix it.
+Save the file; Sushi reads it again the next time the panel appears, and Settings the next time you come back to it. If an entry is wrong, the line above the bar names the file and the entry, such as *rules.json: entry 3 needs exactly one of 'instruction' or 'prefix'.*, until you fix it; the Actions pane shows the same message and can [start over](/guide/settings/#when-a-file-is-broken) with the shipped actions.
 
 The exact file format, with a CUE schema to check it, is in the [local files specification](https://github.com/octopot/sushi/blob/main/docs/specs/local-files.md).

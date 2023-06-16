@@ -36,7 +36,7 @@ For a production server: `npm run build`, then `npm start`.
 | `components/install.jsx`, `components/keys.jsx` | Copyable install commands; keycaps |
 | `release.mjs` | The version, minimum macOS, chip, model, cask and archive name used across the pages |
 | `content/quick-start.mdx` | Install, first prompt, first edit, sending it |
-| `content/guide/` | Editing and versions, actions, voice, `/goal`, library and files, the model, keys, troubleshooting |
+| `content/guide/` | Editing and versions, actions, voice, `/goal`, the settings window, library and files, the model and hosted providers, keys, troubleshooting, reporting a problem |
 | `content/changelog/index.mdx` | Release overview |
 | `content/changelog/v0.2.1.md` | The latest release notes, also the GitHub release body |
 | `content/changelog/v0.2.0.md` | Release notes of v0.2.0: the rename from Susi and the upgrade steps |

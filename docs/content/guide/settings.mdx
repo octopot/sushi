@@ -1,0 +1,90 @@
+---
+title: Settings
+description: Change the key that shows Sushi, the model, your actions, the library folder and the dictionary in one window, over the same files you can still edit by hand.
+---
+
+# Settings
+
+Choose **Settings…** in the Sushi menu bar menu, or press **⌘,** in the panel. **About Sushi** in the same menu opens the window at About.
+
+The window has five panes: **Keyboard**, **Model**, **Actions**, **Library** and **About**. **⌘1** to **⌘5** switch between them, and **⌘W** closes the window.
+
+The panel hides when Settings opens. Caps Lock still shows the panel over the window, and **Esc** brings you back to Settings.
+
+To undo the deletion of an action or a term, click **Undo**, or press **⌘Z** outside a text field.
+
+## Changes save themselves
+
+There is no Save button. A change is saved as soon as you make it: when you leave a field, press Return in a one-line field, or click a control. *Saved* shows for a moment.
+
+What is not valid yet, such as an action without a name, stays in its field marked *Not saved*, with the reason beside it. Nothing is written until you fix it, and the window keeps it while Sushi runs, even after you close Settings.
+
+## Your files stay yours
+
+Every setting still lives in a plain file in the settings folder, and the window reads and writes those files. Under each section, a line names the file, with **Show in Finder** and **Open in editor**.
+
+You can keep editing the files by hand. The window reads them again each time you come back to it. If you changed a file while the window held a change of yours that is not saved yet, the pane says so, for example *Actions changed outside Settings.* with the actions the file changed, and lets you choose: **Use the file's version** or **Replace with my version**. Sushi never writes over a change it has not seen, with one rare exception: if your editor saves at the very moment Sushi saves the same file, your editor's change can be lost.
+
+A settings file that is a symbolic link is shown but never written: the pane says *These settings are managed in another file*.
+
+## Keyboard
+
+- **Show Sushi with:** **Caps Lock** or **Keyboard shortcut**.
+- **Change…** records a combination: press it, and it is taken when you let go. **Esc** cancels. A key without ⌃, ⌥, ⇧ or ⌘ is refused. While you record, the current key does not show the panel. **Restore ⌃⇧Space** next to it brings back the default.
+- With Caps Lock chosen, the combination is the *Backup shortcut*: Sushi uses it when it cannot take Caps Lock.
+- A status line says which key shows Sushi right now. When that is not the key you chose, it says why, which key works and what to do. If macOS uses Caps Lock to switch input sources, it offers **Open macOS keyboard settings…**; once you turn that option off, come back to Settings and Caps Lock works again.
+- A combination Sushi cannot register, for example because another app uses it, is not saved, the backup included, and the previous key goes back into effect; in the rare case that it cannot, Settings says *No shortcut is active.*, and **Show Sushi** in the menu bar menu still opens the panel. The same goes for a backup Sushi tried and could not release again; the message then says the combination may also show Sushi until you quit it.
+
+Below, *Panel shortcuts* lists the keys of the panel. [Keyboard reference →](/guide/keyboard/)
+
+## Model
+
+One row for each place an edit can run: Ollama on your Mac, OpenRouter, OpenAI and Claude. Click a row to see its details; looking does not switch anything. The one in use says *In use*. If `model.json` is broken, no row is in use: edits stop until you fix it or restore the default.
+
+- **Connect…** first says what leaves your Mac and who pays, then connects the provider. Its screens open on the Settings window, and your key goes from that screen straight to your keychain.
+- **Use for edits** makes a connected provider, or Ollama, the one edits run on.
+- **Model ID** chooses the provider's model; **Use Sushi's default** goes back to Sushi's choice, and **Browse models…** opens the provider's list in your browser. *Advanced* holds the reasoning effort, the service tier or the effort. Each says what an edit sends: *Not set in the file · edits send high*, or, for a value the file sets, what removing it would do: *Remove from the file — nothing is sent*.
+- **Disconnect…** asks first, then removes the key from your keychain.
+
+The menu bar menu's **Model** still switches between Ollama and your connected providers in one click. [Model →](/guide/model/)
+
+## Actions
+
+The actions of **⌘K**, in the order the list shows them.
+
+- **Add action** and **Duplicate** create one; **Move up**, **Move down**, dragging, or **⌥↑** and **⌥↓** reorder them.
+- Deleting shows **Undo**, which stays until your next change to the list; **⌘Z** outside a text field works too.
+- Each action has a **Name**, an **Action type**, **Edit with the model** or **Insert before the prompt**, the instruction or the text to insert, kept exactly as you type it, spaces and line breaks included, and **Phrases** that also find it: press Return after each. Inserted text shows a preview.
+- *Phrase used twice* means a phrase also finds another action. It is allowed: typed in **⌘K**, both are listed; dictated or pasted, the action higher in the list runs.
+
+[Actions and instructions →](/guide/actions/)
+
+## Library
+
+- **The folder** your prompts and templates come from, with their counts and where the choice comes from. **Choose folder…** reads another folder instead; it moves nothing. **Use default folder** goes back to the one in the settings folder. **Show library in Finder** opens it. If `library-path.txt` names a folder Sushi cannot use, the pane shows that path and says the Library cannot open until it is fixed.
+- When the `SUSHI_LIBRARY_DIR` environment variable is set, it decides the folder, and the pane says so.
+- **Dictionary:** the terms shown in the library's Dictionary section, *Heard as* and *Written as*. **Add term**, edit in place, delete with **Undo**. The terms are a reference: Sushi does not replace them in your text.
+
+[Library and files →](/guide/library/)
+
+## About
+
+- The version, **Copy build info** for a problem report, and **Documentation**, **Release notes** and **GitHub**. **Build details** shows the full block and the commit.
+- *Troubleshooting*:
+  - **Report a problem…** opens the report in the panel over Settings; when you leave the report, you are back in Settings.
+  - **Log panel activity** keeps a log of when the panel shows and hides; **Show log** shows it in Finder once there is one.
+  - Under *Saved reports*, **Show in Finder** opens the reports you saved; under *Settings folder*, **Open settings folder** opens the folder of these files.
+
+[Report a problem →](/guide/report/)
+
+## When a file is broken
+
+If a file is broken, for example after a hand edit, its pane says what could not be loaded and what Sushi does meanwhile; **Error details** shows the same message the panel gives. The other panes keep working. You can:
+
+- **Open settings file…** and fix it;
+- **Show in Finder**;
+- start over with the button named for the file, such as **Restore default actions…**, **Use the default folder…** or **Turn logging off…**: after you confirm, Sushi keeps the broken file next to it, as `rules.invalid-<date and time>.json`, and puts back the shipped actions, dictionary or key; no model choice, which means Ollama; the default library folder; no log.
+
+A file Sushi cannot read at all, for example because of its permissions, offers **Open settings file…** and **Show in Finder** only.
+
+The exact rules are in the [settings window specification](https://github.com/octopot/sushi/blob/main/docs/specs/settings.md).

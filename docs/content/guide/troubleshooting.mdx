@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: What Sushi's messages mean and what to do about them, from the shortcut and the first launch to Ollama, the model and your settings files.
+description: What Sushi's messages mean and what to do about them, from the shortcut and the first launch to Ollama, a hosted model and your settings files.
 ---
 
 # Troubleshooting
@@ -15,18 +15,24 @@ Sushi needs a Mac with Apple Silicon and macOS 26 or later.
 
 ## The shortcut does not work
 
-Sushi shows the panel on **Caps Lock**: while it runs, it maps Caps Lock to a key no keyboard has and listens to that key. It needs no permission, and quitting Sushi gives Caps Lock back. The menu bar menu shows the key in use.
+Sushi shows the panel on **Caps Lock**: while it runs, it maps Caps Lock to a key no keyboard has and listens to that key. It needs no permission, and quitting Sushi gives Caps Lock back. **Show Sushi** in the menu bar menu shows the key in use. When it is not the key you chose, a row under it, such as **Caps Lock unavailable…**, opens Settings ▸ Keyboard, which says why and what to do.
 
 | Message | What to do |
 | --- | --- |
-| *Caps Lock switches input sources on this Mac, so ⌃⇧Space shows Sushi.* | macOS uses Caps Lock to change the keyboard layout. Turn off **Use the Caps Lock key to switch to and from ABC** in System Settings → Keyboard → Input Sources → Edit, then turn **Use Caps Lock** off and on again in the menu bar menu. Or keep it and use ⌃⇧Space. |
-| *Another app already remaps Caps Lock, so ⌃⇧Space shows Sushi.* | Another tool owns Caps Lock, for example Raycast's Hyper Key or a `hidutil` mapping. Turn that off, then turn **Use Caps Lock** off and on again; or keep ⌃⇧Space. |
-| *Could not register …: …* | Another app holds that key combination. Free it there, or set another combination as `shortcut` in `hotkey.json` in the settings folder and turn **Use Caps Lock** off and on again. Until then, **Show Sushi** in the menu bar menu opens the panel. |
-| *hotkey.json: …* | The file is not valid. Sushi uses Caps Lock with ⌃⇧Space as the fallback until you fix it; see [Change the key](/guide/keyboard/#change-the-key). |
+| *Caps Lock switches input sources on this Mac, so ⌃⇧Space shows Sushi.* | macOS uses Caps Lock to change the keyboard layout. Turn off **Use the Caps Lock key to switch to and from ABC** in System Settings → Keyboard → Input Sources → Edit (**Open macOS keyboard settings…** in Settings ▸ Keyboard goes there), then come back to Settings: Sushi takes Caps Lock again. Or keep it and use the shortcut. |
+| *Another app already remaps Caps Lock, so ⌃⇧Space shows Sushi.* | Another tool owns Caps Lock, for example Raycast's Hyper Key or a `hidutil` mapping. Turn that off, then come back to Settings ▸ Keyboard, or quit Sushi and open it again; or keep the shortcut. |
+| *Could not register …: …* or *No key shows Sushi* | Another app holds that key combination. Free it there, or record another one in Settings ▸ Keyboard. Until then, **Show Sushi** in the menu bar menu opens the panel. |
+| *hotkey.json: …* | The file is not valid. At launch Sushi uses Caps Lock with ⌃⇧Space as the fallback until you fix it. Settings ▸ Keyboard shows the error and can [start over](/guide/settings/#when-a-file-is-broken); see [Change the key](/guide/keyboard/#change-the-key). |
 
-To keep Caps Lock for capitals, turn **Use Caps Lock** off in the menu bar menu: ⌃⇧Space then shows the panel, or the combination you put in `hotkey.json`.
+To keep Caps Lock for capitals, choose **Keyboard shortcut** in Settings ▸ Keyboard: ⌃⇧Space then shows the panel, or the combination you record there.
 
 If the panel shows but ignores keys, click inside it: a panel that is visible but not active does not receive keys.
+
+## The panel hides when Writing Tools opens
+
+On a Mac with Apple Intelligence, selecting text in the panel offers Writing Tools. Sushi 0.2.1 hid the panel when a Writing Tools window, such as the one **Summary** opens, took the keyboard, and the next Caps Lock showed the panel only for a moment. From 0.3.0 the panel stays open under that window and hides when you click another app or press Caps Lock; the next show brings the window back in front, and once you close it, typing goes to the panel again.
+
+If the panel still hides by itself, turn on **Log panel activity** in Settings ▸ About, repeat what hid the panel, and send the log, which **Show log** shows in Finder, with a [problem report](/guide/report/).
 
 ## Edits fail
 
@@ -45,7 +51,9 @@ If the panel shows but ignores keys, click inside it: a panel that is visible bu
 | *No changes* | The prompt already starts with `/goal `. |
 | *Write a prompt first* | The prompt, or the selection, is empty. |
 
-The first edit after Ollama starts takes longer while the model loads. Pressing **⌘K** with Ollama already running loads the model ahead of time. [Local model →](/guide/model/)
+The first edit after Ollama starts takes longer while the model loads. Pressing **⌘K** with Ollama already running loads the model ahead of time. [Model →](/guide/model/)
+
+With OpenRouter, OpenAI or Claude in use, a failed edit ends with **Edit with Ollama**, and a key that no longer works offers **Connect again**. [When a hosted edit fails →](/guide/model/#when-a-hosted-edit-fails)
 
 ## Copying fails
 
@@ -65,9 +73,15 @@ Errors in your files name the file and the entry, for example:
 | *dictionary.json: entry 2 needs both 'from' and 'to'.* | Fill in both. |
 | *dictionary.json: duplicate source 'mac whisper'.* | Spoken forms must differ, ignoring case. |
 | *Enter an absolute library directory in library-path.txt.* | Write a full path starting with `/`, or delete the file to use the default library. |
+| *model.json: …* | Fix the field it names, or delete the file to edit with Ollama. Settings ▸ Model writes the file for you. |
+| *diagnostics.json: …* | The file holds one field, `record`, true or false. Fix it, or delete it to stop recording; **Log panel activity** in Settings ▸ About writes it for you. |
 
-Sushi reads the files again each time the panel appears, so a fixed file takes effect the next time you open it. The message stays until then. [Library and files →](/guide/library/#your-files)
+Sushi reads the files again each time the panel appears, so a fixed file takes effect the next time you open it. The message stays until then. Settings shows the same message in the file's pane and can start that file over from the defaults, keeping the broken one next to it. [Settings →](/guide/settings/#when-a-file-is-broken)
+
+An invalid `dictionary.json` no longer stops your actions, and an invalid `rules.json` no longer hides the dictionary.
 
 ## Report a problem
 
-[Open an issue](https://github.com/octopot/sushi/issues/new) with the message, what you did just before it, and your macOS version. Leave your prompt text out unless it is needed.
+Choose **Report a problem…** in the menu bar menu or in Settings ▸ About: Sushi puts together a report with your description, the build and its own state, leaving your prompts, files and keys out, and you send it yourself. When the panel does not stay open, send the build info and the log from Settings ▸ About instead. [Report a problem →](/guide/report/)
+
+To say only which build you run, choose **About Sushi** in the menu bar menu and click **Copy build info**: it copies a short block with the version, the commit and your macOS version.

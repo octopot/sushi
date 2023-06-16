@@ -10,15 +10,20 @@ description: Every key in Sushi on one page, for the panel, the ⌘K actions lis
 | Keys | Action |
 | --- | --- |
 | **Caps Lock** | Show Sushi; press again to hide it. While Sushi runs, Caps Lock does not switch case. |
-| **⌃⇧Space** | The same, when **Use Caps Lock** is off in the menu bar menu or Caps Lock is taken. Change it in `hotkey.json`. |
+| **⌃⇧Space** | The same, when you choose a keyboard shortcut instead of Caps Lock, or Caps Lock is taken. Change it in [Settings ▸ Keyboard](/guide/settings/#keyboard). |
 
 ## Change the key
 
-Caps Lock shows Sushi while **Use Caps Lock** is on in the menu bar menu. Sushi maps Caps Lock to a key no keyboard has, on every keyboard, including one you connect later; other key mappings stay as they are, and quitting Sushi gives Caps Lock back. No permission is needed.
+Open **Settings…** in the menu bar menu, or press **⌘,** in the panel, and choose **Keyboard**.
 
-Turn **Use Caps Lock** off to keep Caps Lock for capitals: then **⌃⇧Space** shows Sushi. Sushi also falls back to it when macOS switches input sources with Caps Lock or another app already remaps it, and says so in the panel.
+- **Caps Lock** shows Sushi. Sushi maps Caps Lock to a key no keyboard has, on every keyboard, including one you connect later; other key mappings stay as they are, and quitting Sushi gives Caps Lock back. No permission is needed.
+- **Keyboard shortcut** keeps Caps Lock for capitals. Click **Change…** and press the combination you want, with at least one of ⌃, ⌥, ⇧ or ⌘; it is taken when you let go, and **Esc** cancels. **Restore ⌃⇧Space** next to it brings back the default.
 
-Both choices live in `hotkey.json` in the settings folder (**Open Settings Folder** in the menu bar menu):
+With Caps Lock chosen, the combination is the backup: Sushi uses it when macOS switches input sources with Caps Lock or another app already remaps it, and says so in the panel, in the menu bar menu and in Settings. **Show Sushi** in the menu bar menu always shows the key in effect.
+
+### In the file
+
+The choice lives in `hotkey.json` in the settings folder, and you can still edit it by hand:
 
 ```json
 {
@@ -27,13 +32,14 @@ Both choices live in `hotkey.json` in the settings folder (**Open Settings Folde
 }
 ```
 
-`shortcut` takes modifiers (`Control`, `Option`, `Shift`, `Command`) and one key, joined with `+`: `Option+Command+KeyP`, `Control+Shift+Space`, `Shift+F13`. Sushi reads the file at launch and when you switch **Use Caps Lock**; the switch writes `capsLock` back. To return to ⌘⇧Space, the key of Susi, set `"capsLock": false` and `"shortcut": "Command+Shift+Space"`; on macOS 27 that combination opens Visual Intelligence instead.
+`shortcut` takes modifiers (`Control`, `Option`, `Shift`, `Command`) and one key, joined with `+`: `Option+Command+KeyP`, `Control+Shift+Space`, `Shift+F13`. Sushi reads the file at launch and when you come back to the Settings window, which applies a hand edit at once. To return to ⌘⇧Space, the key of Susi, set `"capsLock": false` and `"shortcut": "Command+Shift+Space"`; on macOS 27 that combination opens Visual Intelligence instead.
 
 ## In the panel
 
 | Keys | Action |
 | --- | --- |
 | **⌘K** | Actions on the selection, or on the whole prompt. A right click opens the usual macOS menu. |
+| **⌘,** | Open Settings. |
 | **⌘L** | The library: templates, prompts and dictionary. |
 | **⌘↵** | Copy the prompt, hide Sushi, return to the previous app. On a diff, the copy accepts the edit. |
 | **⇧⌘↵** | Copy the same, then start an empty prompt. |
@@ -73,6 +79,17 @@ A pasted phrase that names an action runs it without **Enter**. [Dictate with Ma
 | **⌘L** or **Esc** | Close the library. |
 
 Section letters and numbers follow the key's position, so they work with any keyboard layout. **⌘L T 1** opens the first template.
+
+## Settings (⌘,)
+
+| Keys | Action |
+| --- | --- |
+| **⌘1**–**⌘5** | Keyboard, Model, Actions, Library, About. |
+| **⌥↑** **⌥↓** | Move the selected action up or down. |
+| **⌘Z** | Outside a text field: undo the latest deletion of an action or a term. |
+| **⌘W** | Close Settings and return to the app you came from. |
+
+[Settings →](/guide/settings/)
 
 ## The bottom bar
 

@@ -5,8 +5,10 @@ export default {
   voice: 'Dictate with MacWhisper',
   goal: 'Long prompts with /goal',
   setup: { type: 'separator', title: 'Make it yours' },
+  settings: 'Settings',
   library: 'Library and files',
-  model: 'Local model',
+  model: 'Model',
   keyboard: 'Keyboard reference',
   troubleshooting: 'Troubleshooting',
+  report: 'Report a problem',
 }

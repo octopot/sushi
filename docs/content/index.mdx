@@ -72,7 +72,7 @@ import { release } from '../release.mjs'
       <p className="eyebrow">04 / ⌘L</p>
       <h2>Start from what already works.</h2>
       <p><Keys keys={['⌘', 'L']} /> opens one searchable list of your templates, saved prompts and dictation dictionary. <Keys keys={['⌘', 'L']} /> <Keys keys={['T']} /> <Keys keys={['3']} /> opens the third template, with the caret on its first empty line.</p>
-      <p>They are Markdown and JSON files in a folder you open from the menu bar. Edit them in any editor, or point Sushi at a library you already keep.</p>
+      <p>They are Markdown and JSON files in a folder of your own. Change the actions, the dictionary and the library folder in Settings, edit the files in any editor, or point Sushi at a library you already keep.</p>
       <Link className="sushi-more" href="/guide/library/">Library and files <span aria-hidden="true">→</span></Link>
     </Reveal>
     <div className="sushi-tile"><LibraryDemo /></div>
@@ -91,11 +91,11 @@ import { release } from '../release.mjs'
 
   <section className="sushi-local">
     <Reveal className="sushi-local-copy">
-      <p className="eyebrow">06 / LOCAL ONLY</p>
-      <h2>Nothing leaves your Mac.</h2>
+      <p className="eyebrow">06 / LOCAL BY DEFAULT</p>
+      <h2>By default, nothing leaves your Mac.</h2>
       <p>Edits run on Ollama with <code>{release.model}</code> at 127.0.0.1. Before any text goes out, Sushi checks that the model really is local and refuses one that Ollama would forward to a cloud service. There is no account and no server of ours.</p>
-      <p>If Ollama is not running, the first edit starts it; if it is not installed, Sushi links to the download. When you open actions, Sushi asks a running Ollama to load the model, so the edit itself starts sooner.</p>
-      <Link className="sushi-more" href="/guide/model/">The local model <span aria-hidden="true">→</span></Link>
+      <p>If Ollama is not running, the first edit starts it; if it is not installed, Sushi links to the download. When an edit needs a bigger model, you can connect OpenRouter, OpenAI or Claude in Settings; Sushi says what would leave the Mac and who pays before anything does.</p>
+      <Link className="sushi-more" href="/guide/model/">The model <span aria-hidden="true">→</span></Link>
     </Reveal>
     <LocalDiagram />
   </section>
@@ -123,19 +123,20 @@ import { release } from '../release.mjs'
       <p className="eyebrow">IN v{release.version}</p>
       <ul>
         <li>The panel on <Keys keys={['Caps Lock']} />, with a menu bar icon</li>
-        <li>Six actions, plus your own in <code>rules.json</code></li>
+        <li>Six actions, plus your own, made in Settings or in <code>rules.json</code></li>
         <li>Instructions in your own words, typed or dictated</li>
         <li>Inline diffs and a version chain that survives a restart</li>
         <li>Templates, saved prompts and a dictionary view on <Keys keys={['⌘', 'L']} /></li>
         <li>Copy and return to the app you came from</li>
+        <li>A settings window over the same files, opened with <Keys keys={['⌘', ',']} /></li>
       </ul>
     </div>
     <div>
       <p className="eyebrow">NOT IN THIS RELEASE</p>
       <ul className="is-not">
-        <li>Another model or a cloud provider: edits use <code>{release.model}</code> through Ollama</li>
+        <li>Choosing among all hosted models: each provider has one</li>
         <li>A microphone of its own: dictate with MacWhisper or a similar tool</li>
-        <li>Editing actions, templates or prompts inside the panel: they are files</li>
+        <li>Editing templates or prompts inside Sushi: they are files</li>
         <li>Dictionary replacement: the terms are shown, not applied</li>
         <li>Intel Macs, macOS before {release.macos}, and a notarized download</li>
       </ul>
