@@ -2,7 +2,6 @@
 mod bindings;
 mod hotkey;
 mod library;
-mod migrate;
 mod model;
 mod openrouter;
 mod rewrite;
@@ -45,7 +44,7 @@ pub(crate) fn staged() -> bool {
     STAGE.load(Ordering::Relaxed)
 }
 
-/// Problems found while starting (the hotkey, the move from Susi), shown once the page asks.
+/// Problems found while starting (the hotkey), shown once the page asks.
 #[derive(Default)]
 struct StartupNotes(Mutex<Vec<String>>);
 
@@ -179,12 +178,6 @@ fn main() {
         std::process::exit(2);
     }
     let notes = StartupNotes::default();
-    if !stage {
-        // Before the webview exists: WebKit must find the copied draft in its new folder.
-        if let Some(note) = migrate::run(&context.config().identifier) {
-            notes.add(note);
-        }
-    }
     let mut builder = tauri::Builder::default();
     if stage {
         builder = builder.activate_ignoring_other_apps(false);

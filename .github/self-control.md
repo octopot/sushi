@@ -52,11 +52,6 @@ touching Sushi; the note says so.
   Sushi's own entry. Not tried live. If the next launch falls back to
   ⌃⇧Space with "Another app already remaps Caps Lock", the check in
   `sushi_caps_take` is the place to look.
-- [ ] **v0.3.0 removes the move from Susi**: `src-tauri/src/migrate.rs`,
-  `sushi_quit_app` in `macos.m`, the `susi.draft.v3` fallback in `src/main.ts`,
-  LF-17 and the Susi part of VH-18, their tests, `x-release.tap.renamed_from`
-  in `.github/settings.json`. The tap keeps `cask_renames.json` and the cask's
-  `zap` keeps Susi's folders.
 
 ### After v0.1.1
 

@@ -645,7 +645,7 @@ test('Sushi composer', async t => {
     await page.waitForFunction(() => document.querySelector('#hint').textContent === '')
   })
 
-  await t.test('the draft and its position survive a reload; the Susi draft carries over once', async t => {
+  await t.test('the draft and its position survive a reload', async t => {
     const page = await start(t)
     await page.keyboard.insertText('One')
     await act(page, 'Shorten', 'Two')
@@ -660,17 +660,6 @@ test('Sushi composer', async t => {
     await page.keyboard.press('Meta+ArrowLeft')
     await page.keyboard.press('Meta+ArrowLeft')
     await copy(page, 'One')
-
-    // The draft Susi left in the copied WebKit folder opens where it was; v0.3.0: remove.
-    const susi = JSON.stringify({ versions: [{ text: 'Susi first' }, { text: 'Susi second' }], index: 0, diff: false })
-    const legacy = await start(t, { storage: { 'susi.draft.v3': susi, 'susi.history.v2': '{}', 'susi.draft.v1': '{}' } })
-    assert.equal(await editorText(legacy), 'Susi first')
-    assert.equal(await legacy.evaluate(() => localStorage.getItem('susi.draft.v3') !== null), true, 'kept until the new key is written')
-    await legacy.keyboard.press('End')
-    await legacy.keyboard.insertText('!')
-    await legacy.waitForFunction(() => localStorage.getItem('sushi.draft.v3') !== null)
-    assert.deepEqual(await legacy.evaluate(() => ['susi.draft.v3', 'susi.history.v2', 'susi.draft.v1'].map(key => localStorage.getItem(key))), [null, null, null])
-    assert.deepEqual(await legacy.evaluate(() => JSON.parse(localStorage.getItem('sushi.draft.v3')).versions.map(v => v.text)), ['Susi first!', 'Susi second'])
 
     // A copy flag saved before a restart selects the text once, at startup.
     const draft = JSON.stringify({ versions: [{ text: 'Copied before' }], index: 0, copied: true })

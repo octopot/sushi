@@ -25,12 +25,9 @@ const hintSlot = $('hint')
 // ——— Draft ———
 
 const KEY = 'sushi.draft.v3'
-// Susi's keys, copied with its WebKit folder on the first launch of Sushi. v0.3.0: remove.
-const SUSI_KEY = 'susi.draft.v3'
-const SUSI_LEFTOVERS = [SUSI_KEY, 'susi.history.v2', 'susi.draft.v1']
 function loadChain(): Chain {
   const read = (key: string) => { try { return JSON.parse(localStorage.getItem(key) ?? 'null') } catch { return undefined } }
-  return Chain.restore(read(KEY) ?? read(SUSI_KEY))
+  return Chain.restore(read(KEY))
 }
 const chain = loadChain()
 let saveTimer = 0
@@ -41,11 +38,7 @@ function save(now = false): boolean {
     saveTimer = window.setTimeout(() => save(true), 200)
     return true
   }
-  const write = () => {
-    localStorage.setItem(KEY, JSON.stringify(chain))
-    // Only once the draft is safe under the new key.
-    for (const key of SUSI_LEFTOVERS) localStorage.removeItem(key)
-  }
+  const write = () => localStorage.setItem(KEY, JSON.stringify(chain))
   try { write(); return true } catch (e) {
     try {
       if (!chain.compact()) throw e
