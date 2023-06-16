@@ -6,11 +6,11 @@ number: 1
 url: https://github.com/octopot/sushi/milestone/1
 title: "M1: Prompt always at hand"
 state: CLOSED
-openIssueCount: null
-closedIssueCount: null
+openIssueCount: 0
+closedIssueCount: 4
 dueOn: null
 createdAt: 2026-11-23T10:49:15Z
-updatedAt: 2026-11-23T10:51:04Z
+updatedAt: 2026-11-23T11:09:14Z
 closedAt: 2026-11-23T10:49:15Z
 ---
 
@@ -27,13 +27,13 @@ One key opens a panel over any app, a full-screen one included. You write a prom
 
 **Done:** the loop *open → write or dictate → edit → copy and paste* works on the desktop and over a full-screen app on macOS 26 and later. Delivered in v0.1.0 – v0.2.1.
 
-**Follow-ups:** the reporters confirm the fixes of [[SUSI-2]] and [[SUSI-4]]; [[SUSI-3]] is delivered and ready to close.
+**Checked:** the reporters confirmed the fixes on their Macs, and all four issues are closed. A second display and Stage Manager are still to be tried.
 
 **Known exception:** on one Mac the panel hides after ⌘A ([[SUSI-7]]); the fix is tracked in M2.
 
 ## Issues
 
 - [x] [[SUSI-1]] — hotkey: move off ⌘⇧Space, which macOS 27 and 1Password claim
-- [ ] [[SUSI-2]] — panel: show over a full-screen app without switching Spaces, and stay out of Mission Control
-- [ ] [[SUSI-3]] — editor: a right click opens the macOS menu, not the actions
-- [ ] [[SUSI-4]] — rewrite: starting Ollama opens its window and takes the focus
+- [x] [[SUSI-2]] — panel: show over a full-screen app without switching Spaces, and stay out of Mission Control
+- [x] [[SUSI-3]] — editor: a right click opens the macOS menu, not the actions
+- [x] [[SUSI-4]] — rewrite: starting Ollama opens its window and takes the focus

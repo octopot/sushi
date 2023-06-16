@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/12
 title: "app: embed build info and show which version and build is running"
 issueType: Feature
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"

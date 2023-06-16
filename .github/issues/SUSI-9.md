@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/13
 title: "app: report a problem from the menu as a text the user can edit and send"
 issueType: Feature
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"

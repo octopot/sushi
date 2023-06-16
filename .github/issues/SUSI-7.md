@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/11
 title: "panel: hides right after ⌘A selects all text, then flickers on Caps Lock"
 issueType: Bug
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"

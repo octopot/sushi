@@ -7,20 +7,20 @@ url: https://github.com/octopot/sushi/issues/4
 title: "editor: a right click opens the macOS menu, not the actions"
 issueType: Bug
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M1]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T14:50:31Z
-updatedAt: 2026-11-23T10:50:28Z
-lastEditedAt: null
-closedAt: null
+updatedAt: 2026-11-23T11:08:31Z
+lastEditedAt: 2026-11-23T11:07:59Z
+closedAt: 2026-11-23T11:08:31Z
 ---
 
 # editor: a right click opens the macOS menu, not the actions
@@ -43,10 +43,14 @@ A right click opens the macOS context menu, with or without a selection, as in a
 
 ## Acceptance criteria
 
-- [ ] A right click on a selection opens the system context menu and leaves the selection as it was; the actions stay closed.
-- [ ] A browser scenario in `tests/composer.test.mjs` fails on the old behaviour and passes on the new one.
-- [ ] README, the editing and keyboard guides, the landing page and VH-10 no longer offer the right click for actions; the release note of the version that ships it says so.
+- [x] A right click on a selection opens the system context menu and leaves the selection as it was; the actions stay closed.
+- [x] A browser scenario in `tests/composer.test.mjs` fails on the old behaviour and passes on the new one.
+- [x] README, the editing and keyboard guides, the landing page and VH-10 no longer offer the right click for actions; the release note of the version that ships it says so.
 
 ## Out of scope
 
 Adding Sushi's own items, such as the actions, to the system context menu.
+
+<!-- 2026-11-23T11:30Z https://github.com/octopot/sushi/issues/4#issuecomment-7099085640
+Closed: v0.2.1 shipped it. A right click opens the macOS menu (`tests/composer.test.mjs`, VH-10), the guides no longer offer it for actions, and the v0.2.1 note says so.
+-->

@@ -7,20 +7,20 @@ url: https://github.com/octopot/sushi/issues/3
 title: "panel: show over a full-screen app without switching Spaces, and stay out of Mission Control"
 issueType: Bug
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M1]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T13:16:28Z
-updatedAt: 2026-11-23T10:50:25Z
-lastEditedAt: 2026-11-19T14:51:12Z
-closedAt: null
+updatedAt: 2026-11-23T11:08:29Z
+lastEditedAt: 2026-11-23T11:07:56Z
+closedAt: 2026-11-23T11:08:29Z
 ---
 
 # panel: show over a full-screen app without switching Spaces, and stay out of Mission Control
@@ -50,15 +50,15 @@ The panel is an overlay on the Space the user is in, like Spotlight. Caps Lock s
 
 ## Acceptance criteria
 
-- [ ] Over an app in full screen, Caps Lock shows the panel on top of it with no Space animation; the app stays in full screen behind the panel.
-- [ ] Esc, Caps Lock, ⌘↵ and ⇧⌘↵ hide the panel and keyboard focus is back in the full-screen app on the same Space; after ⌘↵, ⌘V pastes the prompt there.
-- [ ] A click in another app, another window or on the desktop hides the panel, as Spotlight and Raycast do; focus stays where the user clicked, and the draft is kept.
+- [x] Over an app in full screen, Caps Lock shows the panel on top of it with no Space animation; the app stays in full screen behind the panel.
+- [x] Esc, Caps Lock, ⌘↵ and ⇧⌘↵ hide the panel and keyboard focus is back in the full-screen app on the same Space; after ⌘↵, ⌘V pastes the prompt there.
+- [x] A click in another app, another window or on the desktop hides the panel, as Spotlight and Raycast do; focus stays where the user clicked, and the draft is kept.
 - [ ] The same on a desktop Space, on a second display (the panel shows on the display the user works on), and with Stage Manager on.
-- [ ] Mission Control and App Exposé do not show the panel, whether it is open or hidden.
-- [ ] Everything inside the panel works as before: typing and IME, dictation into the editor and the action field, ⌘K, ⌘L, ⌘← ⌘→, ⌘C ⌘V ⌘X ⌘Z ⇧⌘Z ⌘A, the right-click menu, the glass and its shadow.
+- [x] Mission Control and App Exposé do not show the panel, whether it is open or hidden.
+- [x] Everything inside the panel works as before: typing and IME, dictation into the editor and the action field, ⌘K, ⌘L, ⌘← ⌘→, ⌘C ⌘V ⌘X ⌘Z ⇧⌘Z ⌘A, the right-click menu, the glass and its shadow.
 - [ ] Dictation tools see the panel's text field: MacWhisper shows its recording bubble while the panel is open, as it does over Raycast, and the text lands in the editor.
-- [ ] Showing the panel from the menu bar menu (**Show Sushi**) behaves the same way.
-- [ ] Checked by hand, as AGENTS.md asks for keys, Spaces and focus. The checks become regression scenarios in `docs/specs/panel.md`, each run written down with its date, build and result.
+- [x] Showing the panel from the menu bar menu (**Show Sushi**) behaves the same way.
+- [x] Checked by hand, as AGENTS.md asks for keys, Spaces and focus. The checks become regression scenarios in `docs/specs/panel.md`, each run written down with its date, build and result.
 
 ## Out of scope
 
@@ -120,4 +120,10 @@ Two ways MacWhisper could keep the bubble visible here, and in any app with a lo
 To reproduce: any text field that scrolls and holds more text than fits, with the caret in the visible part; start dictation and look at the window list: the bubble window exists, off-screen.
 
 Thank you for MacWhisper!
+-->
+
+<!-- 2026-11-23T11:30Z https://github.com/octopot/sushi/issues/3#issuecomment-7099084435
+Closed: v0.2.1 shipped it, and the reporter confirmed it on their Mac. The run of 2026-11-23 on v0.2.1 from the cask passed PR-1, PR-2, PR-4, PR-5 and **Show Sushi** from the menu (`docs/specs/panel.md`).
+
+Two criteria stay open outside this issue: a second display and Stage Manager (PR-7) wait for hardware in `.github/self-control.md`, and MacWhisper's bubble under a prompt taller than the panel is MacWhisper's to fix, as the research comment above explains.
 -->

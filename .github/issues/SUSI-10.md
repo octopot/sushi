@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/14
 title: "rewrite: connect OpenAI and edit through its API"
 issueType: Feature
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"

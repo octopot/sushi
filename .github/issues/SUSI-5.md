@@ -7,20 +7,20 @@ url: https://github.com/octopot/sushi/issues/6
 title: "rewrite: an edit the model leaves unchanged passes unnoticed"
 issueType: Bug
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T15:15:48Z
-updatedAt: 2026-11-23T10:50:33Z
-lastEditedAt: null
-closedAt: null
+updatedAt: 2026-11-23T11:08:36Z
+lastEditedAt: 2026-11-23T11:08:04Z
+closedAt: 2026-11-23T11:08:36Z
 ---
 
 # rewrite: an edit the model leaves unchanged passes unnoticed
@@ -48,10 +48,14 @@ The outcome of every model edit stays visible until the next step:
 
 ## Acceptance criteria
 
-- [ ] An unchanged reply leaves a hint that names the cause and stays past three seconds; typing, ⌘←/⌘→, ⌘K or ⌘L clears it.
-- [ ] A diff from the model shows its time and the number of changed places in the hint; a prefix action (Turn into goal) shows the count without a time.
-- [ ] Browser scenarios in `tests/composer.test.mjs` cover both; VH-10, the editing and actions guides and troubleshooting describe the new hint.
+- [x] An unchanged reply leaves a hint that names the cause and stays past three seconds; typing, ⌘←/⌘→, ⌘K or ⌘L clears it.
+- [x] A diff from the model shows its time and the number of changed places in the hint; a prefix action (Turn into goal) shows the count without a time.
+- [x] Browser scenarios in `tests/composer.test.mjs` cover both; VH-10, the editing and actions guides and troubleshooting describe the new hint.
 
 ## Out of scope
 
 A view of what was sent to the model and what came back; a larger model or a different system instruction.
+
+<!-- 2026-11-23T11:30Z https://github.com/octopot/sushi/issues/6#issuecomment-7099087971
+Closed: v0.2.1 shipped it. The hint keeps *No changes* until the next step and shows the model, the time and the changed places (`tests/composer.test.mjs`, VH-4, VH-10).
+-->

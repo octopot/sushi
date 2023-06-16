@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/15
 title: "rewrite: connect Claude through the Anthropic API"
 issueType: Feature
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"

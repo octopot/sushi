@@ -7,20 +7,20 @@ url: https://github.com/octopot/sushi/issues/5
 title: "rewrite: starting Ollama opens its window and takes the focus"
 issueType: Bug
 labels:
-  - "impact: medium"
   - "scope: code"
+  - "impact: medium"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M1]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T15:03:27Z
-updatedAt: 2026-11-23T10:50:31Z
-lastEditedAt: null
-closedAt: null
+updatedAt: 2026-11-23T11:08:34Z
+lastEditedAt: 2026-11-23T11:08:01Z
+closedAt: 2026-11-23T11:08:34Z
 ---
 
 # rewrite: starting Ollama opens its window and takes the focus
@@ -45,10 +45,14 @@ Ollama starts in the background, with its menu bar icon only. The edit arrives i
 
 ## Acceptance criteria
 
-- [ ] Sushi starts the Ollama app hidden and with fast startup, as Ollama's own command line does; a Rust test fixes the arguments.
-- [ ] A regression scenario in `docs/specs/panel.md` covers an edit with Ollama quit, and a run of it passes on the release build.
-- [ ] Starting the command-line `ollama serve` (no app installed) stays as it is.
+- [x] Sushi starts the Ollama app hidden and with fast startup, as Ollama's own command line does; a Rust test fixes the arguments.
+- [x] A regression scenario in `docs/specs/panel.md` covers an edit with Ollama quit, and a run of it passes on the release build.
+- [x] Starting the command-line `ollama serve` (no app installed) stays as it is.
 
 ## Out of scope
 
 Stopping Ollama after the edit, or starting it before the first ⌘K.
+
+<!-- 2026-11-23T11:30Z https://github.com/octopot/sushi/issues/5#issuecomment-7099086781
+Closed: v0.2.1 shipped it, and the reporter confirmed it on their Mac. PR-8 passed on v0.2.1 from the cask on 2026-11-23; `starts_the_app_hidden_and_behind` fixes the `open` arguments.
+-->

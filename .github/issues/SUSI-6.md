@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/7
 title: "rewrite: connect OpenRouter from the menu, without copying a key"
 issueType: Feature
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"
