@@ -4,57 +4,54 @@ id: I_kwDOVy11Hs8AAAABgwT4yA
 databaseId: 6493108424
 number: 7
 url: https://github.com/octopot/sushi/issues/7
-title: "rewrite: edit through OpenRouter, chosen in model.json"
+title: "rewrite: connect OpenRouter from the menu, without copying a key"
 issueType: Feature
 labels:
   - "impact: high"
   - "scope: code"
 assignees:
   - kamilsk
-milestone: null
+milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
 state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-19T15:33:01Z
-updatedAt: 2026-11-19T15:34:31Z
-lastEditedAt: 2026-11-19T15:34:31Z
+updatedAt: 2026-11-23T10:50:36Z
+lastEditedAt: 2026-11-23T10:50:36Z
 closedAt: null
 ---
 
-# rewrite: edit through OpenRouter, chosen in model.json
+# rewrite: connect OpenRouter from the menu, without copying a key
 
 ## Motivation
 
 The local qwen3.5:4b-mlx leaves alone edits that change what a passage means ([[SUSI-5]]): asked to have Codex's remarks read with skepticism instead of Codex acting as the skeptic, it returns the paragraph as it was. A hosted model does that edit well and as fast: GPT-6 Luna through OpenRouter made it in about 3 s with high reasoning effort on the fast tier, against 2.6 s for the local model.
 
-Ollama stays what Sushi ships with and the site's promise stays true by default: a user who wants a hosted model opts in with a file, as every other setting in Sushi is a file.
+v0.2.1 shipped the OpenRouter request without an announcement: a user who writes `model.json` by hand, with a key copied from the OpenRouter site, gets edits through it. That is a developer's path. A user should connect a hosted model in a few clicks from the menu, see at once what it costs them and what leaves the Mac, and never edit a file or copy a key. Ollama stays the default, and *by default nothing leaves your Mac* stays true.
 
-The work comes in two steps. v0.2.1 ships the provider without an announcement: the file, the request, the failures, specified in `docs/specs/model.md`. v0.3.0 announces it with a thought-out integration: how the user connects OpenRouter, the guide and the site. This issue stays open until then.
+OpenRouter lets an app get a key without the user copying one: [OAuth PKCE](https://openrouter.ai/docs/use-cases/oauth-pkce). The user signs in and approves in the browser, and the app receives a new key on the user's own account, billed to their credits; the key shows on their OpenRouter keys page, where it can get a limit or be revoked. Which callback URLs OpenRouter accepts from a desktop app (a custom scheme, a loopback port) has to be checked first.
 
-## Connecting through OpenRouter (for v0.3.0)
-
-OpenRouter lets an app get a key without the user copying one: [OAuth PKCE](https://openrouter.ai/docs/use-cases/oauth-pkce). The app opens `https://openrouter.ai/auth?callback_url=<url>&code_challenge=<challenge>&code_challenge_method=S256`; the user signs in and approves; OpenRouter redirects to the callback with a `code`, and the app exchanges it at `POST https://openrouter.ai/api/v1/auth/keys` (with the `code_verifier`) for a new API key.
-
-- The key is a new, separate key on the user's own account, billed to their credits. It shows on the user's OpenRouter keys page, where it can get a credit limit or be revoked like any other key; the app only stores it.
-- The callback needs a URL Sushi answers: a custom scheme (`sushi://openrouter`, Tauri's deep-link plugin) or a one-shot server on `127.0.0.1`.
-- Open questions for v0.3.0: where the key lives (the Keychain rather than `model.json`), whether Sushi offers a limit when connecting, how the user disconnects, and how the panel says which provider is active.
+This issue builds the way to connect a provider and uses it for OpenRouter. [[SUSI-10]] (OpenAI) and [[SUSI-11]] (Anthropic) reuse it.
 
 ## PoC
 
 ```text
-~/Library/Application Support/me.octopot.sushi/model.json:
+Menu bar menu → Model ▸
+  ✓ Ollama · qwen3.5:4b-mlx (on this Mac)
+    Connect OpenRouter…
 
-{
-  "provider": "openrouter",
-  "openrouter": {
-    "key": "sk-or-v1-…",
-    "model": "openai/gpt-6-luna",
-    "reasoning": "high",
-    "tier": "fast"
-  }
-}
+Connect OpenRouter…  → one screen, before the browser opens:
+  "Edits go to OpenRouter: the instruction and the selected text,
+   or the whole prompt when nothing is selected.
+   Billed to your OpenRouter credits. Model: gpt-6-luna. [Connect] [Cancel]"
+  → browser: sign in, approve → back in Sushi: "Connected to OpenRouter"
+
+Model ▸
+    Ollama · qwen3.5:4b-mlx (on this Mac)
+  ✓ OpenRouter · gpt-6-luna
+    Disconnect OpenRouter
 
 ⌘K → Shorten  →  "Shorten · gpt-6-luna · 3.0 s · 2 changes · ⌘← Back · ⌘→ Accept"
 Without network →  "OpenRouter is not reachable. Edit with Ollama"
@@ -62,15 +59,15 @@ Without network →  "OpenRouter is not reachable. Edit with Ollama"
 
 ## Acceptance criteria
 
-- [ ] Without `model.json`, or with `"provider": "ollama"`, edits go to Ollama exactly as in v0.2.0.
-- [ ] With `"provider": "openrouter"`, an edit sends the instruction and the target text with Sushi's system instruction to `openrouter.ai/api/v1/chat/completions`: the model from the file, `reasoning` with the effort from the file and `exclude: true`, `service_tier` from the file, and `provider.data_collection: "deny"`. Nothing else of the prompt leaves the Mac.
-- [ ] The key is read from `model.json` on every edit and never reaches the page, the hint or an error message.
-- [ ] An invalid `model.json` is reported by file and field, as `rules.json` is; ⌘K says so before an edit.
-- [ ] A failed OpenRouter edit (no network, a rejected key, no credits, rate limit, a server error) stops with a plain message and **Edit with Ollama**, which runs the same edit on the same text locally.
-- [ ] The hint after an edit names the model that answered.
-- [ ] A spec (`docs/specs/model.md`, `local-files.md`, `files.cue`, an example file), Rust tests against a local mock server, an ignored live test with `OPENROUTER_TOKEN`, and browser scenarios for the messages and the summary.
-- [ ] v0.3.0: connecting through OpenRouter, the model guide, the README, troubleshooting and the release note describe the option; the landing page still says that by default nothing leaves the Mac.
+- [ ] **Connect.** **Model ▸ Connect OpenRouter…** first says in one screen what goes to OpenRouter (the instruction and the selected text, or the whole prompt when nothing is selected), who pays and which model answers, then signs in through the browser with PKCE. The user copies no key and edits no file. The default model is named in the specification.
+- [ ] **Which model answers.** The **Model** menu shows the active provider and model with a check mark, and switching between Ollama and a connected provider takes one click. The hint after an edit names the model that answered.
+- [ ] **Cancel and disconnect.** Cancelling, closing the browser or a failed exchange keeps the previous choice and says why. **Disconnect OpenRouter** forgets the key and says where it can be revoked on OpenRouter; disconnecting the active provider makes Ollama active, disconnecting another one keeps the current choice.
+- [ ] **The key.** The key lives in the macOS Keychain, never reaches the page, the hint or an error message. After `brew upgrade` the key is read without a Keychain prompt; if the ad-hoc signed build cannot give that, the issue names another store. A key already in `model.json` from v0.2.1 keeps working: it moves to the Keychain and leaves the file only after it is stored there, while `reasoning` and `tier` stay as they were.
+- [ ] **What leaves the Mac.** An edit through OpenRouter sends the instruction and the target text with Sushi's system instruction, with `provider.data_collection: "deny"`. Nothing else of the prompt leaves the Mac.
+- [ ] **Failures.** A failed OpenRouter edit (no network, a revoked key, no credits, rate limit, a server error) stops with a plain message and **Edit with Ollama**, which runs the same edit on the same text locally. A revoked key also offers **Connect again**.
+- [ ] **Shared flow.** Connecting, the Model menu, the Keychain entry and the failure messages are built once for any provider, so [[SUSI-10]] and [[SUSI-11]] add a provider without a new flow; the specification names what a provider supplies.
+- [ ] **Docs and tests.** `docs/specs/model.md` and `local-files.md` describe the flow and the file; Rust tests cover the PKCE exchange and the requests against a local mock server; an ignored live test runs with `OPENROUTER_TOKEN`; browser scenarios cover the menu, the messages and the summary. The model guide, the README, troubleshooting and the release note describe the option; the landing page still says that by default nothing leaves the Mac.
 
 ## Out of scope
 
-In v0.2.1: a settings screen or menu for the model, signing in to OpenRouter through the browser, the key in the Keychain, an announcement on the site. At all: other hosted providers, a configurable Ollama model, falling back to Ollama without the user's click.
+OpenAI ([[SUSI-10]]) and Anthropic ([[SUSI-11]]). A settings window, a list of every OpenRouter model, a configurable Ollama model, falling back to Ollama without the user's click.
