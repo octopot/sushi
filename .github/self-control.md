@@ -13,16 +13,10 @@ is proven or moved into an issue; a release adds the checks it leaves open
 On 2026-11-19 `cd` published v0.2.1; the tap commit `Brew cask update for
 sushi version v0.2.1` is verified as the Releaser App and the cask's `sha256`
 matches `checksums.txt`. This Mac upgraded through the cask: 0.2.1, not
-quarantined, the signature intact.
+quarantined, the signature intact. On 2026-11-23 the owner's check in the
+installed app passed, and the reporter confirmed the full-screen, click-away
+and Ollama-window fixes on their Mac; #3, #4, #5 and #6 are closed.
 
-- [ ] **The owner's check in the installed app**: the menu bar icon, Caps Lock
-  shows the panel over a full-screen app, a click elsewhere hides it, ⌘K edits
-  a short phrase (through OpenRouter on this Mac, `model.json`), ⌘↵ pastes into
-  the previous app, ⌘L lists the prompts. If one fails, file it for the next
-  patch.
-- [ ] **A week after v0.2.1**: the user who reported the full-screen, click-away
-  and Ollama-window bugs confirms they are gone on their Mac. If one is not,
-  reopen its issue (#3, #5) with what they see.
 - [ ] **On a second display or with Stage Manager**: run PR-7 of the
   [panel scenarios](../docs/specs/panel.md#regression-scenarios) and add a row
   to its runs. Not run: this Mac has one display.
@@ -39,18 +33,15 @@ on this Mac.
 
 On 2026-11-19 `cd` published v0.2.0; the tap commit through
 `createCommitOnBranch` added `Casks/sushi.rb`, deleted `Casks/susi.rb` and
-added `cask_renames.json`, verified as the Releaser App. This Mac upgraded by
-the release note: `brew update` migrated the cask, the upgrade replaced
+added `cask_renames.json`, verified as the Releaser App. Both other users
+confirmed that the panel opens on Caps Lock with their old prompt. This Mac
+upgraded by the release note: `brew update` migrated the cask, the upgrade replaced
 `Susi.app`, Homebrew's reopen of `me.octopot.susi` failed as expected, and
 `open -a Sushi` brought over the draft byte for byte and the settings
 unchanged. The `susi` record left in the Caskroom (a symlink here, an empty
 receipt when only the cask was trusted) is removed with `rm -rf` without
 touching Sushi; the note says so.
 
-- [ ] **A week after v0.2.0**: both other users run Sushi. Proven when each
-  confirms the panel opens on Caps Lock with their old prompt; if one is stuck,
-  walk them through the release note's five steps and fix what the note missed
-  in the next patch.
 - [ ] **An external keyboard** connected while Sushi runs gets the Caps Lock
   mapping. Not tried: this Mac had only the built-in keyboard. If Caps Lock
   does not show the panel on a keyboard connected later, the IOKit
@@ -84,7 +75,8 @@ opened it again with the signature intact.
   show after an upgrade. Confirm it on screen and decide whether Sushi should
   start hidden when Homebrew relaunches it. Not seen on 0.2.0 → 0.2.1: Sushi
   was not running after the upgrade, and whether it ran before was not
-  recorded; note it before the next upgrade.
+  recorded. On 2026-11-23 Sushi 0.2.1 runs from `/Applications`, so the next
+  upgrade shows whether Homebrew reopens it.
 - [ ] **On every upgrade until Developer ID**: Homebrew warns that "sushi's
   signer changed so macOS may prompt at next launch": every ad-hoc build has a
   new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
@@ -98,7 +90,8 @@ opened it again with the signature intact.
   temporarily for third-party tap compatibility") and disables official casks
   that fail Gatekeeper. A tap cask is not audited for that today; if Homebrew
   starts refusing quarantine removal in tap casks, Developer ID signing and
-  notarization become the only way to keep `brew install` working.
+  notarization become the only way to keep `brew install` working. Last
+  checked on 2026-11-23: Homebrew 7.0.15, no new minor release.
 
 ### Dismissed dependency alerts
 
@@ -107,11 +100,13 @@ Dismissed on 2026-11-19 with the reasons on each alert; none reaches the app.
 - [ ] **A Nextra release after 4.6.1**: move the Zod override in
   `docs/package.json` to `4.6.6` or later, or drop it, and check the static
   export ([docs README](../docs/README.md)). Proven when the site builds and
-  the Zod alert does not come back.
+  the Zod alert does not come back. On 2026-11-23 Nextra 4.6.1 is still the
+  latest.
 - [ ] **Tauri on gtk 0.19 or later, or a Linux build of Sushi**: glib 0.18
   (GHSA-wrw7-89jp-8q8g) comes only through gtk for Linux, and
   `cargo tree -i glib --target aarch64-apple-darwin` is empty. When either
-  changes, update Tauri so that glib is 0.20 or later.
+  changes, update Tauri so that glib is 0.20 or later. On 2026-11-23 (Tauri
+  2.12.6) the macOS tree has no glib and no alert is open.
 
 ## Decisions waiting
 
