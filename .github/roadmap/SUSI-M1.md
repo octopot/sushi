@@ -10,7 +10,7 @@ openIssueCount: 0
 closedIssueCount: 4
 dueOn: null
 createdAt: 2026-11-23T10:49:15Z
-updatedAt: 2026-11-23T11:09:14Z
+updatedAt: 2026-11-23T11:21:30Z
 closedAt: 2026-11-23T10:49:15Z
 ---
 
@@ -27,7 +27,7 @@ One key opens a panel over any app, a full-screen one included. You write a prom
 
 **Done:** the loop *open → write or dictate → edit → copy and paste* works on the desktop and over a full-screen app on macOS 26 and later. Delivered in v0.1.0 – v0.2.1.
 
-**Checked:** the reporters confirmed the fixes on their Macs, and all four issues are closed. A second display and Stage Manager are still to be tried.
+**Checked:** the reporters confirmed the fixes on their Macs, and all four issues are closed. Stage Manager is checked; a second display is still to be tried.
 
 **Known exception:** on one Mac the panel hides after ⌘A ([[SUSI-7]]); the fix is tracked in M2.
 

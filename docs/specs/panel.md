@@ -56,6 +56,7 @@ Window showing, Spaces, focus and dictation go through the window server and oth
 | 2026-11-19 | 4c3b076 and the VH-10 change | PR-2: a right click opens the macOS menu; PR-3 explained: with a 1,843 px tall prompt the bubble window opened 5 times of 5 at y = 2169 on a 1117 px screen, the bottom of the field's frame | — |
 | 2026-11-19 | fa2c689 and the PN-6 change | PR-8: with Ollama quit, ⌘K Shorten started Ollama with its menu bar icon only, no window; the panel stayed open and showed the diff | — |
 | 2026-11-23 | v0.2.1 from the cask | PR-1; PR-2: ⌘K through OpenRouter, ⌘L; PR-4: Esc, Caps Lock, ⌘↵ and ⇧⌘↵ return focus, ⌘V pastes; PR-5; PR-8; **Show Sushi** from the menu over a full-screen app behaves as Caps Lock | PR-7 not run, no second display |
+| 2026-11-23 | v0.2.1 from the cask | PR-7 with Stage Manager on macOS 27.2: the panel shows over the stage, Esc hides it with focus back in the stage's window, a click on another app's thumbnail hides it | PR-7 on a second display not run, no second display |
 
 Add a row for every run: the commit of the build, the scenarios that passed, and what failed or was not run, with the reason.
 

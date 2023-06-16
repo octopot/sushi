@@ -18,7 +18,7 @@ state: CLOSED
 stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T13:16:28Z
-updatedAt: 2026-11-23T11:08:29Z
+updatedAt: 2026-11-23T11:21:24Z
 lastEditedAt: 2026-11-23T11:07:56Z
 closedAt: 2026-11-23T11:08:29Z
 ---
@@ -126,4 +126,8 @@ Thank you for MacWhisper!
 Closed: v0.2.1 shipped it, and the reporter confirmed it on their Mac. The run of 2026-11-23 on v0.2.1 from the cask passed PR-1, PR-2, PR-4, PR-5 and **Show Sushi** from the menu (`docs/specs/panel.md`).
 
 Two criteria stay open outside this issue: a second display and Stage Manager (PR-7) wait for hardware in `.github/self-control.md`, and MacWhisper's bubble under a prompt taller than the panel is MacWhisper's to fix, as the research comment above explains.
+-->
+
+<!-- 2026-11-23T12:10Z https://github.com/octopot/sushi/issues/3#issuecomment-7099508294
+Stage Manager checked on v0.2.1 from the cask, macOS 27.2: the panel shows over the stage, Esc returns focus to the stage's window, and a click on another app's thumbnail hides it. Only a second display is left, in `.github/self-control.md`.
 -->

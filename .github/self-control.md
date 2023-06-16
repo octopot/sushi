@@ -17,9 +17,10 @@ quarantined, the signature intact. On 2026-11-23 the owner's check in the
 installed app passed, and the reporter confirmed the full-screen, click-away
 and Ollama-window fixes on their Mac; #3, #4, #5 and #6 are closed.
 
-- [ ] **On a second display or with Stage Manager**: run PR-7 of the
+- [ ] **On a second display**: run PR-7 of the
   [panel scenarios](../docs/specs/panel.md#regression-scenarios) and add a row
-  to its runs. Not run: this Mac has one display.
+  to its runs. Not run: this Mac has one display. The Stage Manager half of
+  PR-7 passed on 2026-11-23.
 
 ### After v0.2.0
 
