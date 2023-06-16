@@ -101,8 +101,8 @@ dispatch the cleanups to try them out: they delete data.
 ```mermaid
 flowchart LR
   frontend[frontend: npm ci, npm test in headless Chrome]
-  native[native on macos-26: cargo fmt, clippy -D warnings, cargo test, brew style of the cask template]
-  release[release: helper tests, version files agree, cue vet, actionlint]
+  native[native on macos-26: cargo fmt, clippy -D warnings, cargo test, the files the app writes against files.cue, brew style of the cask template]
+  release[release: helper tests, version files agree, cue vet of the settings and examples, actionlint]
   frontend & native & release --> notify[notify]
 ```
 

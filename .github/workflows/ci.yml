@@ -11,6 +11,8 @@ on:
       - '.github/settings.*'
       - '.github/actions/**'
       - 'index.html'
+      - 'settings.html'
+      - 'vite.config.ts'
       - 'src/**'
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
@@ -34,6 +36,8 @@ on:
       - '.github/settings.*'
       - '.github/actions/**'
       - 'index.html'
+      - 'settings.html'
+      - 'vite.config.ts'
       - 'src/**'
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
@@ -124,6 +128,13 @@ jobs:
       # the test that edits through a running Ollama is ignored here
       - name: Run tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --release
+      # the files the settings window writes and the choices it offers, against files.cue
+      - name: Install CUE
+        run: |
+          go install cuelang.org/go/cmd/cue@v0.17.1
+          echo "$(go env GOPATH)/bin" >> "${GITHUB_PATH}"
+      - name: Check the files against the schema
+        run: make config-vet
 
       # the cask cd publishes, rendered for placeholder bytes: brew style
       # checks it with the Homebrew of the runner, as the tap's users run it
@@ -160,8 +171,9 @@ jobs:
           go install cuelang.org/go/cmd/cue@v0.17.1
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           echo "$(go env GOPATH)/bin" >> "${GITHUB_PATH}"
-      - name: Check the settings
-        run: make config-vet
+      # what the app writes is checked against the schema where the app builds
+      - name: Check the settings and the examples
+        run: make examples-vet
       - name: Check the workflows
         run: actionlint
 
