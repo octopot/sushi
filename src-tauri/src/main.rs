@@ -1,11 +1,24 @@
 #[cfg(test)]
 mod bindings;
+#[cfg(test)]
+#[path = "../build_git.rs"]
+mod build_git;
+mod build_info;
+mod diagnostics;
+mod files;
+mod hosted;
 mod hotkey;
+mod keychain;
 mod library;
 mod model;
-mod openrouter;
+mod preferences;
+mod providers;
+mod report;
 mod rewrite;
 mod settings;
+mod settings_window;
+mod signin;
+mod tray;
 
 use std::{
     ffi::CString,
@@ -13,13 +26,12 @@ use std::{
     process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Mutex,
+        Mutex, OnceLock,
     },
 };
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::webview::PageLoadEvent;
-use tauri::{AppHandle, Emitter, Manager, RunEvent, State, WindowEvent};
+use tauri::{AppHandle, Emitter, Listener, Manager, RunEvent, State, WindowEvent};
 
 extern "C" {
     fn sushi_remember_frontmost();
@@ -30,6 +42,11 @@ extern "C" {
     fn sushi_is_active() -> bool;
     fn sushi_copy(bytes: *const u8, count: usize) -> bool;
     fn sushi_stage_appearance(name: *const libc::c_char);
+    fn sushi_panel_family_key(window: *mut std::ffi::c_void) -> bool;
+    fn sushi_present_sheet(window: *mut std::ffi::c_void) -> bool;
+    fn sushi_panel_keeps(window: *mut std::ffi::c_void) -> bool;
+    fn sushi_watch_sheets(window: *mut std::ffi::c_void, lost: extern "C" fn());
+    fn sushi_test_sheet(window: *mut std::ffi::c_void);
     fn sushi_stage_present(
         window: *mut std::ffi::c_void,
         image: *const libc::c_char,
@@ -39,6 +56,9 @@ extern "C" {
 
 /// Stage runs must never touch the clipboard, focus, other apps or Ollama's lifecycle.
 static STAGE: AtomicBool = AtomicBool::new(false);
+/// The panel was shown while the settings window had the keyboard: hiding it gives the keyboard
+/// back to that window, not to the app underneath (SUSI-12).
+static OVER_SETTINGS: AtomicBool = AtomicBool::new(false);
 
 pub(crate) fn staged() -> bool {
     STAGE.load(Ordering::Relaxed)
@@ -65,50 +85,139 @@ fn startup_notes(state: State<'_, StartupNotes>) -> Option<String> {
 // Dispatch window and NSApplication calls together so that focus capture precedes showing.
 // The panel takes the keyboard without activating Sushi: no Space switch, and the app
 // underneath stays frontmost (SUSI-2).
-fn show_launcher(app: &AppHandle, toggle: bool) {
+fn show_launcher(app: &AppHandle, toggle: bool, reason: &'static str) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Some(window) = handle.get_webview_window("main") {
+            let native = window.ns_window().ok();
+            // The panel's sheet has the keyboard while it is open: the hotkey still hides (PN-8).
             if toggle
                 && window.is_visible().unwrap_or(false)
-                && window.is_focused().unwrap_or(false)
+                && (window.is_focused().unwrap_or(false)
+                    || native.is_some_and(|n| unsafe { sushi_panel_family_key(n) }))
             {
-                let _ = hide(&handle);
+                let _ = hide(&handle, "hotkey");
                 return;
             }
-            unsafe { sushi_remember_frontmost() };
-            let Ok(native) = window.ns_window() else {
+            // diagnostics.json is read on every show (LF-2, LF-21), and the menu follows it and
+            // model.json, which the user may have edited by hand (LF-20).
+            diagnostics::refresh(&handle);
+            tray::refresh(&handle);
+            diagnostics::record(&format!("show reason={reason}"));
+            let Some(native) = native else {
                 return;
             };
-            unsafe { sushi_prepare_window(native) };
+            // Shown over an open sheet: the sheet takes the keyboard back, the editor waits (PN-8).
+            if window.is_visible().unwrap_or(false) && unsafe { sushi_present_sheet(native) } {
+                diagnostics::record("show: keyboard back to the panel's sheet");
+                return;
+            }
+            // Settings and its sheets are one family: shown over a folder picker, the panel gives
+            // the keyboard back to the picker.
+            let over =
+                settings_window::shown(&handle).is_some_and(|s| settings_window::has_keyboard(&s));
+            OVER_SETTINGS.store(over, Ordering::Relaxed);
+            unsafe { sushi_remember_frontmost() };
+            unsafe {
+                sushi_prepare_window(native);
+                sushi_watch_sheets(native, sheet_lost);
+            }
             let _ = window.show();
             unsafe {
                 sushi_present(native);
                 sushi_refresh_shadow(native);
             }
             let _ = window.emit("launcher-shown", ());
+            // PR-10 on a Mac without Writing Tools: a sheet on the first show.
+            if std::env::var_os("SUSHI_TEST_SHEET").is_some() {
+                unsafe { sushi_test_sheet(native) };
+            }
         }
     });
 }
 
-fn hide(app: &AppHandle) -> Result<(), String> {
+/// Set once the app starts, for the callback of the panel's sheets.
+static APP: OnceLock<AppHandle> = OnceLock::new();
+
+/// The keyboard left the panel and its sheets: the panel hides (PN-5).
+fn focus_lost(app: &AppHandle) {
+    if let Some(webview) = app.get_webview_window("main") {
+        diagnostics::focus_lost(&webview);
+    }
+    let _ = hide(app, "focus-lost");
+}
+
+/// One of the panel's sheets lost the keyboard to another app or window (PN-8).
+extern "C" fn sheet_lost() {
+    if let Some(app) = APP.get() {
+        focus_lost(app);
+    }
+}
+
+/// Hides the panel. Where the keyboard goes: to the settings window when the panel was shown
+/// over it (Esc, a copy, the hotkey), nowhere when a click already gave it to that window, and
+/// otherwise back to the app the user came from, as before (SUSI-2).
+fn hide(app: &AppHandle, reason: &str) -> Result<(), String> {
     if staged() {
         return Ok(());
     }
     if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(false) {
+            diagnostics::record(&format!("hide reason={reason}"));
+        }
         let active = unsafe { sushi_is_active() };
+        let over = OVER_SETTINGS.swap(false, Ordering::Relaxed);
         window.hide().map_err(|e| e.to_string())?;
         if active {
-            unsafe { sushi_restore_frontmost() };
+            match settings_window::shown(app) {
+                Some(settings) if over && reason != "focus-lost" => {
+                    settings_window::take_keyboard(&settings)
+                }
+                // A click already gave the keyboard to Settings or one of its sheets.
+                Some(settings) if settings_window::has_keyboard(&settings) => (),
+                _ => unsafe { sushi_restore_frontmost() },
+            }
         }
     }
     Ok(())
 }
 
+/// The settings window takes the keyboard: the panel hides without handing it to the app
+/// underneath, which gets it back when the window closes.
+pub(crate) fn hide_for_settings(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(false) {
+            diagnostics::record("hide reason=settings");
+            let _ = window.hide();
+        }
+    }
+    OVER_SETTINGS.store(false, Ordering::Relaxed);
+}
+
+/// The payload of `report-open`: where the flow started. From Settings, leaving the flow hides
+/// the panel, which gives the keyboard back to Settings; from the menu the panel stays (RP-1).
+#[derive(serde::Serialize, Clone)]
+struct ReportOpen {
+    origin: &'static str,
+}
+
+/// Report a problem starts in the panel (RP-1): from the menu (`menu`), or from Settings ▸ About
+/// (`settings`), where the panel shows over Settings.
+pub(crate) fn open_report(app: &AppHandle, origin: &'static str) {
+    show_launcher(app, false, origin);
+    let _ = app.emit("report-open", ReportOpen { origin });
+}
+
+/// `reason`: `esc` or `copy`, for the diagnostic log (LF-22).
 #[tauri::command]
-fn hide_launcher(app: AppHandle) -> Result<(), String> {
+fn hide_launcher(app: AppHandle, reason: Option<String>) -> Result<(), String> {
     // Synchronous desktop commands run on the UI thread.
-    hide(&app)
+    let reason = match reason.as_deref() {
+        Some("esc") => "esc",
+        Some("copy") => "copy",
+        _ => "page",
+    };
+    hide(&app, reason)
 }
 
 #[tauri::command]
@@ -123,17 +232,44 @@ fn copy_text(text: String) -> Result<(), String> {
     }
 }
 
-fn open_settings_folder(app: &AppHandle) {
-    if let Ok(dir) = app.path().app_data_dir() {
-        let _ = std::fs::create_dir_all(&dir);
-        let _ = Command::new("/usr/bin/open").arg(dir).spawn();
+/// Shows a log in Finder, selected.
+fn reveal_log(name: &str) {
+    if let Some(path) = diagnostics::path(name).filter(|p| p.exists()) {
+        let _ = Command::new("/usr/bin/open").arg("-R").arg(path).spawn();
+    }
+}
+
+/// The window a stage run presents: `main` (the panel), or `settings` with
+/// `SUSHI_STAGE_WINDOW=settings`.
+fn stage_label() -> &'static str {
+    match std::env::var("SUSHI_STAGE_WINDOW").as_deref() {
+        Ok(settings_window::LABEL) => settings_window::LABEL,
+        _ => "main",
     }
 }
 
 // Stage mode renders the real window off-screen for screenshots: no hotkey, no tray,
 // no activation, and never the real profile.
 fn stage_present(app: &AppHandle) {
-    let Some(window) = app.get_webview_window("main") else {
+    let settings = stage_label() == settings_window::LABEL;
+    let window = if settings {
+        // `SUSHI_STAGE_PANE`: the pane the window opens on, as the menu would ask for it.
+        let pane = std::env::var("SUSHI_STAGE_PANE")
+            .ok()
+            .and_then(|pane| serde_json::from_value(serde_json::Value::String(pane)).ok());
+        let window = settings_window::stage(app, pane);
+        // The panel's page would read and seed the settings files too: a settings run checks
+        // what the settings window alone does.
+        if let Some(panel) = app.get_webview_window("main") {
+            let _ = panel.destroy();
+        }
+        window
+    } else {
+        app.get_webview_window("main")
+    };
+    let Some(window) = window else {
+        eprintln!("SUSHI_STAGE: the window could not be made.");
+        app.exit(1);
         return;
     };
     let Ok(native) = window.ns_window() else {
@@ -142,7 +278,10 @@ fn stage_present(app: &AppHandle) {
     let image = std::env::var("SUSHI_STAGE_BACKDROP")
         .ok()
         .and_then(|path| CString::new(path).ok());
-    unsafe { sushi_prepare_window(native) };
+    // The panel's own window setup; the settings window keeps the one it was made with.
+    if !settings {
+        unsafe { sushi_prepare_window(native) };
+    }
     let mut backdrop = 0;
     let id = unsafe {
         sushi_stage_present(
@@ -164,6 +303,11 @@ fn stage_present(app: &AppHandle) {
 }
 
 fn main() {
+    // Before the single-instance check and any AppKit call (BI-5).
+    if std::env::args().nth(1).as_deref() == Some("version") {
+        print!("{}", build_info::block(&build_info::collect()));
+        return;
+    }
     let stage = std::env::var_os("SUSHI_STAGE").is_some_and(|v| v == "1");
     STAGE.store(stage, Ordering::Relaxed);
     if !stage {
@@ -182,8 +326,9 @@ fn main() {
     if stage {
         builder = builder.activate_ignoring_other_apps(false);
         if let Some(path) = std::env::var_os("SUSHI_STAGE_SCRIPT") {
+            let label = stage_label();
             builder = builder.on_page_load(move |webview, payload| {
-                if payload.event() == PageLoadEvent::Finished {
+                if payload.event() == PageLoadEvent::Finished && webview.label() == label {
                     match std::fs::read_to_string(&path) {
                         Ok(script) => {
                             let _ = webview.eval(script);
@@ -196,13 +341,13 @@ fn main() {
     } else {
         builder = builder
             .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-                show_launcher(app, false)
+                show_launcher(app, false, "second-launch")
             }))
             .plugin(
                 tauri_plugin_global_shortcut::Builder::new()
                     .with_handler(|app, _, event| {
                         if hotkey::pressed(event.state) {
-                            show_launcher(app, true);
+                            show_launcher(app, true, "hotkey");
                         }
                     })
                     .build(),
@@ -214,6 +359,7 @@ fn main() {
         .manage(rewrite::Requests::default())
         .setup(move |app| {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            let _ = APP.set(app.handle().clone());
             if stage {
                 if let Some(name) = std::env::var("SUSHI_STAGE_APPEARANCE")
                     .ok()
@@ -221,50 +367,49 @@ fn main() {
                 {
                     unsafe { sushi_stage_appearance(name.as_ptr()) };
                 }
+                if stage_label() == settings_window::LABEL {
+                    // As at launch: hotkey.json is read, seeded when missing, and its effect
+                    // decided; nothing is registered in a stage run (hotkey.rs, `engage`).
+                    hotkey::apply(app.handle());
+                    // The stage script's lines (`stage-report` events) go to stdout, where
+                    // tests/stage/settings.sh reads them.
+                    app.listen_any("stage-report", |event| {
+                        let line = serde_json::from_str::<String>(event.payload())
+                            .unwrap_or_else(|_| event.payload().to_string());
+                        let mut out = std::io::stdout();
+                        let _ = writeln!(out, "{line}");
+                        let _ = out.flush();
+                    });
+                }
                 return Ok(());
             }
-            let show = MenuItem::with_id(app, "sushi-show", "Show Sushi", true, None::<&str>)?;
-            let folder = MenuItem::with_id(
-                app,
-                "sushi-folder",
-                "Open Settings Folder",
-                true,
-                None::<&str>,
-            )?;
-            let quit = MenuItem::with_id(app, "sushi-quit", "Quit", true, None::<&str>)?;
-            let key = MenuItem::with_id(app, "sushi-key", "Shows Sushi:", false, None::<&str>)?;
-            let caps_lock = CheckMenuItem::with_id(
-                app,
-                "sushi-caps-lock",
-                "Use Caps Lock",
-                true,
-                false,
-                None::<&str>,
-            )?;
-            let separator = PredefinedMenuItem::separator(app)?;
-            let keys = PredefinedMenuItem::separator(app)?;
-            let menu = Menu::with_items(
-                app,
-                &[&show, &key, &caps_lock, &keys, &folder, &separator, &quit],
-            )?;
-            hotkey::attach(
-                app.handle(),
-                hotkey::Menu {
-                    label: key,
-                    caps_lock,
-                },
-            );
-            TrayIconBuilder::with_id("sushi")
+            diagnostics::init(app.handle());
+            diagnostics::refresh(app.handle());
+            providers::init(app.handle());
+            let menu = tray::build(app.handle())?;
+            TrayIconBuilder::with_id(tray::ID)
                 .tooltip("Sushi")
                 .icon(tauri::include_image!("icons/menu-template.png"))
                 .icon_as_template(true)
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "sushi-show" => show_launcher(app, false),
-                    "sushi-folder" => open_settings_folder(app),
-                    "sushi-caps-lock" => hotkey::toggle_caps_lock(app),
+                    "sushi-show" => show_launcher(app, false, "menu"),
+                    "sushi-key-problem" => {
+                        settings_window::open(app, Some(preferences::PaneId::Keyboard))
+                    }
+                    "sushi-settings" => settings_window::open(app, None),
+                    "sushi-about" => settings_window::open(app, Some(preferences::PaneId::About)),
+                    "sushi-diagnostics" => reveal_log(diagnostics::LOG),
+                    // The flow lives in the panel; the page opens it on this event (RP-1).
+                    "sushi-report" => open_report(app, "menu"),
+                    "sushi-report-finish" => {
+                        report::record(app, false);
+                        show_launcher(app, false, "menu");
+                    }
                     "sushi-quit" => app.exit(0),
-                    _ => (),
+                    id => {
+                        let _ = providers::on_menu(app, id);
+                    }
                 })
                 .build(app)?;
 
@@ -272,20 +417,33 @@ fn main() {
                 app.state::<StartupNotes>().add(note);
             }
             if !hidden {
-                show_launcher(app.handle(), false);
+                show_launcher(app.handle(), false, "launch");
             }
             Ok(())
         })
-        .on_window_event(|window, event| match event {
-            WindowEvent::CloseRequested { api, .. } => {
-                api.prevent_close();
-                let _ = hide(window.app_handle());
-            }
-            // As with Spotlight, a click in another app or on the desktop hides the panel;
-            // focus stays where the user clicked (SUSI-2).
-            WindowEvent::Focused(false) if window.is_visible().unwrap_or(false) => {
-                let _ = hide(window.app_handle());
-            }
+        // By window label first: the panel's rules concern `main` only (SUSI-12).
+        .on_window_event(|window, event| match window.label() {
+            "main" => match event {
+                WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    let _ = hide(window.app_handle(), "close-request");
+                }
+                // As with Spotlight, a click in another app or on the desktop hides the panel;
+                // focus stays where the user clicked (SUSI-2). A sheet of the panel that takes
+                // the keyboard keeps it open (PN-8); `sheet_lost` covers the sheet losing it.
+                WindowEvent::Focused(false) if window.is_visible().unwrap_or(false) => {
+                    let keeps = window
+                        .ns_window()
+                        .is_ok_and(|native| unsafe { sushi_panel_keeps(native) });
+                    if keeps {
+                        diagnostics::record("focus kept: the panel's sheet has the keyboard");
+                    } else {
+                        focus_lost(window.app_handle());
+                    }
+                }
+                _ => (),
+            },
+            settings_window::LABEL => settings_window::on_event(window, event),
             _ => (),
         })
         .invoke_handler(tauri::generate_handler![
@@ -299,13 +457,38 @@ fn main() {
             rewrite::rewrite,
             rewrite::cancel_rewrite,
             rewrite::warm_model,
-            rewrite::ollama_download
+            rewrite::ollama_download,
+            diagnostics::diagnostics_key,
+            diagnostics::diagnostics_state,
+            providers::provider_connect,
+            report::report_start,
+            report::report_questions,
+            report::report_record,
+            report::report_end,
+            report::report_draft,
+            report::report_save,
+            preferences::prefs_load,
+            preferences::prefs_keyboard_save,
+            preferences::prefs_capture,
+            preferences::prefs_model_select,
+            preferences::prefs_model_option,
+            preferences::prefs_connect,
+            preferences::prefs_disconnect,
+            preferences::prefs_actions_save,
+            preferences::prefs_dictionary_save,
+            preferences::prefs_library_choose,
+            preferences::prefs_library_default,
+            preferences::prefs_diagnostics_save,
+            preferences::prefs_reset,
+            preferences::prefs_file,
+            preferences::prefs_action,
+            preferences::prefs_open
         ])
         .build(context)
         .expect("Sushi could not start");
     app.run(move |app, event| match event {
         RunEvent::Ready if stage => stage_present(app),
-        RunEvent::Reopen { .. } if !stage => show_launcher(app, false),
+        RunEvent::Reopen { .. } if !stage => show_launcher(app, false, "reopen"),
         RunEvent::Exit if !stage => hotkey::release(),
         _ => (),
     });

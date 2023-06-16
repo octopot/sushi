@@ -31,22 +31,39 @@ import "strings"
 }
 
 // hotkey.json: Caps Lock shows the panel, or a combination of modifiers and one key.
+// Modifiers are case-insensitive, as in the app; Sushi writes them as Control, Option,
+// Shift, Command and the key as its physical code (KeyP, Digit1, Space). Only the app
+// checks that the key name is one it knows.
 #Hotkey: {
 	capsLock!: bool
-	shortcut!: string & =~"^((Control|Ctrl|Option|Alt|Shift|Command|Cmd|Super|Meta)\\+)+[A-Za-z0-9]+$"
+	shortcut!: string & =~"^((?i:control|ctrl|option|alt|shift|command|cmd|super|commandorcontrol|commandorctrl|cmdorctrl|cmdorcontrol)\\+)+[A-Za-z0-9]+$"
 }
 
 // model.json: optional; without it, or with "ollama", edits run on Ollama.
+// Sushi writes it from the Model menu and the settings window; keys live in the keychain.
+// src-tauri/src/model.rs offers the same values: `make config-vet` compares them.
+#Reasoning: "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
 #Model: {
-	provider!: "ollama" | "openrouter"
+	provider!: "ollama" | "openrouter" | "openai" | "anthropic"
 	openrouter?: {
-		key!:       #Text
-		model!:     #Text
-		reasoning?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
+		// Only in files from v0.2.1: Sushi moves it to the keychain.
+		key?:       #Text
+		model?:     #Text
+		reasoning?: #Reasoning
 		tier?:      "default" | "flex" | "fast" | "ultrafast"
 	}
-	if provider == "openrouter" {openrouter!: _}
+	openai?: {
+		model?:     #Text
+		reasoning?: #Reasoning
+	}
+	anthropic?: {
+		model?:  #Text
+		effort?: "low" | "medium" | "high" | "xhigh" | "max"
+	}
 }
+
+// diagnostics.json: optional; the settings window creates it with its switch.
+#Diagnostics: {record!: bool}
 
 // The YAML frontmatter of a template: a title and nothing else.
 #Template: {title!: #Text}

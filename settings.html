@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sushi settings</title>
+  <link rel="icon" href="/src/mark.svg">
+</head>
+<body>
+  <div class="settings">
+    <nav class="sidebar" aria-label="Settings">
+      <div class="titlebar" data-tauri-drag-region></div>
+      <ul id="nav"></ul>
+      <p class="sidebar-note">Changes are saved as you make them.</p>
+    </nav>
+    <main class="content">
+      <header class="pane-header" data-tauri-drag-region>
+        <h1 id="pane-title" data-tauri-drag-region></h1>
+        <span id="pane-state" class="pane-state" role="status" aria-live="polite"></span>
+      </header>
+      <div id="pane" class="pane-scroll" tabindex="-1"></div>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+      <div id="live" class="visually-hidden" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+  <script type="module" src="/src/settings/main.ts"></script>
+</body>
+</html>

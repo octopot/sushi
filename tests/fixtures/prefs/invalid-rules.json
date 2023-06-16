@@ -1,0 +1,200 @@
+{
+  "keyboard": {
+    "file": {
+      "name": "hotkey.json",
+      "status": "ok",
+      "revision": "4f575ee42ab40e37ca04c0602ba4883f1ac76b0f8a0ca0dcb934c4858de522f2",
+      "message": null,
+      "writable": true
+    },
+    "capsLock": true,
+    "shortcut": "Control+Shift+Space",
+    "defaultShortcut": "Control+Shift+Space",
+    "effective": "caps-lock",
+    "problem": null
+  },
+  "model": {
+    "file": {
+      "name": "model.json",
+      "status": "absent",
+      "revision": "absent",
+      "message": null,
+      "writable": true
+    },
+    "active": "ollama",
+    "ollama": {
+      "model": "qwen3.5:4b-mlx"
+    },
+    "providers": [
+      {
+        "id": "openrouter",
+        "name": "OpenRouter",
+        "connected": false,
+        "connect": "sign-in",
+        "sends": "Edits will go to OpenRouter: Sushi's instruction, the action and the selected text, or the whole prompt when nothing is selected. Nothing else of the prompt leaves this Mac.",
+        "pays": "Billed to your OpenRouter credits. OpenRouter sends edits only to providers that do not train on them; they may still keep them for a while.",
+        "modelName": "gpt-6-luna",
+        "options": [
+          {
+            "field": "model",
+            "label": "Model",
+            "stored": null,
+            "effective": "openai/gpt-6-luna",
+            "unset": "openai/gpt-6-luna",
+            "choices": null
+          },
+          {
+            "field": "reasoning",
+            "label": "Reasoning",
+            "stored": null,
+            "effective": "high",
+            "unset": null,
+            "choices": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          {
+            "field": "tier",
+            "label": "Tier",
+            "stored": null,
+            "effective": "fast",
+            "unset": null,
+            "choices": [
+              "default",
+              "flex",
+              "fast",
+              "ultrafast"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "openai",
+        "name": "OpenAI",
+        "connected": false,
+        "connect": "key",
+        "sends": "Edits will go to OpenAI: Sushi's instruction, the action and the selected text, or the whole prompt when nothing is selected. Nothing else of the prompt leaves this Mac.",
+        "pays": "Billed to your OpenAI API credits, not to a ChatGPT subscription. Sushi asks OpenAI not to store the requests.",
+        "modelName": "gpt-6-luna",
+        "options": [
+          {
+            "field": "model",
+            "label": "Model",
+            "stored": null,
+            "effective": "gpt-6-luna",
+            "unset": "gpt-6-luna",
+            "choices": null
+          },
+          {
+            "field": "reasoning",
+            "label": "Reasoning",
+            "stored": null,
+            "effective": "high",
+            "unset": null,
+            "choices": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "anthropic",
+        "name": "Claude",
+        "connected": false,
+        "connect": "key",
+        "sends": "Edits will go to Anthropic: Sushi's instruction, the action and the selected text, or the whole prompt when nothing is selected. Nothing else of the prompt leaves this Mac.",
+        "pays": "Billed to your Anthropic API credits, not to a Claude subscription.",
+        "modelName": "claude-opus-5-5",
+        "options": [
+          {
+            "field": "model",
+            "label": "Model",
+            "stored": null,
+            "effective": "claude-opus-5-5",
+            "unset": "claude-opus-5-5",
+            "choices": null
+          },
+          {
+            "field": "effort",
+            "label": "Effort",
+            "stored": null,
+            "effective": "low",
+            "unset": null,
+            "choices": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "actions": {
+    "file": {
+      "name": "rules.json",
+      "status": "invalid",
+      "revision": "0477237d2f0fc246279e5d76341563dc49ad36d0fa369c622bccf5a3dac05e48",
+      "message": "rules.json: entry 1 contains an empty field.",
+      "writable": false
+    },
+    "rules": []
+  },
+  "library": {
+    "file": {
+      "name": "library-path.txt",
+      "status": "absent",
+      "revision": "absent",
+      "message": null,
+      "writable": true
+    },
+    "path": "/Users/sample/Library/Application Support/me.octopot.sushi/Input",
+    "source": "default",
+    "prompts": null,
+    "templates": null,
+    "dictionary": {
+      "file": {
+        "name": "dictionary.json",
+        "status": "ok",
+        "revision": "27cbe427a47aa82a6babe9b90d4815392a017306f7d974aafd76d801e30c55e3",
+        "message": null,
+        "writable": true
+      },
+      "terms": [
+        {
+          "from": "Mac Whisper",
+          "to": "MacWhisper"
+        }
+      ]
+    }
+  },
+  "about": {
+    "version": "0.3.0",
+    "hash": "0123456",
+    "build": "sushi:\n  version     : 0.3.0\n  build       : release\n  build date  : 2026-11-29T09:30:00Z\n  git hash    : 0123456789abcdef0123456789abcdef01234567\n  rust        : 1.100.0 (0ef1bc386 2026-11-09)\n  tauri       : 2.12.7\n  webkit      : 21623.1.14.11.4\n  platform    : darwin/arm64\n  macos       : 27.2 (25C56)\n  signing     : ad-hoc\n  features    : -\n",
+    "diagnostics": {
+      "file": {
+        "name": "diagnostics.json",
+        "status": "absent",
+        "revision": "absent",
+        "message": null,
+        "writable": true
+      },
+      "record": false,
+      "logExists": false
+    },
+    "recording": false
+  }
+}

@@ -1,5 +1,6 @@
-use crate::model::{self, Choice};
-use crate::openrouter;
+use crate::hosted::{self, Failure};
+use crate::model;
+use crate::providers;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -15,7 +16,7 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::oneshot;
 
-const MODEL: &str = "qwen3.5:4b-mlx";
+pub(crate) const MODEL: &str = "qwen3.5:4b-mlx";
 const SERVER: &str = "http://127.0.0.1:11434";
 // Warm-up and editing must request the same context size, or Ollama reloads the model.
 const CONTEXT: u32 = 16384;
@@ -266,7 +267,15 @@ async fn infer(
     text: &str,
     start_ollama_if_offline: bool,
 ) -> Result<String, String> {
-    let content = content(instruction, text)?;
+    chat(SYSTEM, content(instruction, text)?, start_ollama_if_offline).await
+}
+
+/// One request to the local model, starting Ollama when it is not running and asked to.
+pub(crate) async fn chat(
+    system: &str,
+    content: String,
+    start_ollama_if_offline: bool,
+) -> Result<String, String> {
     let client = client()?;
     if !online(client, Duration::from_secs(1)).await {
         if !start_ollama_if_offline {
@@ -296,7 +305,7 @@ async fn infer(
         "model":MODEL, "stream":false, "think":false,
         "options":{"temperature":0, "num_ctx":CONTEXT},
         "messages":[
-            {"role":"system","content":SYSTEM},
+            {"role":"system","content":system},
             {"role":"user","content":content}
         ]
     });
@@ -335,11 +344,16 @@ pub async fn warm_model(app: AppHandle) -> Option<String> {
     if crate::staged() {
         return None;
     }
-    // A hosted model needs no warm-up; only a file that would fail the edit is worth a note (MD-9).
+    // A hosted model needs no warm-up; only an edit bound to fail is worth a note (MD-9).
     match settings_dir(&app).and_then(|dir| model::load(&dir)) {
         Err(error) => return Some(error),
-        Ok(Choice::OpenRouter(_)) => return None,
-        Ok(Choice::Ollama) => (),
+        Ok(settings) => {
+            if let Some(provider) = settings.active() {
+                return providers::key(&settings, provider)
+                    .is_none()
+                    .then(|| Failure::NotConnected.message(provider, ""));
+            }
+        }
     }
     let client = client().ok()?;
     if !online(client, Duration::from_millis(500)).await {
@@ -359,6 +373,44 @@ pub async fn warm_model(app: AppHandle) -> Option<String> {
     None
 }
 
+/// Ollama for a problem report (docs/specs/report.md, RP-6): asks only the server on 127.0.0.1,
+/// never starts it and sends no user text.
+pub(crate) async fn ollama_status() -> String {
+    let Ok(client) = client() else {
+        return "unknown".into();
+    };
+    let version = client
+        .get(format!("{SERVER}/api/version"))
+        .timeout(Duration::from_secs(1))
+        .send()
+        .await
+        .ok()
+        .filter(|r| r.status().is_success());
+    let Some(version) = version else {
+        return match locate(registered_app(), &Places::system()) {
+            Install::App(_) => "installed (app), not running".into(),
+            Install::Cli(_) => "installed (command line), not running".into(),
+            Install::Missing => "not installed".into(),
+        };
+    };
+    let version = version
+        .json::<serde_json::Value>()
+        .await
+        .ok()
+        .and_then(|v| {
+            v.get("version")
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| "unknown".into());
+    let model = match ensure_local_model(client).await {
+        Ok(()) => format!("{MODEL} present"),
+        Err(e) if e == missing_model() => format!("{MODEL} not downloaded"),
+        Err(_) => format!("{MODEL} not usable"),
+    };
+    format!("running, version {version}, {model}")
+}
+
 fn settings_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path().app_data_dir().map_err(|e| e.to_string())
 }
@@ -372,33 +424,38 @@ pub struct Edit {
 }
 
 /// Runs one edit on the provider `model.json` names, or on Ollama when `local` is set:
-/// Edit with Ollama after an OpenRouter failure (MD-6).
+/// Edit with Ollama after a hosted provider failed (MD-6).
 async fn edit(
     dir: Result<PathBuf, String>,
     instruction: &str,
     text: &str,
     local: bool,
 ) -> Result<Edit, String> {
-    let choice = if local {
-        Choice::Ollama
+    let settings = if local {
+        model::Settings::default()
     } else {
         dir.and_then(|dir| model::load(&dir))
-            .map_err(|error| error + openrouter::EDIT_WITH_OLLAMA)?
+            .map_err(|error| error + hosted::EDIT_WITH_OLLAMA)?
     };
-    match choice {
-        Choice::Ollama => Ok(Edit {
+    let Some(provider) = settings.active() else {
+        return Ok(Edit {
             text: infer(instruction, text, true).await?,
             model: MODEL.into(),
-        }),
-        Choice::OpenRouter(settings) => {
-            let content = content(instruction, text)?;
-            let reply = openrouter::edit(openrouter::API, &settings, SYSTEM, &content).await?;
-            Ok(Edit {
-                text: untag(&reply).to_string(),
-                model: settings.name().into(),
-            })
-        }
-    }
+        });
+    };
+    let content = content(instruction, text)?;
+    let Some(key) = providers::key(&settings, provider) else {
+        hosted::remember(provider, Failure::NotConnected.kind());
+        return Err(Failure::NotConnected.message(provider, ""));
+    };
+    let answer = hosted::edit(provider.api(), provider, &settings, &key, SYSTEM, &content).await?;
+    Ok(Edit {
+        text: untag(&answer.text).to_string(),
+        // The model that answered, which a fallback may change (MD-8).
+        model: answer
+            .model
+            .unwrap_or_else(|| settings.model_name(provider)),
+    })
 }
 
 #[tauri::command]
@@ -583,8 +640,8 @@ mod tests {
         for message in [NOT_INSTALLED, CLI_DID_NOT_START, &missing_model()] {
             assert!(page.contains(&format!("'{message}'")), "{message}");
         }
-        // OpenRouter failures end with a phrase the page turns into a button (MD-6).
-        assert!(page.contains(&format!("'{}'", openrouter::EDIT_WITH_OLLAMA)));
+        // Hosted failures end with a phrase the page turns into a button (MD-6).
+        assert!(page.contains(&format!("'{}'", hosted::EDIT_WITH_OLLAMA)));
     }
 
     #[test]

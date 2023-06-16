@@ -59,9 +59,10 @@ test:
 	$(AT) cargo test $(MANIFEST) --release
 .PHONY: test
 
-# src/bindings/ from the Rust types the commands return; the Rust tests fail while it is stale.
+# src/bindings/ from the Rust types the commands return, and tests/fixtures/prefs/ from real
+# replies of the settings window; the Rust tests fail while either is stale.
 bindings:
-	$(AT) SUSHI_WRITE_BINDINGS=1 cargo test $(MANIFEST) --release bindings::
+	$(AT) SUSHI_WRITE_BINDINGS=1 cargo test $(MANIFEST) --release -- bindings:: prefs_fixtures_are_current
 .PHONY: bindings
 
 release-helpers-test:
@@ -73,6 +74,10 @@ config-vet:
 	$(AT) cue vet docs/specs/files.cue docs/specs/examples/rules.json -d '#Rules'
 	$(AT) cue vet docs/specs/files.cue docs/specs/examples/dictionary.json -d '#Dictionary'
 	$(AT) cue vet docs/specs/files.cue docs/specs/examples/hotkey.json -d '#Hotkey'
+	$(AT) cue vet docs/specs/files.cue docs/specs/examples/model.json -d '#Model'
+	$(AT) cue vet docs/specs/files.cue docs/specs/examples/diagnostics.json -d '#Diagnostics'
+	$(AT) cargo test $(MANIFEST) --release --quiet files_schema_corpus
+	$(AT) node .github/scripts/files-schema.mjs
 .PHONY: config-vet
 
 workflows-check:

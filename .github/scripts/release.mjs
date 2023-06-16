@@ -340,6 +340,43 @@ function cask(opts) {
 
 // --- package -----------------------------------------------------------------
 
+// The build info block of `sushi version` (docs/specs/build-info.md, BI-1) as fields.
+export function parseBuildInfo(text) {
+  const fields = {}
+  for (const line of text.split('\n').slice(1)) {
+    const m = line.match(/^ {2}(\S(?:.*\S)?)\s*: (.*)$/)
+    if (m) fields[m[1].trim()] = m[2]
+  }
+  return fields
+}
+
+const BUILD_FIELDS = ['version', 'build', 'build date', 'git hash', 'rust', 'tauri', 'webkit', 'platform', 'macos', 'signing', 'features']
+
+// BI-7: every field is present and known, the version is the files'; in cd, the build is the
+// tag's clean commit, dated at its commit time.
+export function buildInfoErrors(text, { version, commit, date } = {}) {
+  if (!text.startsWith('sushi:\n')) return ['sushi version did not print the build info block']
+  const info = parseBuildInfo(text)
+  const errors = []
+  for (const name of BUILD_FIELDS) {
+    if (!(name in info) || !info[name].trim()) errors.push(`build info: ${name} is missing`)
+    else if (/\bunknown\b/.test(info[name])) errors.push(`build info: ${name} is unknown`)
+  }
+  if (Object.keys(info).join() !== BUILD_FIELDS.filter(name => name in info).join())
+    errors.push(`build info: the fields are not in the order of BI-1: ${Object.keys(info).join(', ')}`)
+  if (version && info.version !== version) errors.push(`build info: version is ${info.version}, the version files say ${version}`)
+  if (info.build && info.build !== 'release') errors.push(`build info: build is ${info.build}, not release`)
+  if (commit) {
+    if (info['git hash']?.endsWith('-dirty')) errors.push('build info: the build is marked dirty')
+    else if (info['git hash'] !== commit) errors.push(`build info: git hash is ${info['git hash']}, the tag's commit is ${commit}`)
+  }
+  if (date && info['build date'] !== date) errors.push(`build info: build date is ${info['build date']}, the tag's commit time is ${date}`)
+  return errors
+}
+
+// The commit time of a tag's commit as the build date of BI-3 renders it.
+const commitTime = (ref) => new Date(Number(git('log', '-1', '--format=%ct', `${ref}^{commit}`).trim()) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+
 const sha256File = (file) => createHash('sha256').update(readFileSync(file)).digest('hex')
 
 // Packs the bundle the way the cask unpacks it, proves that the signature
@@ -357,6 +394,13 @@ function pack(opts) {
   const plist = execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', join(app, 'Contents/Info.plist')], { encoding: 'utf8' }).trim()
   if (plist !== version) throw new Error(`${app}: CFBundleShortVersionString is ${plist}, the version files say ${version}; rebuild it`)
   execFileSync('codesign', ['--verify', '--deep', '--strict', app], { stdio: 'inherit' })
+  const block = execFileSync(join(app, 'Contents/MacOS/sushi'), ['version'], { encoding: 'utf8' })
+  // In cd the bundle must be the tag's commit, as it was committed.
+  const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : null
+  const expected = tag ? { version, commit: git('rev-parse', `${tag}^{commit}`).trim(), date: commitTime(tag) } : { version }
+  const problems = buildInfoErrors(block, expected)
+  if (problems.length) throw new Error(`${app}:\n  ${problems.join('\n  ')}`)
+  process.stdout.write(block)
 
   mkdirSync(out, { recursive: true })
   const asset = release.asset.replace('{version}', version)

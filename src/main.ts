@@ -7,7 +7,8 @@ import { Palette, type Row } from './palette'
 import { Library, type Entry, type Kind } from './library'
 import { instructionFirst, phrase, rank } from './fuzzy'
 import { el, icon, keys } from './icons'
-import { call, on, type Edit, type Rule, type Settings } from './ipc'
+import { call, on, type Diagnostics, type Edit, type Rule, type Term } from './ipc'
+import { Report } from './report'
 
 
 // Dictation tools post-process text themselves; flip to re-enable dictionary replacement on paste.
@@ -21,6 +22,7 @@ const workspace = $('workspace')
 const [actionButton, libraryButton, copyButton, previousButton, nextButton] =
   ['action', 'library', 'copy', 'previous', 'next'].map(id => $<HTMLButtonElement>(id))
 const hintSlot = $('hint')
+const statusSlot = $('status')
 
 // ——— Draft ———
 
@@ -54,16 +56,19 @@ function save(now = false): boolean {
 
 // ——— Settings ———
 
-let settings: Settings = { rules: desktop ? [] : shipped.rules, terms: [] }
-async function loadSettings(): Promise<Settings> {
+/** rules.json and dictionary.json are read independently (LF-4): an invalid one keeps what was last read for it. */
+const settings: { rules: Rule[]; terms: Term[] } = { rules: desktop ? [] : shipped.rules, terms: [] }
+async function loadSettings() {
   if (!desktop) return settings
   try {
-    settings = await call('settings_load')
-    settingsError = ''
+    const loaded = await call('settings_load')
+    if (loaded.rules) settings.rules = loaded.rules
+    if (loaded.terms) settings.terms = loaded.terms
+    settingsError = loaded.error ?? ''
   } catch (e) {
     settingsError = message(e)
-    if (library.isOpen) library.showError(settingsError)
   }
+  if (settingsError && library.isOpen) library.showError(settingsError)
   update()
   return settings
 }
@@ -130,14 +135,30 @@ const ollamaActions: { message: string; phrase: string; download?: true }[] = [
  * that takes no address, a command is copied and `done` shows the confirmation. Other text comes back as it is.
  */
 function actionable(text: string, done: (message: string) => void): (Node | string)[] {
-  // A failed OpenRouter edit ends with this phrase (docs/specs/model.md, MD-6); the button repeats it locally.
-  if (retry && text.endsWith(EDIT_WITH_OLLAMA) && /^(OpenRouter|model\.json)\b/u.test(text)) {
-    const button = el('button', 'link', EDIT_WITH_OLLAMA.trim())
-    button.type = 'button'
-    button.title = 'Run the same edit on the same text with the local model'
-    button.addEventListener('mousedown', event => event.preventDefault())
-    button.addEventListener('click', () => editLocally())
-    return [text.slice(0, -EDIT_WITH_OLLAMA.length), ' ', button]
+  // A failed hosted edit ends with this phrase (docs/specs/model.md, MD-6); the button repeats it locally.
+  // A rejected or missing key also offers Connect again, which starts the native connect flow.
+  const hosted = /^(OpenRouter|OpenAI|Claude)\b/u.exec(text)?.[1] as keyof typeof providerIds | undefined
+  if (text.endsWith(EDIT_WITH_OLLAMA) && (hosted || text.startsWith('model.json'))) {
+    let rest = text.slice(0, -EDIT_WITH_OLLAMA.length)
+    const parts: (Node | string)[] = []
+    if (hosted && rest.endsWith(CONNECT_AGAIN)) {
+      rest = rest.slice(0, -CONNECT_AGAIN.length)
+      const connect = el('button', 'link', CONNECT_AGAIN.replace(' ·', '').trim())
+      connect.type = 'button'
+      connect.title = `Connect ${hosted} from the menu bar menu's flow`
+      connect.addEventListener('mousedown', event => event.preventDefault())
+      connect.addEventListener('click', () => { call('provider_connect', { provider: providerIds[hosted] }).catch(fail) })
+      parts.push(' ', connect)
+    }
+    if (retry) {
+      const button = el('button', 'link', EDIT_WITH_OLLAMA.trim())
+      button.type = 'button'
+      button.title = 'Run the same edit on the same text with the local model'
+      button.addEventListener('mousedown', event => event.preventDefault())
+      button.addEventListener('click', () => editLocally())
+      parts.push(parts.length ? ' · ' : ' ', button)
+    }
+    if (parts.length) return [rest, ...parts]
   }
   const known = ollamaActions.find(action => action.message === text)
   if (!known) return [text]
@@ -159,7 +180,8 @@ function actionable(text: string, done: (message: string) => void): (Node | stri
 }
 function hint(): (Node | string)[] {
   // Tab from the prompt reaches a button here; after a copy the caret goes back to the prompt.
-  if (error || settingsError) return actionable(error || settingsError, message => { error = ''; notify(message); editor.focus() })
+  const problem = error || settingsError || diagnostics.error
+  if (problem) return actionable(problem, message => { error = ''; notify(message); editor.focus() })
   if (notice) return [notice]
   if (busy) return []
   if (unchanged) return ['No changes: the model returned the text as it was · ', keys('⌘', 'K'), ' Try other words']
@@ -211,7 +233,8 @@ function update() {
     actionButton.setAttribute('aria-label', busy ? 'Cancel rewriting' : 'Action')
   }
   hintSlot.replaceChildren(...hint())
-  hintSlot.classList.toggle('error', !!(error || settingsError))
+  hintSlot.classList.toggle('error', !!(error || settingsError || diagnostics.error))
+  showStatus()
 }
 
 function navigate(forward: boolean) {
@@ -295,8 +318,11 @@ function prepend(prefix: string, label: string) {
   show(prefix.length)
 }
 
-/** The phrase that ends an OpenRouter failure; a Rust test keeps it in step with src-tauri/src/openrouter.rs. */
+/** The phrases that end a hosted failure; Rust tests keep them in step with src-tauri/src/hosted.rs. */
 const EDIT_WITH_OLLAMA = ' Edit with Ollama'
+const CONNECT_AGAIN = ' Connect again ·'
+/** The name a failure starts with, and the provider id Connect again sends (src-tauri/src/providers.rs). */
+const providerIds = { OpenRouter: 'openrouter', OpenAI: 'openai', Claude: 'anthropic' } as const
 /** The last edit that failed, so that Edit with Ollama repeats it on the same text. */
 let retry: { instruction: string; label: string; from: number; to: number; text: string } | undefined
 
@@ -394,29 +420,122 @@ function openLibrary() {
   opened(library)
 }
 
-function opened(panel: Palette | Library) {
+function opened(panel: Palette | Library | Report) {
   unchanged = false
   workspace.inert = true
   windowRoot.classList.toggle('library-open', panel === library)
   windowRoot.classList.toggle('actions-open', panel === actions)
+  windowRoot.classList.toggle('report-open', panel === report)
   if (panel === library) library.open()
+  else if (panel === report) void report.open()
   else actions.open()
 }
 function closed() {
-  if (actions.isOpen || library.isOpen) return
+  if (actions.isOpen || library.isOpen || report.isOpen) return
   reading++
   workspace.inert = false
-  windowRoot.classList.remove('library-open', 'actions-open')
+  windowRoot.classList.remove('library-open', 'actions-open', 'report-open')
   editor.focus()
+}
+
+// ——— Report a problem (docs/specs/report.md) ———
+
+/** Which view was open when the flow started: the snapshot names it (RP-6). */
+let reportedView: 'editor' | 'actions' | 'library' = 'editor'
+/** Where the flow started. From Settings ▸ About, leaving it hides the panel, so the keyboard
+    goes back to Settings; from the menu the panel stays (RP-1). */
+let reportOrigin: 'menu' | 'settings' = 'menu'
+/** How the flow was left, for the hide that follows from Settings (LF-22). */
+let reportLeft: 'esc' | 'copy' = 'esc'
+const report = new Report(windowRoot, {
+  start: () => call('report_start'),
+  questions: (description, consent) => call('report_questions', { description, consent }),
+  record: on => call('report_record', { on }).then(() => refreshDiagnostics()),
+  end: () => call('report_end').then(() => refreshDiagnostics()),
+  draft: (description, answers) => call('report_draft', {
+    description, answers, panel: { view: reportedView, versions: chain.versions.length, editing: !!busy },
+  }),
+  copy: async text => {
+    await (desktop ? call('copy_text', { text }) : navigator.clipboard.writeText(text))
+    // Copying finishes a flow started from Settings: the user goes back to where they came from.
+    if (reportOrigin === 'settings') { reportLeft = 'copy'; report.close() }
+  },
+  save: async (text, recording) => { await call('report_save', { text, recording }) },
+  onClose: () => {
+    closed()
+    void refreshDiagnostics()
+    if (reportOrigin === 'settings') {
+      const reason = reportLeft
+      reportOrigin = 'menu'
+      reportLeft = 'esc'
+      void hide(false, reason)
+    }
+  },
+  onRecording: () => { closed(); void refreshDiagnostics() },
+})
+
+function openReport(origin: 'menu' | 'settings' = 'menu') {
+  if (report.isOpen) return report.focus()
+  // The view the flow started from: reopening it during a recording keeps that one (RP-6).
+  if (!report.active) {
+    reportedView = actions.isOpen ? 'actions' : library.isOpen ? 'library' : 'editor'
+    reportOrigin = origin
+  }
+  actions.close()
+  library.close()
+  if (report.recording) { windowRoot.classList.add('report-open'); workspace.inert = true; return report.show() }
+  opened(report)
+}
+
+// ——— Diagnostics (docs/specs/local-files.md, LF-21 to LF-23) ———
+
+let diagnostics: Diagnostics = { file: false, report: false }
+async function refreshDiagnostics() {
+  if (!desktop) return
+  try { diagnostics = await call('diagnostics_state') } catch { return }
+  update()
+}
+
+/** While the recording runs, the panel says so on every show, apart from errors and edit hints. */
+function showStatus() {
+  const parts: (Node | string)[] = []
+  if (diagnostics.report) {
+    const finish = el('button', '', 'Finish recording')
+    finish.type = 'button'
+    finish.addEventListener('mousedown', event => event.preventDefault())
+    finish.addEventListener('click', () => { void call('report_record', { on: false }).then(() => { report.recorded(); openRecorded() }) })
+    parts.push('Recording for a problem report · ', finish)
+  }
+  if (diagnostics.file) parts.push(parts.length ? ' · ' : '', 'Diagnostics on · diagnostics.json turns it off')
+  statusSlot.replaceChildren(...parts)
+  statusSlot.hidden = !parts.length
+}
+
+/** The report after a recording; a palette opened while it ran gives way, as in openReport. */
+function openRecorded() {
+  actions.close()
+  library.close()
+  windowRoot.classList.remove('library-open', 'actions-open')
+  windowRoot.classList.add('report-open')
+  workspace.inert = true
+}
+
+/** The last combination with ⌘ or ⌃, never typed text: a modifier set and a key name (LF-22). */
+function recordCombination(event: KeyboardEvent) {
+  if (!desktop || !(diagnostics.file || diagnostics.report) || !(event.metaKey || event.ctrlKey) || event.repeat) return
+  const key = event.code.replace(/^(Key|Digit)/u, '')
+  if (!key || /^(Meta|Control|Shift|Alt|OS)(Left|Right)?$/u.test(key)) return
+  const mods = (event.ctrlKey ? '⌃' : '') + (event.altKey ? '⌥' : '') + (event.shiftKey ? '⇧' : '') + (event.metaKey ? '⌘' : '')
+  void call('diagnostics_key', { combination: mods + key }).catch(() => {})
 }
 
 // ——— Copy and hide ———
 
 /** Hides the window, but never with an unsaved draft: the text would be lost. */
-async function hide(copied = false) {
+async function hide(copied = false, reason: 'esc' | 'copy' = 'esc') {
   // Hiding without a copy means the user kept this prompt: the next launch must not select it again.
   chain.copied = copied
-  if (save(true) && desktop) await call('hide_launcher').catch(fail)
+  if (save(true) && desktop) await call('hide_launcher', { reason }).catch(fail)
 }
 
 /** Copies the whole prompt. A copy on a diff accepts the edit; `clear` then starts an empty prompt. */
@@ -431,7 +550,7 @@ async function copy(clear = false) {
   } catch (e) { return fail(e) }
   if (clear) chain.reset('')
   if (clear || (chain.diff && chain.forward())) show()
-  if (desktop) await hide(!clear)
+  if (desktop) await hide(!clear, 'copy')
   else { chain.copied = !clear; if (save(true)) notify('Copied') }
 }
 
@@ -439,13 +558,14 @@ async function copy(clear = false) {
 
 document.addEventListener('keydown', event => {
   if (event.isComposing || event.keyCode === 229) return
+  recordCombination(event)
   const stop = (action: () => unknown) => {
     event.preventDefault()
     event.stopPropagation()
     if (!event.repeat) void action()
   }
   if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    return stop(() => actions.isOpen ? actions.close() : library.isOpen ? library.close() : busy ? cancel() : hide())
+    return stop(() => report.isOpen ? report.close() : actions.isOpen ? actions.close() : library.isOpen ? library.close() : busy ? cancel() : hide())
   }
   // Tab moves between the prompt and a button in the hint line, and back: WebKit's own Tab order skips buttons.
   const hinted = event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey && !workspace.inert
@@ -455,6 +575,9 @@ document.addEventListener('keydown', event => {
     if (inHint || $('editor').contains(document.activeElement)) return stop(() => inHint ? editor.focus() : hinted.focus())
   }
   if (!event.metaKey || event.ctrlKey || event.altKey) return
+  // ⌘, opens the settings window, from any view of the panel (SUSI-12).
+  if (!event.shiftKey && event.code === 'Comma' && desktop) return stop(() => call('prefs_open', { pane: null }).catch(fail))
+  if (report.isOpen) return
   const code = event.code
   if (!event.shiftKey && code === 'KeyK') return stop(() => actions.isOpen ? actions.close() : openActions())
   if (!event.shiftKey && code === 'KeyL') return stop(() => library.isOpen ? library.close() : openLibrary())
@@ -479,7 +602,8 @@ for (const node of document.querySelectorAll<HTMLElement>('[data-icon]')) node.r
 // ——— Window lifecycle ———
 
 function refocus() {
-  if (actions.isOpen) actions.focus()
+  if (report.isOpen) report.focus()
+  else if (actions.isOpen) actions.focus()
   else if (library.isOpen) library.focus()
   else if (!busy) editor.focus()
 }
@@ -508,7 +632,14 @@ if (desktop) {
     selectAfterCopy(true)
     refocus()
     void loadSettings()
+    void refreshDiagnostics()
   })
+  void on('report-open', payload => openReport(payload?.origin ?? 'menu'))
+  void on('report-recording', recording => {
+    void refreshDiagnostics()
+    if (!recording && report.recording) { report.recorded(); openRecorded() }
+  })
+  void refreshDiagnostics()
   call('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
   void on('startup-notes', fail)
 }

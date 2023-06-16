@@ -2,4 +2,9 @@
 import type { Rule } from "./Rule";
 import type { Term } from "./Term";
 
-export type Settings = { rules: Array<Rule>, terms: Array<Term>, };
+/**
+ * What the panel reads on every show. The two files are independent (LF-4): the one that is
+ * invalid comes as null, so the page keeps what it last read for it, and `error` names the first
+ * problem.
+ */
+export type Settings = { rules: Array<Rule> | null, terms: Array<Term> | null, error: string | null, };

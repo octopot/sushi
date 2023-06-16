@@ -66,7 +66,7 @@ export class Library {
     const row = this.selectedRow
     const nodes: Node[] = this.problem ? [el('span', 'error', this.problem)] : []
     if (row) {
-      const open = el('button', 'open', el('span', 'label', row.id.startsWith('d:') ? 'Open in Editor' : 'Open'), keys('↵'))
+      const open = el('button', 'open', el('span', 'label', row.id.startsWith('d:') ? 'Open in editor' : 'Open'), keys('↵'))
       open.type = 'button'
       open.addEventListener('click', () => this.palette.run())
       nodes.push(open)

@@ -5,11 +5,14 @@ The specifications fix how Sushi behaves where a casual reading of the code or t
 | Specification | Covers | Status |
 | --- | --- | --- |
 | [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.2.1, as implemented |
-| [Local files](local-files.md) | `rules.json`, `dictionary.json`, `model.json`, the Library directory, prompts, templates, first-run seeding | v0.2.1, as implemented |
-| [The model behind an edit](model.md) | Ollama or OpenRouter, what an edit sends, failures and Edit with Ollama | v0.2.1, as implemented |
-| [The panel on screen](panel.md) | Where the panel shows, who has the keyboard, where focus goes when it hides, and the regression scenarios run by hand | v0.2.1, as implemented |
+| [Local files](local-files.md) | `rules.json`, `dictionary.json`, `hotkey.json`, `model.json`, `diagnostics.json` and its log, `library-path.txt` and the Library directory, prompts, templates, first-run seeding, what Sushi writes | v0.3.0, as implemented |
+| [The model behind an edit](model.md) | Ollama or a hosted provider (OpenRouter, OpenAI, Claude), connecting one from Settings, the keychain, what an edit sends, failures and Edit with Ollama | v0.3.0, as implemented |
+| [The panel on screen](panel.md) | Where the panel shows, who has the keyboard, where focus goes when it hides, the panel with the settings window, the menu bar menu, and the regression scenarios run by hand | v0.3.0, as implemented |
+| [The settings window](settings.md) | Opening and closing it, reading and saving the settings files, drafts, conflicts and broken files, each pane, recording the key, the schema check | v0.3.0, as implemented |
+| [Build info](build-info.md) | The block that names the build, About in Settings and `sushi version` | v0.3.0, as implemented |
+| [Reporting a problem](report.md) | Report a problem: the questions, the recording, the snapshot and what it leaves out, the report's format | v0.3.0, as implemented |
 
-[`files.cue`](files.cue) gives the file formats as CUE definitions, and [`examples/`](examples/) holds the files Sushi ships: the app embeds them at build time to seed a new settings folder and library, and the tests read them. Editing an example therefore changes what new users get.
+[`files.cue`](files.cue) gives the file formats as CUE definitions, and [`examples/`](examples/) holds the files Sushi ships: the app embeds the examples of `rules.json`, `dictionary.json`, `hotkey.json` and the templates at build time to seed missing files in a new settings folder and library, and restores them over a broken file; the examples of `model.json` and `diagnostics.json` document optional files and are not seeded. The tests read them all. Editing an example therefore changes what new users get.
 
 ## How a specification is built
 
@@ -17,6 +20,6 @@ Each specification opens with a status line naming the version it describes, the
 
 ## Specifications, tests and the user guide
 
-- **Tests prove the rules.** `tests/history.test.mjs` checks the chain model, `tests/composer.test.mjs` drives the real page in headless Chrome or WebKit with the model and system calls replaced, and the Rust tests in `src-tauri/src/` check file reading and validation. Run `npm test` and `cargo test --manifest-path src-tauri/Cargo.toml --release`.
+- **Tests prove the rules.** `tests/history.test.mjs` checks the chain model, `tests/composer.test.mjs` drives the real page in headless Chrome or WebKit with the model and system calls replaced, `tests/settings.test.mjs` drives the settings window's page the same way, the Rust tests in `src-tauri/src/` check file reading, validation and writing, and `make config-vet` checks the files against [`files.cue`](files.cue). Run `npm test` and `cargo test --manifest-path src-tauri/Cargo.toml --release`.
 - **The user guide explains, the specification decides.** The [site](https://sushi.octolab.org/) shows how to use Sushi and links here for the exact rules. These files are plain Markdown read on GitHub; they are not published on the site.
 - **A change of behaviour changes its specification in the same change.** Update the rule, its example and its row in Verification together with the code and the test. A rule that drifted from the code is a defect of one of the two: decide which, and fix that one.

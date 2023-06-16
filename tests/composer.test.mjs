@@ -72,6 +72,8 @@ test('Sushi composer', async t => {
       const state = window.fixture = {
         copies: [], hidden: 0, reads: [], requests: [], replies: [], cancelled: [], warmed: 0, warmers: [], downloads: 0, openedDictionary: 0,
         delay: false, callbacks: [], listeners: {},
+        hideReasons: [], diagnostics: { file: false, report: false }, combinations: [], connects: [],
+        reportStart: { fixed: ['What were you doing?', 'What did you expect?', 'Does it repeat?'] }, questions: [], recordings: [], drafts: [], saves: [],
       }
       // Simulates a full localStorage for the draft: 'always', or only for chains longer than three versions.
       const setItem = Storage.prototype.setItem
@@ -86,8 +88,9 @@ test('Sushi composer', async t => {
         async invoke(command, args) {
           switch (command) {
             case 'settings_load':
-              if (state.badSettings) throw new Error('rules.json: expected an array')
-              return { rules, terms }
+              // The files are read independently (LF-4): an invalid one comes as null with the error.
+              if (state.badSettings) return { rules: null, terms, error: 'rules.json: expected an array' }
+              return { rules, terms, error: null }
             case 'warm_model':
               state.warmed++
               if (state.holdWarm) return new Promise(resolve => state.warmers.push(resolve))
@@ -96,7 +99,29 @@ test('Sushi composer', async t => {
             case 'copy_text':
               if (state.badCopy) throw new Error('The clipboard is not available')
               state.copies.push(args.text); return
-            case 'hide_launcher': state.hidden++; return
+            case 'hide_launcher': state.hidden++; state.hideReasons.push(args.reason); return
+            case 'diagnostics_state': return state.diagnostics
+            case 'diagnostics_key': state.combinations.push(args.combination); return
+            case 'provider_connect': state.connects.push(args.provider); return
+            case 'report_start':
+              if (state.holdStart) return new Promise(resolve => { state.releaseStart = () => resolve(state.reportStart) })
+              return state.reportStart
+            case 'report_questions':
+              state.questions.push(args)
+              return state.questionReply ?? ['Что вы делали?', 'Повторяется ли?']
+            case 'report_record':
+              state.recordings.push(args.on)
+              state.diagnostics = { ...state.diagnostics, report: args.on }
+              return
+            case 'report_end':
+              state.ends = (state.ends ?? 0) + 1
+              state.diagnostics = { ...state.diagnostics, report: false }
+              return
+            case 'report_draft':
+              state.drafts.push(args)
+              return { text: 'Sushi problem report · format 1\n\n## What went wrong\n\n' + args.description + '\n', recording: state.recordings.includes(true) ? 2048 : undefined }
+            case 'report_save': state.saves.push(args); return
+            case 'prefs_open': state.prefs = [...(state.prefs ?? []), args.pane]; return
             case 'rewrite':
               state.requests.push(args)
               if (state.failure) throw state.failure
@@ -177,7 +202,7 @@ test('Sushi composer', async t => {
     await actionsInput(page).press('Enter')
     await page.locator('.cm-diff-ins, .cm-diff-del').first().waitFor()
   }
-  const emit = (page, event) => page.evaluate(event => window.fixture.listeners[event]({ event, payload: null }), event)
+  const emit = (page, event, payload = null) => page.evaluate(([event, payload]) => window.fixture.listeners[event]({ event, payload }), [event, payload])
 
   await t.test('rewrite a selection, read the diff, walk the chain and copy each position', async t => {
     const page = await start(t)
@@ -538,13 +563,13 @@ test('Sushi composer', async t => {
     await page.locator('.scope').click()
     await page.locator('.scope').click()
     assert.equal(await scope(), 'Dictionary')
-    assert.equal(await page.locator('.library .footer').textContent(), 'Open in Editor↵')
+    assert.equal(await page.locator('.library .footer').textContent(), 'Open in editor↵')
     await capture(page, '07-dictionary')
     await page.keyboard.press('1')
     assert.equal(await libraryInput(page).inputValue(), '', 'Dictionary rows have no numbers')
     await page.keyboard.press('Enter')
     await page.waitForFunction(() => window.fixture.openedDictionary === 1)
-    await page.getByRole('button', { name: 'Open in Editor' }).click()
+    await page.getByRole('button', { name: 'Open in editor' }).click()
     await page.waitForFunction(() => window.fixture.openedDictionary === 2)
     assert.equal(await libraryInput(page).isVisible(), true, 'the dictionary row leaves the Library open')
     await page.keyboard.press('Shift+Tab')
@@ -640,9 +665,21 @@ test('Sushi composer', async t => {
     await page.evaluate(() => { window.fixture.badSettings = true })
     await focus()
     await page.locator('#hint.error', { hasText: 'rules.json' }).waitFor()
+    // An invalid rules.json keeps the actions last read (LF-4).
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await page.getByRole('option', { name: /Shorten/ }).first().waitFor()
+    await page.keyboard.press('Escape')
     await page.evaluate(() => { window.fixture.badSettings = false })
     await focus()
     await page.waitForFunction(() => document.querySelector('#hint').textContent === '')
+  })
+
+  await t.test('⌘, opens the settings window from the panel', async t => {
+    const page = await start(t)
+    await page.keyboard.press('Meta+Comma')
+    await page.waitForFunction(() => window.fixture.prefs?.length === 1)
+    assert.deepEqual(await page.evaluate(() => window.fixture.prefs), [null])
   })
 
   await t.test('the draft and its position survive a reload', async t => {
@@ -788,6 +825,201 @@ test('Sushi composer', async t => {
     await page.keyboard.press('Meta+k')
     await page.locator('.actions .note', { hasText: 'model.json: openrouter.key is empty.' }).waitFor()
     assert.equal(await page.locator('.actions .note button').count(), 0)
+  })
+
+  await t.test('every hosted provider offers Connect again for a key and Edit with Ollama (MD-6)', async t => {
+    const page = await start(t)
+    await page.keyboard.insertText(brief.join('\n'))
+    for (const [name, id] of [['OpenRouter', 'openrouter'], ['OpenAI', 'openai'], ['Claude', 'anthropic']]) {
+      await select(page, brief[1])
+      const rejected = `${name} did not accept the key. Connect again · Edit with Ollama`
+      await page.evaluate(rejected => { window.fixture.failures = [rejected] }, rejected)
+      await page.keyboard.press('Meta+k')
+      await actionsInput(page).fill('Shorten')
+      await actionsInput(page).press('Enter')
+      await hint(page).getByRole('button', { name: 'Connect again' }).waitFor()
+      assert.equal(await hint(page).textContent(), rejected)
+      await hint(page).getByRole('button', { name: 'Connect again' }).click()
+      assert.equal(await page.evaluate(() => window.fixture.connects.at(-1)), id)
+      assert.equal(await editorText(page), brief.join('\n'), 'the chain does not change')
+      // Without a key the hint still offers to connect, and the edit can run locally.
+      const missing = `${name} is not connected. Connect again · Edit with Ollama`
+      await page.evaluate(missing => { window.fixture.failures = [missing] }, missing)
+      await page.keyboard.press('Meta+k')
+      await actionsInput(page).fill('Shorten')
+      await actionsInput(page).press('Enter')
+      await hint(page).getByRole('button', { name: 'Edit with Ollama' }).waitFor()
+      assert.equal(await hint(page).getByRole('button', { name: 'Connect again' }).count(), 1)
+      await page.keyboard.press('Escape')
+    }
+    // A message from elsewhere that merely starts with a name stays plain.
+    await page.evaluate(() => { window.fixture.failures = ['Claude Monet painted water lilies.'] })
+    await select(page, brief[1])
+    await page.keyboard.press('Meta+k')
+    await actionsInput(page).fill('Shorten')
+    await actionsInput(page).press('Enter')
+    await page.locator('#hint.error').waitFor()
+    assert.equal(await hint(page).locator('button').count(), 0)
+  })
+
+  await t.test('diagnostics: a notice on every show, ⌘ combinations without text, hide reasons (LF-22, LF-23)', async t => {
+    const page = await start(t)
+    assert.equal(await page.locator('#status').isHidden(), true, 'off without the file')
+    await page.evaluate(() => { window.fixture.diagnostics = { file: true, report: false } })
+    await emit(page, 'launcher-shown')
+    await page.locator('#status', { hasText: 'Diagnostics on · diagnostics.json turns it off' }).waitFor()
+    await page.keyboard.insertText('secret words')
+    await page.keyboard.press('Meta+a')
+    await page.keyboard.press('Control+Shift+k')
+    await page.keyboard.type('typed')
+    assert.deepEqual(await page.evaluate(() => window.fixture.combinations), ['⌘A', '⌃⇧K'], 'combinations only, never text')
+    // An error keeps the hint line; the notice stays at the top.
+    await page.evaluate(() => { window.fixture.diagnostics = { file: true, report: false, error: 'diagnostics.json: unknown field `verbose`' } })
+    await emit(page, 'launcher-shown')
+    await page.locator('#hint.error', { hasText: 'diagnostics.json: unknown field' }).waitFor()
+    assert.equal(await page.locator('#status').isVisible(), true)
+    await capture(page, '24-diagnostics-on')
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Meta+Enter')
+    await page.waitForFunction(() => window.fixture.hideReasons.length === 2)
+    assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc', 'copy'])
+  })
+
+  await t.test('Report a problem: describe, answer, record, edit, then copy or save; the prompt stays out (RP-1 to RP-9)', async t => {
+    const page = await start(t)
+    const outside = []
+    page.on('request', request => { if (!request.url().startsWith(new URL(page.url()).origin)) outside.push(request.url()) })
+    const draft = 'Unique draft text Zebra7Marker'
+    await page.keyboard.insertText(draft)
+    await emit(page, 'report-open', { origin: 'menu' })
+    const field = page.getByRole('textbox', { name: 'What went wrong' })
+    await field.waitFor()
+    assert.equal(await page.evaluate(() => window.fixture.recordings.length), 0, 'starting records nothing')
+    await page.keyboard.press('Meta+Enter')
+    await page.locator('.report-status', { hasText: 'Describe the problem first.' }).waitFor()
+    await field.fill('Панель закрывается после ⌘A.')
+    await capture(page, '25-report-describe')
+    await page.keyboard.press('Meta+Enter')
+    // Ollama asks in the language of the description; the model gets the description only.
+    await page.getByRole('textbox', { name: 'Что вы делали?' }).fill('Нажимал ⌘A')
+    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [{ description: 'Панель закрывается после ⌘A.', consent: null }])
+    await page.keyboard.press('Meta+Enter')
+    await page.getByRole('button', { name: 'Start recording' }).click()
+    await page.locator('#status', { hasText: 'Recording for a problem report' }).waitFor()
+    assert.equal(await page.locator('.report').isHidden(), true, 'the panel is free to repeat the steps')
+    await capture(page, '26-report-recording')
+    await page.locator('#status').getByRole('button', { name: 'Finish recording' }).click()
+    const report = page.getByRole('textbox', { name: 'Report' })
+    await report.waitFor()
+    assert.deepEqual(await page.evaluate(() => window.fixture.recordings), [true, false])
+    const [sent] = await page.evaluate(() => window.fixture.drafts)
+    assert.deepEqual(sent.answers, [{ question: 'Что вы делали?', answer: 'Нажимал ⌘A' }, { question: 'Повторяется ли?', answer: '' }])
+    assert.deepEqual(sent.panel, { view: 'editor', versions: 1, editing: false })
+    assert.ok(!JSON.stringify(sent).includes('Zebra7Marker'), 'nothing of the prompt goes to the report')
+    await page.getByText('Save the recording with the report (report-recording.log, 2.0 KB)').waitFor()
+    await capture(page, '27-report-text')
+    await report.fill('Edited by the user.')
+    await page.keyboard.press('Meta+Enter')
+    await page.locator('.report-status', { hasText: 'Sushi sends nothing' }).waitFor()
+    assert.equal(await page.evaluate(() => window.fixture.copies.at(-1)), 'Edited by the user.')
+    await page.getByRole('checkbox').uncheck()
+    await page.getByRole('button', { name: 'Save…' }).click()
+    await page.waitForFunction(() => window.fixture.saves.length === 1)
+    assert.deepEqual(await page.evaluate(() => window.fixture.saves[0]), { text: 'Edited by the user.', recording: false })
+    await page.keyboard.press('Escape')
+    await prompt(page).waitFor()
+    assert.equal(await editorText(page), draft, 'the draft is as it was')
+    assert.equal(await page.evaluate(() => window.fixture.hidden), 0, 'Esc leaves the flow, not the panel')
+    assert.deepEqual(outside, [], 'the flow makes no network request')
+  })
+
+  await t.test('Report from Settings ▸ About: leaving it hides the panel, so Settings has the keyboard again (RP-1)', async t => {
+    const page = await start(t)
+    const field = page.getByRole('textbox', { name: 'What went wrong' })
+    // Esc at the first step leaves the flow and hides the panel.
+    await emit(page, 'report-open', { origin: 'settings' })
+    await field.waitFor()
+    await page.keyboard.press('Escape')
+    await page.waitForFunction(() => window.fixture.hidden === 1)
+    assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc'])
+    // Copy finishes it the same way.
+    await emit(page, 'report-open', { origin: 'settings' })
+    await field.fill('It hides.')
+    await page.keyboard.press('Meta+Enter')
+    await page.getByRole('button', { name: 'Skip' }).click()
+    await page.getByRole('button', { name: 'Skip' }).click()
+    await page.getByRole('textbox', { name: 'Report' }).waitFor()
+    await page.keyboard.press('Meta+Enter')
+    await page.waitForFunction(() => window.fixture.hidden === 2)
+    assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc', 'copy'])
+    assert.equal(await page.locator('.report').isHidden(), true)
+    // From the menu the panel stays, as before.
+    await emit(page, 'report-open', { origin: 'menu' })
+    await field.waitFor()
+    await page.keyboard.press('Escape')
+    await prompt(page).waitFor()
+    assert.equal(await page.evaluate(() => window.fixture.hidden), 2)
+  })
+
+  await t.test('Report: a hosted provider gets the description only with consent; the menu can finish the recording (RP-3, RP-5)', async t => {
+    const page = await start(t)
+    await page.evaluate(() => { window.fixture.reportStart = { provider: 'Claude', fixed: ['What were you doing?', 'What did you expect?', 'Does it repeat?'] } })
+    // The form is there at once; what the user types before Sushi answers stays.
+    await page.evaluate(() => { window.fixture.holdStart = true })
+    await emit(page, 'report-open', { origin: 'menu' })
+    await page.getByRole('textbox', { name: 'What went wrong' }).fill('It flickers.')
+    // Next waits for that answer: Sushi does not yet know the description would go to Claude.
+    await page.keyboard.press('Meta+Enter')
+    await page.locator('.report-status', { hasText: 'One moment…' }).waitFor()
+    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [])
+    await page.evaluate(() => { window.fixture.holdStart = false; window.fixture.releaseStart() })
+    await page.waitForTimeout(50)
+    assert.equal(await page.getByRole('textbox', { name: 'What went wrong' }).inputValue(), 'It flickers.')
+    await page.keyboard.press('Meta+Enter')
+    await page.getByText('the description would go to Claude').waitFor()
+    await page.getByRole('button', { name: 'Use standard questions' }).click()
+    await page.getByRole('textbox', { name: 'What did you expect?' }).waitFor()
+    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [], 'nothing was asked')
+    await page.getByRole('button', { name: 'Skip' }).click()
+    await page.getByRole('button', { name: 'Start recording' }).click()
+    await page.locator('#status', { hasText: 'Recording' }).waitFor()
+    // Finish recording in the menu bar menu, while the Library is open: the report takes its place.
+    await page.keyboard.press('Meta+l')
+    await libraryInput(page).waitFor()
+    await page.evaluate(() => { window.fixture.diagnostics = { file: false, report: false } })
+    await emit(page, 'report-recording', false)
+    await page.getByRole('textbox', { name: 'Report' }).waitFor()
+    await libraryInput(page).waitFor({ state: 'hidden' })
+    assert.equal(await page.locator('#status').isHidden(), true)
+    // Leaving the flow while it records turns the recording off.
+    await page.keyboard.press('Escape')
+    // This report starts from the Library, and is reopened later from the editor.
+    await page.keyboard.press('Meta+l')
+    await libraryInput(page).waitFor()
+    await emit(page, 'report-open', { origin: 'menu' })
+    await page.getByRole('textbox', { name: 'What went wrong' }).fill('Again.')
+    await page.keyboard.press('Meta+Enter')
+    await page.getByRole('button', { name: `Ask Claude` }).click()
+    await page.getByRole('textbox', { name: 'Что вы делали?' }).waitFor()
+    assert.deepEqual(await page.evaluate(() => window.fixture.questions.at(-1)), { description: 'Again.', consent: 'Claude' })
+    await page.keyboard.press('Meta+Enter')
+    await page.getByRole('button', { name: 'Start recording' }).click()
+    await page.locator('#status', { hasText: 'Recording' }).waitFor()
+    // Reopened while it records, the flow offers only to finish; nothing can skip past it.
+    await emit(page, 'report-open', { origin: 'menu' })
+    await page.getByRole('heading', { name: 'Recording…' }).waitFor()
+    assert.equal(await page.locator('.report').getByRole('button', { name: 'Skip' }).count(), 0)
+    await page.locator('.report').getByRole('button', { name: 'Finish recording' }).click()
+    const edited = page.getByRole('textbox', { name: 'Report' })
+    await edited.waitFor()
+    assert.equal(await page.evaluate(() => window.fixture.drafts.at(-1).panel.view), 'library', 'the view it started from')
+    await edited.fill('My own words.')
+    // A late finish from the menu leaves the report as the user edited it.
+    await emit(page, 'report-recording', false)
+    await page.waitForTimeout(100)
+    assert.equal(await edited.inputValue(), 'My own words.')
+    await page.keyboard.press('Escape')
+    await page.waitForFunction(() => window.fixture.ends === 2, 'leaving the flow ends the recording')
   })
 
   await t.test('a free-form instruction leads when no action matches well', async t => {

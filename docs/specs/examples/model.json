@@ -1,7 +1,6 @@
 {
   "provider": "openrouter",
   "openrouter": {
-    "key": "sk-or-v1-replace-with-your-key",
     "model": "openai/gpt-6-luna",
     "reasoning": "high",
     "tier": "fast"

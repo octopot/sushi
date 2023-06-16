@@ -28,27 +28,76 @@ pub enum Kind {
     Templates,
 }
 
+pub(crate) const PATH_FILE: &str = "library-path.txt";
+
+/// The folder `library-path.txt` names, from its bytes: one absolute path, a line break allowed.
+pub(crate) fn parse_path(bytes: &[u8]) -> Result<PathBuf, String> {
+    let value = std::str::from_utf8(bytes)
+        .map_err(|_| "Enter an absolute library directory in library-path.txt.".to_string())?;
+    let dir = PathBuf::from(value.trim_end_matches(['\r', '\n']));
+    if !dir.is_absolute() {
+        return Err("Enter an absolute library directory in library-path.txt.".into());
+    }
+    Ok(dir)
+}
+
+/// The folder the environment sets, which wins over the file (LF-11).
+pub(crate) fn environment() -> Option<PathBuf> {
+    env::var_os("SUSHI_LIBRARY_DIR")
+        .filter(|p| !p.is_empty())
+        .map(PathBuf::from)
+}
+
+/// Where the library comes from (LF-11): the folder, and `environment`, `custom` or `default`.
+pub(crate) fn source(data: &Path) -> Result<(PathBuf, &'static str), String> {
+    if let Some(path) = environment() {
+        return Ok((path, "environment"));
+    }
+    match fs::read(data.join(PATH_FILE)) {
+        Ok(bytes) => Ok((parse_path(&bytes)?, "custom")),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => Ok((data.join("Input"), "default")),
+        // The same words as the settings window's file state (files.rs).
+        Err(err) => Err(format!("{PATH_FILE}: {err}")),
+    }
+}
+
+/// How many templates a library folder lists: a folder without `.templates` yet has none
+/// (Sushi creates it with its examples on the first look); None when it cannot be read.
+pub(crate) fn count_templates(dir: &Path) -> Option<usize> {
+    let templates = dir.join(".templates");
+    match fs::symlink_metadata(&templates) {
+        Err(e) if e.kind() == io::ErrorKind::NotFound => fs::read_dir(dir).ok().map(|_| 0),
+        _ => count(&templates),
+    }
+}
+
 fn directory(app: &AppHandle, kind: Kind) -> Result<PathBuf, String> {
-    let base = if let Some(path) = env::var_os("SUSHI_LIBRARY_DIR").filter(|p| !p.is_empty()) {
-        PathBuf::from(path)
-    } else {
-        let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
-        match fs::read_to_string(data.join("library-path.txt")) {
-            Ok(value) => {
-                let dir = PathBuf::from(value.trim_end_matches(['\r', '\n']));
-                if !dir.is_absolute() {
-                    return Err("Enter an absolute library directory in library-path.txt.".into());
-                }
-                dir
-            }
-            Err(err) if err.kind() == io::ErrorKind::NotFound => data.join("Input"),
-            Err(err) => return Err(format!("Could not read library-path.txt: {err}")),
-        }
-    };
+    let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let (base, _) = source(&data)?;
     Ok(match kind {
         Kind::Documents => base,
         Kind::Templates => base.join(".templates"),
     })
+}
+
+/// How many prompts a folder lists, by the rules of LF-12, without creating or reading anything
+/// but the folder itself; `None` when it cannot be read.
+pub(crate) fn count(dir: &Path) -> Option<usize> {
+    let items = fs::read_dir(dir).ok()?;
+    Some(
+        items
+            .flatten()
+            .filter(|item| item.file_type().is_ok_and(|kind| kind.is_file()))
+            .filter(|item| {
+                let path = item.path();
+                path.extension().and_then(|s| s.to_str()) == Some("md")
+                    && path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .is_some_and(valid_stem)
+            })
+            .count(),
+    )
 }
 
 fn list(dir: &Path, templates: bool) -> io::Result<Vec<Entry>> {

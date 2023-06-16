@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { checksumOf, declaredVersion, renderCask, tapAction, tapRenames } from './release.mjs'
+import { buildInfoErrors, checksumOf, declaredVersion, parseBuildInfo, renderCask, tapAction, tapRenames } from './release.mjs'
 
 const script = resolve('.github/scripts/release.mjs')
 const template = readFileSync(resolve('.github/homebrew/sushi.rb'), 'utf8')
@@ -108,6 +108,28 @@ test('cask renders from the template that settings.json names', () => fixture(({
   assert.equal(result.status, 0, result.stderr)
   assert.equal(readFileSync(out, 'utf8'), renderCask(template, { version: '0.1.0', sha256: SHA }))
 }))
+
+test('the build info of sushi version is complete, and in cd it is the tag\'s clean commit', () => {
+  // The example of docs/specs/build-info.md, BI-1.
+  const spec = readFileSync(new URL('../../docs/specs/build-info.md', import.meta.url), 'utf8')
+  const block = spec.split('<!-- block -->')[1].split('```text\n')[1].split('  ```')[0].replace(/^ {2}/gm, '')
+  const info = parseBuildInfo(block)
+  assert.equal(info.version, '0.3.0')
+  assert.equal(info['git hash'], '0123456789abcdef0123456789abcdef01234567')
+  assert.equal(info['build date'], '2026-11-29T09:30:00Z')
+  assert.deepEqual(buildInfoErrors(block, { version: '0.3.0' }), [])
+  const ci = { version: '0.3.0', commit: info['git hash'], date: info['build date'] }
+  assert.deepEqual(buildInfoErrors(block, ci), [])
+  assert.deepEqual(buildInfoErrors(block, { version: '0.3.1' }), ['build info: version is 0.3.0, the version files say 0.3.1'])
+  const swap = (field, value) => block.replace(new RegExp(`(  ${field} *: ).*`), `$1${value}`)
+  assert.deepEqual(buildInfoErrors(swap('webkit', 'unknown'), ci), ['build info: webkit is unknown'])
+  assert.deepEqual(buildInfoErrors(swap('git hash', `${info['git hash']}-dirty`), ci), ['build info: the build is marked dirty'])
+  assert.deepEqual(buildInfoErrors(swap('git hash', 'f'.repeat(40)), ci), [`build info: git hash is ${'f'.repeat(40)}, the tag's commit is ${info['git hash']}`])
+  assert.deepEqual(buildInfoErrors(swap('build date', '2026-11-29T09:31:00Z'), ci), ["build info: build date is 2026-11-29T09:31:00Z, the tag's commit time is 2026-11-29T09:30:00Z"])
+  assert.deepEqual(buildInfoErrors(swap('build', 'debug'), { version: '0.3.0' }), ['build info: build is debug, not release'])
+  assert.deepEqual(buildInfoErrors(block.replace(/^ {2}rust .*\n/m, ''), {}), ['build info: rust is missing'])
+  assert.deepEqual(buildInfoErrors('Sushi could not start', {}), ['sushi version did not print the build info block'])
+})
 
 test('checksums.txt lookups match the asset name exactly', () => {
   const text = `${'1'.repeat(64)}  sushi_0.1.0_darwin-arm64.zip\n${'2'.repeat(64)} *sushi_0.1.0_darwin-arm64.zip.sig\n`

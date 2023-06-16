@@ -162,6 +162,9 @@ jobs:
           for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
             [ -n "${!name:-}" ] || unset "${name}"
           done
+          # BI-3: the build date is the commit time of what is built, the tag's commit
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct HEAD)"
+          export SOURCE_DATE_EPOCH
           if [ "${SIGNING}" = developer-id ]; then
             export APPLE_SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-Developer ID Application}"
           else

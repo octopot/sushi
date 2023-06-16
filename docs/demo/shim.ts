@@ -71,16 +71,18 @@ const callbacks: ((payload: unknown) => void)[] = []
 const listeners: Partial<Record<keyof Events, (message: unknown) => void>> = {}
 /** Delivers an event from the native side, with the payload src/ipc.ts declares for it. */
 /** Every event of src/ipc.ts; one the page listens for but the demo never sends stops it here. */
-const events: string[] = Object.keys({ 'launcher-shown': true, 'startup-notes': true } satisfies Record<keyof Events, true>)
+const events: string[] = Object.keys({ 'launcher-shown': true, 'startup-notes': true, 'report-open': true, 'report-recording': true, 'prefs-changed': true, 'prefs-pane': true } satisfies Record<keyof Events, true>)
 const fire = <K extends keyof Events>(event: K, payload: Events[K]) => listeners[event]?.({ event, payload })
 const pending = new Map<string, () => void>()
+
+const noWindow = () => Promise.reject(new Error('The demo has no settings window.'))
 
 /** The model the demo's hint names: the one the app runs locally by default. */
 const model = 'qwen3.5:4b-mlx'
 type Handlers = { [K in keyof Commands]: (args: Commands[K]['args']) => Commands[K]['reply'] | Promise<Commands[K]['reply']> }
 // Typed against src/ipc.ts: `npm run build` type-checks this file, so a reply the app reads differently fails there.
 const commands: Handlers = {
-  settings_load: () => ({ rules, terms: dictionary.terms }),
+  settings_load: () => ({ rules, terms: dictionary.terms, error: null }),
   startup_notes: () => null,
   warm_model: () => null,
   ollama_download: () => (emit({ type: 'notice', text: 'In the app, this opens the Ollama download page in your browser.' }), null),
@@ -107,6 +109,33 @@ const commands: Handlers = {
     : Object.entries(documents).map(([name, { ago }]) => ({ name, updatedAt: Date.now() - ago })),
   library_read: ({ kind, name }) => kind === 'templates' ? body(templates[name] ?? '') : documents[name]?.text ?? '',
   dictionary_open: () => (emit({ type: 'notice', text: 'In the app, this opens dictionary.json in your text editor.' }), null),
+  diagnostics_key: () => null,
+  diagnostics_state: () => ({ file: false, report: false }),
+  provider_connect: () => (emit({ type: 'notice', text: 'In the app, this connects a hosted model from the menu bar menu.' }), null),
+  // The demo has no menu bar menu, so Report a problem never opens; these only keep the contract.
+  report_start: () => ({ fixed: [] }),
+  report_questions: () => Promise.reject(new Error('The demo asks no questions.')),
+  report_record: () => null,
+  report_end: () => null,
+  report_draft: () => ({ text: 'In the app, the report holds your description, the build and the state of Sushi.' }),
+  report_save: () => null,
+  // The demo has no settings window: ⌘, says what it does in the app; the window's own calls never come.
+  prefs_open: () => (emit({ type: 'notice', text: 'In the app, ⌘, opens the settings window.' }), null),
+  prefs_load: noWindow,
+  prefs_keyboard_save: noWindow,
+  prefs_capture: () => null,
+  prefs_model_select: noWindow,
+  prefs_model_option: noWindow,
+  prefs_connect: noWindow,
+  prefs_disconnect: noWindow,
+  prefs_actions_save: noWindow,
+  prefs_dictionary_save: noWindow,
+  prefs_library_choose: noWindow,
+  prefs_library_default: noWindow,
+  prefs_diagnostics_save: noWindow,
+  prefs_reset: noWindow,
+  prefs_file: noWindow,
+  prefs_action: noWindow,
 }
 
 declare global { interface Window { isTauri?: boolean; __TAURI_INTERNALS__?: unknown; sushiDemo?: typeof api } }

@@ -320,7 +320,9 @@ void sushi_stage_appearance(const char *name) {
 static NSWindow *backdrop;
 
 // Level of the desktop picture covering rect (AppKit coordinates), or NSNotFound.
-// macOS 26+ draws it in a WallpaperAgent window two levels below kCGDesktopWindowLevel.
+// macOS 26 draws it in a WallpaperAgent window two levels below kCGDesktopWindowLevel; macOS 27
+// lists no such window, and the lowest opaque full-screen window is the Window Server's own,
+// three levels below. Either way the stage windows go under the lowest one found.
 static NSInteger wallpaper_level(NSRect rect) {
     CGFloat top = NSMaxY(NSScreen.screens.firstObject.frame);
     CGRect target = CGRectMake(NSMinX(rect), top - NSMaxY(rect), NSWidth(rect), NSHeight(rect));
@@ -330,7 +332,11 @@ static NSInteger wallpaper_level(NSRect rect) {
         CGRect bounds;
         NSInteger layer = [info[(id)kCGWindowLayer] integerValue];
         NSString *owner = [NSRunningApplication runningApplicationWithProcessIdentifier:[info[(id)kCGWindowOwnerPID] intValue]].bundleIdentifier;
-        if (([owner isEqual:@"com.apple.wallpaper.agent"] || layer == CGWindowLevelForKey(kCGDesktopWindowLevelKey)) &&
+        BOOL server = !owner && [info[(id)kCGWindowOwnerName] isEqual:@"Window Server"] &&
+            layer < CGWindowLevelForKey(kCGDesktopWindowLevelKey);
+        // Nothing above the desktop level counts: the stage must end up under the desktop, never over it.
+        if (([owner isEqual:@"com.apple.wallpaper.agent"] || server || layer == CGWindowLevelForKey(kCGDesktopWindowLevelKey)) &&
+            layer <= CGWindowLevelForKey(kCGDesktopWindowLevelKey) &&
             [info[(id)kCGWindowAlpha] doubleValue] == 1.0 &&
             CGRectMakeWithDictionaryRepresentation((__bridge CFDictionaryRef)info[(id)kCGWindowBounds], &bounds) &&
             CGRectContainsRect(bounds, target)) {
@@ -397,4 +403,380 @@ long sushi_stage_present(void *native, const char *image_path, long *backdrop_nu
     dispatch_resume(term);
     *backdrop_number = backdrop.windowNumber;
     return window.windowNumber;
+}
+
+// ——— Build info (docs/specs/build-info.md) ———
+// How the running binary is signed, read from its own signature. No AppKit: `sushi version`
+// runs this before NSApplication exists. Returns 0 unsigned, 1 ad-hoc, 2 ad-hoc by the linker
+// (a plain cargo build), 3 Developer ID, 4 another certificate; team receives the team ID.
+#import <Security/Security.h>
+
+int sushi_signing(char *team, size_t size) {
+    @autoreleasepool {
+        if (size) team[0] = 0;
+        SecCodeRef code = NULL;
+        if (SecCodeCopySelf(kSecCSDefaultFlags, &code) != errSecSuccess) return 0;
+        SecStaticCodeRef file = NULL;
+        OSStatus status = SecCodeCopyStaticCode(code, kSecCSDefaultFlags, &file);
+        CFRelease(code);
+        if (status != errSecSuccess) return 0;
+        CFDictionaryRef copied = NULL;
+        status = SecCodeCopySigningInformation(file, kSecCSSigningInformation, &copied);
+        CFRelease(file);
+        if (status != errSecSuccess || !copied) return 0;
+        NSDictionary *info = CFBridgingRelease(copied);
+        if (!info[(__bridge NSString *)kSecCodeInfoIdentifier]) return 0;
+        uint32_t flags = [info[(__bridge NSString *)kSecCodeInfoFlags] unsignedIntValue];
+        // kSecCodeSignatureAdhoc and kSecCodeSignatureLinkerSigned
+        if (flags & 0x20000) return 2;
+        if (flags & 0x2) return 1;
+        NSString *teamID = info[(__bridge NSString *)kSecCodeInfoTeamIdentifier];
+        if (teamID && size) [teamID getCString:team maxLength:size encoding:NSUTF8StringEncoding];
+        NSArray *certificates = info[(__bridge NSString *)kSecCodeInfoCertificates];
+        NSString *leaf = certificates.count
+            ? CFBridgingRelease(SecCertificateCopySubjectSummary((__bridge SecCertificateRef)certificates.firstObject))
+            : nil;
+        return [leaf hasPrefix:@"Developer ID Application"] ? 3 : 4;
+    }
+}
+
+// ——— Diagnostics (SUSI-7, docs/specs/local-files.md LF-22) ———
+// What Sushi sees without a permission one run-loop turn after the panel lost the keyboard:
+// its own key window, whether it is active, the frontmost app, the on-screen windows above the
+// normal level (owner, level, size; never a title) and whether Writing Tools is active in the
+// panel's web view. Calls done on the main thread with one line of text.
+
+static id find_webview(NSView *view) {
+    if ([view respondsToSelector:NSSelectorFromString(@"isWritingToolsActive")]) return view;
+    for (NSView *child in view.subviews) {
+        id found = find_webview(child);
+        if (found) return found;
+    }
+    return nil;
+}
+
+static NSString *owner_of(pid_t pid, NSString *fallback) {
+    NSRunningApplication *app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+    return app.bundleIdentifier ?: (fallback ?: [NSString stringWithFormat:@"pid %d", pid]);
+}
+
+// ——— The panel's own sheets (docs/specs/panel.md, PN-8) ———
+// A sheet that AppKit attaches to the panel, such as the result of Writing Tools → Summary
+// (SUSI-7), takes the keyboard from the panel. It is part of the panel: losing the keyboard to
+// it does not hide the panel (PN-5), and losing the keyboard from it to anything else does.
+static BOOL in_family(NSWindow *panel, NSWindow *window) {
+    for (NSWindow *w = window; w; w = w.sheetParent) {
+        if (w == panel) return YES;
+    }
+    return NO;
+}
+
+static NSWindow *deepest_sheet(NSWindow *panel) {
+    NSWindow *sheet = panel.attachedSheet;
+    while (sheet.attachedSheet) sheet = sheet.attachedSheet;
+    return sheet;
+}
+
+// The panel or one of its sheets has the keyboard. Main thread only; false off it.
+bool sushi_panel_family_key(void *native) {
+    if (!NSThread.isMainThread) return false;
+    NSWindow *panel = (__bridge NSWindow *)native;
+    return panel && in_family(panel, NSApp.keyWindow);
+}
+
+// The panel lost the keyboard to its own sheet: one is attached, or one has the keyboard.
+// attachedSheet is set when the sheet begins, before it takes the keyboard, so the answer
+// does not depend on when tao reports the loss; tao reports it once the run-loop turn ends,
+// when the key window has changed. This is the affected user's check, proven on the Summary
+// sheet. Main thread only; false off it.
+bool sushi_panel_keeps(void *native) {
+    if (!NSThread.isMainThread) return false;
+    NSWindow *panel = (__bridge NSWindow *)native;
+    return panel && (panel.attachedSheet || in_family(panel, NSApp.keyWindow.sheetParent));
+}
+
+// On a show while a sheet is attached, the sheet takes the keyboard back, not the editor.
+// Returns whether it did. Main thread only.
+bool sushi_present_sheet(void *native) {
+    if (!NSThread.isMainThread) return false;
+    NSWindow *panel = (__bridge NSWindow *)native;
+    NSWindow *sheet = deepest_sheet(panel);
+    if (!sheet) return false;
+    [panel orderFrontRegardless];
+    [sheet makeKeyAndOrderFront:nil];
+    return true;
+}
+
+// tao reports only the panel's own loss of the keyboard. When one of its sheets loses it,
+// for a click in another app with the sheet in front, lost() hides the panel. The sheet's
+// notification comes before the new key window is known, so this waits one run-loop turn:
+// - the panel is hidden (the hotkey hid it with the sheet): nothing to do;
+// - the panel has the keyboard (AppKit gives it back when the sheet closes), or another of
+//   its sheets has it (a sheet of the sheet): the panel stays;
+// - no window has it and no sheet is attached: the sheet closed without giving it back, so
+//   the panel takes it and typing lands in the editor;
+// - otherwise the keyboard left for another app or window.
+// Installed once.
+void sushi_watch_sheets(void *native, void (*lost)(void)) {
+    static id observer;
+    if (observer) return;
+    NSWindow *panel = (__bridge NSWindow *)native;
+    observer = [NSNotificationCenter.defaultCenter addObserverForName:NSWindowDidResignKeyNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+        NSWindow *window = note.object;
+        if (window == panel || !in_family(panel, window)) return;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!panel.visible) return;
+            NSWindow *key = NSApp.keyWindow;
+            if (key == panel || in_family(panel, key.sheetParent)) return;
+            if (!key && !panel.attachedSheet) {
+                [panel makeKeyWindow];
+            } else {
+                lost();
+            }
+        });
+    }];
+}
+
+// SUSHI_TEST_SHEET=1: a sheet like the one of SUSI-7, attached to the panel on its first
+// show, for the regression scenario PR-10 on a Mac without Writing Tools. Main thread only.
+void sushi_test_sheet(void *native) {
+    static BOOL attached;
+    if (attached) return;
+    attached = YES;
+    NSAlert *alert = [NSAlert new];
+    alert.messageText = @"Test sheet";
+    alert.informativeText = @"SUSHI_TEST_SHEET attaches this sheet to the panel (PR-10).";
+    [alert addButtonWithTitle:@"OK"];
+    [alert beginSheetModalForWindow:(__bridge NSWindow *)native completionHandler:nil];
+}
+
+void sushi_focus_snapshot(void *native, void (*done)(const char *)) {
+    NSWindow *panel = (__bridge NSWindow *)native;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        @autoreleasepool {
+            NSMutableArray<NSString *> *parts = [NSMutableArray array];
+            NSWindow *key = NSApp.keyWindow;
+            [parts addObject:key ? [NSString stringWithFormat:@"key window %@ level %ld%@", NSStringFromClass(key.class), (long)key.level, key == panel ? @" (the panel)" : @""]
+                                 : @"key window none in Sushi"];
+            [parts addObject:[NSString stringWithFormat:@"sheet attached %@", panel.attachedSheet ? NSStringFromClass(deepest_sheet(panel).class) : @"no"]];
+            [parts addObject:[NSString stringWithFormat:@"sushi active %@", NSApp.active ? @"yes" : @"no"]];
+            NSRunningApplication *front = NSWorkspace.sharedWorkspace.frontmostApplication;
+            [parts addObject:[NSString stringWithFormat:@"frontmost %@", front.bundleIdentifier ?: @"-"]];
+            id webview = find_webview(panel.contentView);
+            if (webview) {
+                BOOL writing = ((BOOL (*)(id, SEL))objc_msgSend)(webview, NSSelectorFromString(@"isWritingToolsActive"));
+                [parts addObject:[NSString stringWithFormat:@"writing tools active %@", writing ? @"yes" : @"no"]];
+            } else {
+                [parts addObject:@"writing tools active n/a"];
+            }
+            NSMutableArray<NSString *> *above = [NSMutableArray array];
+            CFArrayRef list = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+            for (NSDictionary *info in (__bridge NSArray *)list) {
+                NSInteger layer = [info[(id)kCGWindowLayer] integerValue];
+                if (layer <= kCGNormalWindowLevel) continue;
+                CGRect bounds = CGRectZero;
+                CGRectMakeWithDictionaryRepresentation((__bridge CFDictionaryRef)info[(id)kCGWindowBounds], &bounds);
+                NSString *owner = owner_of([info[(id)kCGWindowOwnerPID] intValue], info[(id)kCGWindowOwnerName]);
+                [above addObject:[NSString stringWithFormat:@"%@ level %ld %.0fx%.0f", owner, (long)layer, bounds.size.width, bounds.size.height]];
+                if (above.count == 24) break;
+            }
+            if (list) CFRelease(list);
+            [parts addObject:[NSString stringWithFormat:@"windows above normal [%@]", [above componentsJoinedByString:@", "]]];
+            done([parts componentsJoinedByString:@"; "].UTF8String);
+        }
+    });
+}
+
+// ——— Connecting a provider (docs/specs/model.md, MD-14 and MD-13) ———
+// An alert in front of every app; returns the button pressed, 0 for the first. buttons holds
+// the titles separated by '\n'. With secure set, the alert has a secure text field for a pasted
+// key, whose text is written to secure (at most size bytes, NUL-terminated): the key never
+// passes through the page. Main thread only.
+int sushi_alert(const char *title, const char *text, const char *buttons, char *secure, size_t size, const char *placeholder) {
+    @autoreleasepool {
+        NSAlert *alert = [NSAlert new];
+        alert.messageText = @(title);
+        alert.informativeText = @(text);
+        for (NSString *button in [@(buttons) componentsSeparatedByString:@"\n"]) [alert addButtonWithTitle:button];
+        NSSecureTextField *field = nil;
+        if (secure && size) {
+            secure[0] = 0;
+            field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 0, 340, 24)];
+            if (placeholder) field.placeholderString = @(placeholder);
+            alert.accessoryView = field;
+            [alert layout];
+            alert.window.initialFirstResponder = field;
+        }
+        [NSApp activateIgnoringOtherApps:YES];
+        NSModalResponse response = [alert runModal];
+        if (field) {
+            const char *value = field.stringValue.UTF8String;
+            strlcpy(secure, value ? value : "", size);
+            field.stringValue = @"";
+        }
+        return (int)(response - NSAlertFirstButtonReturn);
+    }
+}
+
+// ——— A problem report's snapshot (docs/specs/report.md, RP-6) ———
+#import <Carbon/Carbon.h>
+
+// The identifier of the current keyboard input source, such as com.apple.keylayout.US.
+void sushi_input_source(char *out, size_t size) {
+    @autoreleasepool {
+        if (size) out[0] = 0;
+        TISInputSourceRef source = TISCopyCurrentKeyboardInputSource();
+        if (!source) return;
+        CFStringRef identifier = TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+        if (identifier) CFStringGetCString(identifier, out, (CFIndex)size, kCFStringEncodingUTF8);
+        CFRelease(source);
+    }
+}
+
+// Whether macOS uses the dark appearance, as the panel follows it.
+bool sushi_dark(void) {
+    // Light mode has no AppleInterfaceStyle at all: a nil style must not compare as equal.
+    NSString *style = [NSUserDefaults.standardUserDefaults stringForKey:@"AppleInterfaceStyle"];
+    return style && [style caseInsensitiveCompare:@"Dark"] == NSOrderedSame;
+}
+
+// ——— The settings window (SUSI-12) ———
+// A normal window of an accessory app: opening it activates Sushi so the window takes the
+// keyboard, on the Space the user is in. sushi_prepare_window never touches it. Main thread only.
+void sushi_activate_window(void *native) {
+    NSWindow *window = (__bridge NSWindow *)native;
+    if (!window) return;
+    window.collectionBehavior |= NSWindowCollectionBehaviorMoveToActiveSpace;
+    if (NSApp.hidden) [NSApp unhideWithoutActivation];
+    [NSApp activateIgnoringOtherApps:YES];
+    [window makeKeyAndOrderFront:nil];
+}
+
+// The alert of sushi_alert as a sheet of window, for a connect or disconnect flow the settings
+// window started: done(context, button, key) runs once on the main thread when it ends, with
+// the text of the secure field when secure is set (the key never passes through the page).
+// Returns false when window cannot take a sheet; done is then never called. Main thread only.
+typedef void (*sushi_alert_done)(void *context, int pressed, const char *key);
+
+bool sushi_alert_sheet(void *native, const char *title, const char *text, const char *buttons, bool secure, const char *placeholder, sushi_alert_done done, void *context) {
+    NSWindow *window = (__bridge NSWindow *)native;
+    if (!window || !window.visible) return false;
+    NSAlert *alert = [NSAlert new];
+    alert.messageText = @(title);
+    alert.informativeText = @(text);
+    for (NSString *button in [@(buttons) componentsSeparatedByString:@"\n"]) [alert addButtonWithTitle:button];
+    NSSecureTextField *field = nil;
+    if (secure) {
+        field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 0, 340, 24)];
+        if (placeholder) field.placeholderString = @(placeholder);
+        alert.accessoryView = field;
+        [alert layout];
+        alert.window.initialFirstResponder = field;
+    }
+    [NSApp activateIgnoringOtherApps:YES];
+    [window makeKeyAndOrderFront:nil];
+    [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse response) {
+        const char *value = field ? field.stringValue.UTF8String : NULL;
+        done(context, (int)(response - NSAlertFirstButtonReturn), value ? value : "");
+        field.stringValue = @"";
+    }];
+    return true;
+}
+
+// A folder picker, directories only, as a sheet of window. done(context, path) runs once on
+// the main thread: the chosen folder, or NULL for a cancel. A window that is hidden or gone is a
+// cancel: the picker never opens on its own over another app. Main thread only.
+typedef void (*sushi_folder_done)(void *context, const char *path);
+
+void sushi_choose_folder(void *native, const char *start, sushi_folder_done done, void *context) {
+    NSWindow *window = (__bridge NSWindow *)native;
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseFiles = NO;
+    panel.canChooseDirectories = YES;
+    panel.canCreateDirectories = YES;
+    panel.allowsMultipleSelection = NO;
+    panel.prompt = @"Choose";
+    panel.message = @"Choose the folder of your prompts. Sushi reads it and moves nothing.";
+    if (start) panel.directoryURL = [NSURL fileURLWithPath:@(start) isDirectory:YES];
+    void (^finish)(NSModalResponse) = ^(NSModalResponse response) {
+        NSString *path = response == NSModalResponseOK ? panel.URL.path : nil;
+        done(context, path ? path.fileSystemRepresentation : NULL);
+    };
+    if (window && window.visible) {
+        [panel beginSheetModalForWindow:window completionHandler:finish];
+    } else {
+        done(context, NULL);
+    }
+}
+
+// ——— The menu's shortcut hint for Caps Lock (SUSI-12) ———
+// The tray sets its menu on the status item only while the user opens it, so the hint is set
+// on that menu as it arrives: Show Sushi gets ⇪ as its key equivalent with no modifiers, as a
+// combination gets its own through the native accelerator.
+static BOOL capsHint;
+
+static void apply_caps_hint(NSMenu *menu) {
+    if (!menu || !capsHint) return;
+    NSMenuItem *item = [menu itemWithTitle:@"Show Sushi"];
+    if (!item) return;
+    item.keyEquivalent = @"⇪";
+    item.keyEquivalentModifierMask = 0;
+}
+
+@interface SushiStatusMenuWatcher : NSObject
+@end
+
+@implementation SushiStatusMenuWatcher
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    if ([object isKindOfClass:NSStatusItem.class]) apply_caps_hint(((NSStatusItem *)object).menu);
+}
+@end
+
+// Turns the hint on or off for the menu of status_item; false when the item cannot be reached,
+// and the row then names the key in its title. Main thread only.
+bool sushi_menu_caps_hint(void *status_item, bool on) {
+    if (!NSThread.isMainThread) return false;
+    id item = (__bridge id)status_item;
+    if (![item isKindOfClass:NSStatusItem.class]) return false;
+    static SushiStatusMenuWatcher *watcher;
+    static __weak NSStatusItem *watched;
+    capsHint = on;
+    if (watched != item) {
+        if (!watcher) watcher = [SushiStatusMenuWatcher new];
+        [item addObserver:watcher forKeyPath:@"menu" options:NSKeyValueObservingOptionNew context:NULL];
+        watched = item;
+    }
+    apply_caps_hint(((NSStatusItem *)item).menu);
+    return true;
+}
+
+// ——— The settings window and its sheets as one family (SUSI-12) ———
+// A folder picker or a connect screen attached to the settings window has the keyboard in
+// place of the window: for the panel's focus return they are the window. Main thread only.
+bool sushi_window_family_key(void *native) {
+    if (!NSThread.isMainThread) return false;
+    NSWindow *window = (__bridge NSWindow *)native;
+    return window && window.visible && in_family(window, NSApp.keyWindow);
+}
+
+// Gives the keyboard back to the window, or to its deepest attached sheet. Main thread only.
+void sushi_window_family_focus(void *native) {
+    NSWindow *window = (__bridge NSWindow *)native;
+    if (!window) return;
+    if (NSApp.hidden) [NSApp unhideWithoutActivation];
+    [NSApp activateIgnoringOtherApps:YES];
+    NSWindow *sheet = deepest_sheet(window);
+    [window makeKeyAndOrderFront:nil];
+    if (sheet) [sheet makeKeyAndOrderFront:nil];
+}
+
+// ——— Keys held while the key that shows Sushi pauses (SUSI-12) ———
+// Whether any of the key codes is down, or all of the modifier flags are, as the HID system
+// sees them now. Any thread.
+bool sushi_keys_down(unsigned long long flags, const unsigned short *codes, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        if (CGEventSourceKeyState(kCGEventSourceStateHIDSystemState, (CGKeyCode)codes[i])) return true;
+    }
+    if (!flags) return false;
+    return (CGEventSourceFlagsState(kCGEventSourceStateHIDSystemState) & flags) == flags;
 }
