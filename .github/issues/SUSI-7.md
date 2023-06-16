@@ -11,14 +11,14 @@ labels:
   - "scope: code"
 assignees:
   - kamilsk
-milestone: null
+milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
 state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T08:40:41Z
-updatedAt: 2026-11-23T09:17:27Z
+updatedAt: 2026-11-23T10:50:39Z
 lastEditedAt: 2026-11-23T09:17:27Z
 closedAt: null
 ---

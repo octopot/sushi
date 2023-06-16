@@ -11,14 +11,14 @@ labels:
   - "impact: high"
 assignees:
   - kamilsk
-milestone: null
+milestone: "[[SUSI-M1]]"
 parent: null
 issueFields: {}
 state: CLOSED
 stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-19T11:07:40Z
-updatedAt: 2026-11-19T13:11:21Z
+updatedAt: 2026-11-23T10:50:22Z
 lastEditedAt: 2026-11-19T11:33:00Z
 closedAt: 2026-11-19T13:11:21Z
 ---
