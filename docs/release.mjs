@@ -5,15 +5,15 @@
 // reads this file as text: keep `version`, `tag` and `archive` as plain single-quoted strings on
 // their own lines, naming the same version, or a tag cannot be pushed.
 export const release = {
-  version: '0.2.1',
-  tag: 'v0.2.1',
-  slogan: 'Stays where you work.',
+  version: '0.3.0',
+  tag: 'v0.3.0',
+  slogan: 'Your model, your settings.',
   // Liquid Glass, which the panel is built on, arrived in macOS 26.
   macos: '26',
   chip: 'Apple Silicon',
   model: 'qwen3.5:4b-mlx',
   cask: 'octolab/tap/sushi',
-  archive: 'sushi_0.2.1_darwin-arm64.zip',
+  archive: 'sushi_0.3.0_darwin-arm64.zip',
   repo: 'https://github.com/octopot/sushi',
 }
 release.download = `${release.repo}/releases/tag/${release.tag}`

@@ -14,7 +14,7 @@ On an Apple Silicon Mac with macOS 26 or later, with [Homebrew](https://brew.sh/
 brew install --cask octolab/tap/sushi
 ```
 
-Or download `sushi_0.2.1_darwin-arm64.zip` from the [v0.2.1 release](https://github.com/octopot/sushi/releases/tag/v0.2.1) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
+Or download `sushi_0.3.0_darwin-arm64.zip` from the [v0.3.0 release](https://github.com/octopot/sushi/releases/tag/v0.3.0) and move `Sushi.app` to Applications. This build is not notarized yet, so macOS stops its first launch and asks you to confirm opening it; the quick start shows how in [Download instead](docs/content/quick-start.mdx#download-instead). Homebrew needs no confirmation and stays the recommended way.
 
 Local edits, the default, need [Ollama](https://ollama.com/) and its model:
 
@@ -80,7 +80,7 @@ To use the prompts of a Tuna assistant, choose its `Input` folder with **Choose 
 
 **Reporting a problem.** **Report a problem…** in the menu bar menu turns your description, a few answers and an anonymized snapshot of Sushi into a text you edit and send yourself; **Copy build info** in Settings ▸ About copies which build runs, as `sushi version` prints it. See the [report](docs/specs/report.md) and [build info](docs/specs/build-info.md) specifications.
 
-v0.2.1 composes one prompt at a time, with a linear history of edits, a file-based library and a local model. Branching versions, images, editing prompts and templates inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
+v0.3.0 composes one prompt at a time, with a linear history of edits, a file-based library and a local or hosted model. Branching versions, images, editing prompts and templates inside Sushi and dictionary replacement of dictated text are not part of it; see what each specification lists as [not supported or switched off](docs/specs/README.md).
 
 ## Development
 

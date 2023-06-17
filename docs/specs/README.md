@@ -4,7 +4,7 @@ The specifications fix how Sushi behaves where a casual reading of the code or t
 
 | Specification | Covers | Status |
 | --- | --- | --- |
-| [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.2.1, as implemented |
+| [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.3.0, as implemented |
 | [Local files](local-files.md) | `rules.json`, `dictionary.json`, `hotkey.json`, `model.json`, `diagnostics.json` and its log, `library-path.txt` and the Library directory, prompts, templates, first-run seeding, what Sushi writes | v0.3.0, as implemented |
 | [The model behind an edit](model.md) | Ollama or a hosted provider (OpenRouter, OpenAI, Claude), connecting one from Settings, the keychain, what an edit sends, failures and Edit with Ollama | v0.3.0, as implemented |
 | [The panel on screen](panel.md) | Where the panel shows, who has the keyboard, where focus goes when it hides, the panel with the settings window, the menu bar menu, and the regression scenarios run by hand | v0.3.0, as implemented |
