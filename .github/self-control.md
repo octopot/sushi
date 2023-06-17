@@ -8,6 +8,42 @@ is proven or moved into an issue; a release adds the checks it leaves open
 
 ## Watch
 
+### After v0.3.0
+
+On 2026-11-24 `cd` published v0.3.0; the tap commit `Brew cask update for
+sushi version v0.3.0` is verified as the Releaser App and the cask's `sha256`
+matches `checksums.txt`. This Mac upgraded through the cask from a running
+Sushi: 0.3.0 of the tag's commit, not quarantined, the signature intact, the
+settings files unchanged, and the provider key in the keychain still read
+through `security` without a prompt. The owner looked over the menu and the
+settings window in a build of the same code; no scenario was run by its steps.
+
+- [ ] **The panel scenarios new in v0.3.0**: run PR-10 to PR-15 of the
+  [panel scenarios](../docs/specs/panel.md#regression-scenarios) and the menu
+  of PN-7 by hand in the installed app, and add a row to its runs. Not run
+  before the release. A scenario that fails is fixed in the next patch.
+- [ ] **PR-9 on the Mac where the panel hid** (#11): the Summary of Writing
+  Tools over the panel, with Caps Lock on. The fix uses the condition the
+  reporter verified in their own patch, but the released code never met a live
+  sheet. #11 closes on this run; if the panel still hides, the diagnostic log
+  of Settings ▸ About says which window took the keyboard.
+- [ ] **A hosted provider with a real account** (#7, #14, #15): connect
+  OpenRouter by the sign-in in the browser, OpenAI and Claude by a key, and
+  run the example edit of #7. Tested against a mock server only. A failure the
+  message does not explain is a bug for the next patch.
+- [ ] **The first hosted edit after the upgrade** must not ask for the
+  keychain password: the key was stored through `security`, which read it
+  after the upgrade without a prompt; the edit itself was not run.
+- [ ] **The build date of v0.3.0 is wrong**: `sushi version` and **Copy build
+  info** say `2023-06-17`. `cd` takes the date from the commit time of the tag
+  (BI-3), and the commits of this repository carry planned dates, not the time
+  they were made. Needs an issue for the next patch: take the date from the
+  tag or from the run. The commit hash in the same block names the build
+  correctly.
+- [ ] **The criteria of #7, #11, #12, #13, #14, #15 and #17** are ticked and
+  the issues closed as the checks above pass; #12 still describes a menu item
+  that moved to About and needs its criterion reworded first.
+
 ### After v0.2.1
 
 On 2026-11-19 `cd` published v0.2.1; the tap commit `Brew cask update for
@@ -66,13 +102,11 @@ opened it again with the signature intact.
   the download page, and ⌘K must show the same note. With only the
   command-line tool, the first edit must start `ollama serve`, and the server
   must outlive Susi. If any of these fails, fix it in the next patch.
-- [ ] **On the next `brew upgrade` of Sushi**: Homebrew reopens the app
-  without `--hidden` (seen after 0.1.0 → 0.1.1), so the panel is expected to
-  show after an upgrade. Confirm it on screen and decide whether Sushi should
-  start hidden when Homebrew relaunches it. Not seen on 0.2.0 → 0.2.1: Sushi
-  was not running after the upgrade, and whether it ran before was not
-  recorded. On 2026-11-23 Sushi 0.2.1 runs from `/Applications`, so the next
-  upgrade shows whether Homebrew reopens it.
+- [ ] **After a `brew upgrade` of Sushi**: Homebrew reopens the app without
+  `--hidden` (seen after 0.1.0 → 0.1.1, and on 2026-11-24 after the upgrade
+  to 0.3.0: Sushi ran with `--hidden` before and without it after), so the
+  panel shows after an upgrade. Decide whether Sushi should start hidden when
+  Homebrew relaunches it; the release notes say that Homebrew opens it again.
 - [ ] **On every upgrade until Developer ID**: Homebrew warns that "sushi's
   signer changed so macOS may prompt at next launch": every ad-hoc build has a
   new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
