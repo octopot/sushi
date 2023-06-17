@@ -162,9 +162,14 @@ jobs:
           for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
             [ -n "${!name:-}" ] || unset "${name}"
           done
-          # BI-3: the build date is the commit time of what is built, the tag's commit
-          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct HEAD)"
-          export SOURCE_DATE_EPOCH
+          # BI-3: a release is dated when its tag was made, not when its commit says it
+          # was; checkout leaves the tag pointing at the commit, so fetch the tag itself.
+          # A run on a branch is dated when it builds
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            git fetch --force --quiet origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+            SOURCE_DATE_EPOCH="$(node .github/scripts/release.mjs date "${GITHUB_REF_NAME}")"
+            export SOURCE_DATE_EPOCH
+          fi
           if [ "${SIGNING}" = developer-id ]; then
             export APPLE_SIGNING_IDENTITY="${APPLE_SIGNING_IDENTITY:-Developer ID Application}"
           else

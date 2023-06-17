@@ -7,6 +7,7 @@
 //   release.mjs render <tag> --site-url <url> --out <file>   (prints the title)
 //   release.mjs package [--app <path>] [--out <dir>] [--signing adhoc|developer-id]
 //                                                            (zip, checksums.txt and the cask for these bytes)
+//   release.mjs date <tag>                                   (CI: when the tag was made, in seconds, for SOURCE_DATE_EPOCH)
 //   release.mjs cask --version <v> --sha256 <hex> [--signing adhoc|developer-id] [--out <file>]
 //   release.mjs tap <cask-file> --version <v>                (CI: commit the cask to the tap through the API)
 //   release.mjs preflight [<tag>]                            (CI: secrets a release needs; outputs the tap and the signing mode)
@@ -353,7 +354,7 @@ export function parseBuildInfo(text) {
 const BUILD_FIELDS = ['version', 'build', 'build date', 'git hash', 'rust', 'tauri', 'webkit', 'platform', 'macos', 'signing', 'features']
 
 // BI-7: every field is present and known, the version is the files'; in cd, the build is the
-// tag's clean commit, dated at its commit time.
+// tag's clean commit, dated when the tag was made.
 export function buildInfoErrors(text, { version, commit, date } = {}) {
   if (!text.startsWith('sushi:\n')) return ['sushi version did not print the build info block']
   const info = parseBuildInfo(text)
@@ -370,12 +371,18 @@ export function buildInfoErrors(text, { version, commit, date } = {}) {
     if (info['git hash']?.endsWith('-dirty')) errors.push('build info: the build is marked dirty')
     else if (info['git hash'] !== commit) errors.push(`build info: git hash is ${info['git hash']}, the tag's commit is ${commit}`)
   }
-  if (date && info['build date'] !== date) errors.push(`build info: build date is ${info['build date']}, the tag's commit time is ${date}`)
+  if (date && info['build date'] !== date) errors.push(`build info: build date is ${info['build date']}, the tag was made at ${date}`)
   return errors
 }
 
-// The commit time of a tag's commit as the build date of BI-3 renders it.
-const commitTime = (ref) => new Date(Number(git('log', '-1', '--format=%ct', `${ref}^{commit}`).trim()) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+// When an annotated tag was made, in seconds: the date of a release build (BI-3). The time of
+// its commit is no witness: a commit can carry any date its author gave it.
+export function tagEpoch(tag, cwd) {
+  const out = execFileSync('git', ['for-each-ref', '--format=%(taggerdate:unix)', `refs/tags/${tag}`], { cwd, encoding: 'utf8' }).trim()
+  if (!/^\d+$/.test(out)) throw new Error(`${tag}: not an annotated tag here, so it has no date; fetch it: git fetch --force origin refs/tags/${tag}:refs/tags/${tag}`)
+  return Number(out)
+}
+const buildDate = (epoch) => new Date(epoch * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
 
 const sha256File = (file) => createHash('sha256').update(readFileSync(file)).digest('hex')
 
@@ -397,7 +404,7 @@ function pack(opts) {
   const block = execFileSync(join(app, 'Contents/MacOS/sushi'), ['version'], { encoding: 'utf8' })
   // In cd the bundle must be the tag's commit, as it was committed.
   const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : null
-  const expected = tag ? { version, commit: git('rev-parse', `${tag}^{commit}`).trim(), date: commitTime(tag) } : { version }
+  const expected = tag ? { version, commit: git('rev-parse', `${tag}^{commit}`).trim(), date: buildDate(tagEpoch(tag)) } : { version }
   const problems = buildInfoErrors(block, expected)
   if (problems.length) throw new Error(`${app}:\n  ${problems.join('\n  ')}`)
   process.stdout.write(block)
@@ -810,6 +817,7 @@ async function main(argv) {
     case 'version': console.log(currentVersion()); return
     case 'render': return render(opts._[0], opts)
     case 'package': return pack(opts)
+    case 'date': console.log(tagEpoch(opts._[0])); return
     case 'cask': return cask(opts)
     case 'tap': return tap(opts._[0], opts)
     case 'preflight': return exit(preflight(opts._[0]), 'preflight')

@@ -40,7 +40,7 @@ A report about Sushi has to say which build it came from. The version in `Info.p
 
   The block holds nothing about the user: no paths, names or settings.
 - **BI-2. The commit.** `build.rs` reads `git rev-parse HEAD` and marks the hash `-dirty` when `git status` lists a tracked file that differs from it; untracked files do not count. The script runs again when `HEAD`, the branch it names, the folder `refs/heads`, `packed-refs`, the index or any tracked file changes, a deleted one included (Cargo reruns the script while it is missing and once more when it comes back), and when `SOURCE_DATE_EPOCH`, `SUSHI_BUILD_COMMIT` or `SUSHI_BUILD_DATE` changes, so a new commit or an edit never ships the old hash. `SUSHI_BUILD_COMMIT` overrides the hash. Without git, or outside a repository, the build succeeds and says `unknown`.
-- **BI-3. The date.** `SUSHI_BUILD_DATE` when set; else `SOURCE_DATE_EPOCH` when set; else the time `build.rs` ran. Always UTC, as `YYYY-MM-DDTHH:MM:SSZ`. `cd` sets `SOURCE_DATE_EPOCH` to the commit time of the tag.
+- **BI-3. The date.** `SUSHI_BUILD_DATE` when set; else `SOURCE_DATE_EPOCH` when set; else the time `build.rs` ran. Always UTC, as `YYYY-MM-DDTHH:MM:SSZ`. `cd` sets `SOURCE_DATE_EPOCH` to the time the release tag was made, its tagger date. The time of the tagged commit is not used: a commit carries whatever date its author gave it, and v0.3.0, dated that way, says `2023-06-17`.
 - **BI-4. About.** Settings ▸ About ([ST-29](settings.md#about)) shows `Sushi <version>`. **Copy build info** puts the block on the clipboard. **Build details** expands to the block and the short hash, as `Commit 0123456`: the first 7 characters of the hash, `0123456-dirty` for a dirty build, `unknown` without git. The menu bar menu has no version item: **About Sushi** there opens this pane. The standard About panel is not used: an app without a Dock icon cannot bring it forward, and its version line cannot be copied. The stage build never touches the clipboard.
 
   On one line, as a person quotes it, a build is `Sushi <version> (<short hash>)`; for the block above:
@@ -51,7 +51,7 @@ A report about Sushi has to say which build it came from. The version in `Info.p
   ```
 - **BI-5. `sushi version`.** `sushi version` as the first argument prints the block and exits with 0. It is handled at the top of `main()`, before the single-instance check and any AppKit call, so it answers whether or not Sushi is running, and a running Sushi does not show its panel.
 - **BI-6. The same text everywhere.** **Copy build info**, **Build details** and `sushi version` call one function, and nothing else formats build info: they give the same text byte for byte. The run-time fields are read the same way in each, without a window.
-- **BI-7. The release checks it.** `release.mjs package` runs `sushi version` on the built bundle and fails when a field is missing or says `unknown`, or when `version` differs from the version files. In `cd` it also fails when the hash is not the tag's commit, the build is marked dirty, or the date is not the tag's commit time.
+- **BI-7. The release checks it.** `release.mjs package` runs `sushi version` on the built bundle and fails when a field is missing or says `unknown`, or when `version` differs from the version files. In `cd` it also fails when the hash is not the tag's commit, the build is marked dirty, or the date is not the time the tag was made.
 
 ## Not supported
 

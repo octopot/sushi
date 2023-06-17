@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
-import { buildInfoErrors, checksumOf, declaredVersion, parseBuildInfo, renderCask, tapAction, tapRenames } from './release.mjs'
+import { buildInfoErrors, checksumOf, declaredVersion, parseBuildInfo, renderCask, tagEpoch, tapAction, tapRenames } from './release.mjs'
 
 const script = resolve('.github/scripts/release.mjs')
 const template = readFileSync(resolve('.github/homebrew/sushi.rb'), 'utf8')
@@ -109,6 +109,24 @@ test('cask renders from the template that settings.json names', () => fixture(({
   assert.equal(readFileSync(out, 'utf8'), renderCask(template, { version: '0.1.0', sha256: SHA }))
 }))
 
+test('a release is dated when its tag was made, whatever date its commit carries (BI-3)', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'sushi-tag-'))
+  try {
+    const git = (env, ...args) => {
+      const run = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8', env: { ...isolated, ...env } })
+      assert.equal(run.status, 0, run.stderr)
+    }
+    const old = '2023-06-17T06:44:18Z'
+    git({}, 'init', '--quiet')
+    git({ GIT_AUTHOR_DATE: old, GIT_COMMITTER_DATE: old }, 'commit', '--quiet', '--allow-empty', '-m', 'a commit with a date of its own')
+    git({ GIT_COMMITTER_DATE: '2026-11-24T11:34:35Z' }, 'tag', '-a', 'v0.3.1', '-m', 'v0.3.1')
+    git({}, 'tag', 'v0.3.2')
+    assert.equal(tagEpoch('v0.3.1', cwd), Date.parse('2026-11-24T11:34:35Z') / 1000)
+    assert.throws(() => tagEpoch('v0.3.2', cwd), /not an annotated tag/)
+    assert.throws(() => tagEpoch('v9.9.9', cwd), /not an annotated tag/)
+  } finally { rmSync(cwd, { recursive: true, force: true }) }
+})
+
 test('the build info of sushi version is complete, and in cd it is the tag\'s clean commit', () => {
   // The example of docs/specs/build-info.md, BI-1.
   const spec = readFileSync(new URL('../../docs/specs/build-info.md', import.meta.url), 'utf8')
@@ -125,7 +143,7 @@ test('the build info of sushi version is complete, and in cd it is the tag\'s cl
   assert.deepEqual(buildInfoErrors(swap('webkit', 'unknown'), ci), ['build info: webkit is unknown'])
   assert.deepEqual(buildInfoErrors(swap('git hash', `${info['git hash']}-dirty`), ci), ['build info: the build is marked dirty'])
   assert.deepEqual(buildInfoErrors(swap('git hash', 'f'.repeat(40)), ci), [`build info: git hash is ${'f'.repeat(40)}, the tag's commit is ${info['git hash']}`])
-  assert.deepEqual(buildInfoErrors(swap('build date', '2026-11-29T09:31:00Z'), ci), ["build info: build date is 2026-11-29T09:31:00Z, the tag's commit time is 2026-11-29T09:30:00Z"])
+  assert.deepEqual(buildInfoErrors(swap('build date', '2026-11-29T09:31:00Z'), ci), ["build info: build date is 2026-11-29T09:31:00Z, the tag was made at 2026-11-29T09:30:00Z"])
   assert.deepEqual(buildInfoErrors(swap('build', 'debug'), { version: '0.3.0' }), ['build info: build is debug, not release'])
   assert.deepEqual(buildInfoErrors(block.replace(/^ {2}rust .*\n/m, ''), {}), ['build info: rust is missing'])
   assert.deepEqual(buildInfoErrors('Sushi could not start', {}), ['sushi version did not print the build info block'])
