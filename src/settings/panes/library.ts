@@ -25,6 +25,9 @@ const SCOPE = 'dictionary'
 const sourceOf = (term: string) => term.trim().toLowerCase()
 const sameTerm = (a: Term, b: Term) => a.from === b.from && a.to === b.to
 const basename = (path: string) => path.replace(/\/+$/, '').split('/').pop() || path
+/** A path that wraps after a slash, not inside a name. */
+const breakable = (path: string): (Node | string)[] =>
+  path.split(/(?<=\/)/).flatMap((part, i, parts) => (i < parts.length - 1 ? [part, document.createElement('wbr')] : [part]))
 
 export class LibrarySettings implements Pane {
   readonly id = 'library'
@@ -117,7 +120,7 @@ export class LibrarySettings implements Pane {
           h('div', { class: 'row-control' },
             button({ label: 'Show library in Finder', id: 'library-show', disabled: pane.prompts === null,
               onClick: () => call('prefs_action', { action: 'library', provider: null }).catch(e => this.ctx.error(e)) }))),
-        h('div', { class: 'path-line' }, h('code', { class: 'path', title: pane.path, text: pane.path })),
+        h('div', { class: 'path-line' }, h('code', { class: 'path', title: pane.path }, ...breakable(pane.path))),
         env ? null : h('div', { class: 'card-actions' },
           h('span', { class: 'card-note', text: 'Choose the folder Sushi reads. Existing files stay where they are.' }),
           reset, choose),
