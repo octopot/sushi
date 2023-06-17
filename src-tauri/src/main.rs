@@ -85,6 +85,13 @@ fn startup_notes(state: State<'_, StartupNotes>) -> Option<String> {
 // Dispatch window and NSApplication calls together so that focus capture precedes showing.
 // The panel takes the keyboard without activating Sushi: no Space switch, and the app
 // underneath stays frontmost (SUSI-2).
+/// PN-11: starting Sushi leaves the menu bar icon and the key; the panel shows by itself only
+/// on the first start on a Mac, so a login item or Homebrew's reopen after an upgrade puts
+/// nothing in front of the user.
+fn shows_at_start(first_start: bool, hidden: bool) -> bool {
+    first_start && !hidden
+}
+
 fn show_launcher(app: &AppHandle, toggle: bool, reason: &'static str) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
@@ -314,7 +321,7 @@ fn main() {
         // On a cold start the app the user came from is still frontmost.
         unsafe { sushi_remember_frontmost() };
     }
-    // `--hidden` starts with the tray and hotkey only, e.g. after an update.
+    // `--hidden` keeps the panel closed even on the first start (PN-11).
     let hidden = std::env::args().any(|arg| arg == "--hidden");
     let context = tauri::generate_context!();
     if stage && context.config().identifier == "me.octopot.sushi" {
@@ -358,6 +365,9 @@ fn main() {
         .manage(hotkey::State::default())
         .manage(rewrite::Requests::default())
         .setup(move |app| {
+            // Read before anything is seeded: no settings folder yet means that Sushi starts
+            // on this Mac for the first time (PN-11).
+            let first_start = !app.path().app_data_dir().is_ok_and(|dir| dir.exists());
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let _ = APP.set(app.handle().clone());
             if stage {
@@ -416,7 +426,7 @@ fn main() {
             for note in hotkey::apply(app.handle()) {
                 app.state::<StartupNotes>().add(note);
             }
-            if !hidden {
+            if shows_at_start(first_start, hidden) {
                 show_launcher(app.handle(), false, "launch");
             }
             Ok(())
@@ -492,4 +502,23 @@ fn main() {
         RunEvent::Exit if !stage => hotkey::release(),
         _ => (),
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::shows_at_start;
+
+    #[test]
+    fn the_panel_shows_by_itself_only_on_the_first_start() {
+        assert!(shows_at_start(true, false));
+        assert!(
+            !shows_at_start(false, false),
+            "a later start: the icon and the key only"
+        );
+        assert!(
+            !shows_at_start(true, true),
+            "--hidden keeps it closed even then"
+        );
+        assert!(!shows_at_start(false, true));
+    }
 }
