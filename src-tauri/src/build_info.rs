@@ -1,4 +1,4 @@
-//! Which build is running (docs/specs/build-info.md). The menu item and `sushi version` both call
+//! Which build is running (docs/specs/build-info.md). Settings ▸ About and `sushi version` both call
 //! [`block`]; nothing else formats build info.
 
 use std::ffi::CStr;
