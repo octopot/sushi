@@ -10,13 +10,13 @@ openIssueCount: 7
 closedIssueCount: 1
 dueOn: 2026-11-29T00:00:00Z
 createdAt: 2026-11-23T10:49:16Z
-updatedAt: 2026-11-24T10:57:13Z
+updatedAt: 2026-11-24T12:04:07Z
 closedAt: null
 ---
 
 # M2: See what happens, pick your model
 
-You always know what Sushi did and why: every edit says how it ended, the menu tells which build you run, and a problem can be reported without a terminal. When the local model cannot make an edit, you connect OpenRouter in a few clicks, without copying a key; OpenAI and Claude connect from the same menu, by sign-in or a key pasted once. Ollama stays the default.
+You always know what Sushi did and why: every edit says how it ended, **About** tells which build you run, and a problem can be reported without a terminal. When the local model cannot make an edit, you connect OpenRouter in a few clicks, without copying a key; OpenAI and Claude connect in the same place, Settings ▸ Model, each by a key pasted once. Ollama stays the default.
 
 **What you get after upgrading**
 
@@ -31,7 +31,7 @@ You always know what Sushi did and why: every edit says how it ended, the menu t
 
 - An unchanged edit stays visible until your next step; a diff names the model, the time and the number of changes.
 - The example edit of [[SUSI-6]] gives the expected diff through OpenRouter, connected without copying a key or editing a file; a failure offers **Edit with Ollama**.
-- OpenAI and Claude connect through the same menu and flow, each by the way its issue chose.
+- OpenAI and Claude connect in Settings ▸ Model with the same flow, each by a key pasted once.
 - The build info copied from **About** matches `sushi version`.
 - The key that shows Sushi, the model of a provider and an action can be changed in the settings window without opening a file, and a file edited by hand shows there.
 - On the Mac where the panel hid, ⌘A selects all and the panel stays open; Caps Lock opens it without flicker; a click elsewhere still hides it.
@@ -42,7 +42,7 @@ By default nothing leaves your Mac: a hosted provider gets the instruction and t
 ## Issues
 
 - [x] [[SUSI-5]] — rewrite: an edit the model leaves unchanged passes unnoticed
-- [ ] [[SUSI-6]] — rewrite: connect OpenRouter from the menu, without copying a key
+- [ ] [[SUSI-6]] — rewrite: connect OpenRouter in Settings, without copying a key
 - [ ] [[SUSI-7]] — panel: hides right after ⌘A selects all text, then flickers on Caps Lock
 - [ ] [[SUSI-8]] — app: embed build info and show which version and build is running
 - [ ] [[SUSI-9]] — app: report a problem from the menu as a text the user can edit and send

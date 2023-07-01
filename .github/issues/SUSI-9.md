@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T09:17:05Z
-updatedAt: 2026-11-24T10:57:41Z
-lastEditedAt: 2026-11-24T10:57:00Z
+updatedAt: 2026-11-24T12:04:01Z
+lastEditedAt: 2026-11-24T12:03:43Z
 closedAt: null
 ---
 
@@ -54,28 +54,28 @@ Menu bar menu → Report a problem…
 ## Acceptance criteria
 
 - [ ] **Starting.** **Report a problem…** in the menu bar menu starts the flow. Starting it records nothing and sends nothing, and its first step is the description. The user can leave at any step. Sushi never sends the report. The messages in the panel that link to the flow are listed in the specification.
-- [ ] **One way in.** The flow lives in the panel; the menu bar menu has one row for it and no second route. While a recording runs, the menu bar menu has the item that finishes it. When the panel does not show or does not stay open, as in [[SUSI-7]], the user still gets what support needs without a terminal: the build info and the diagnostic log from the settings window ([[SUSI-12]]).
-- [ ] **Describing.** The user describes the problem in free text, typed or dictated. Follow-up questions are optional, at most three, in the language of the description, and the user can skip them. The model receives only the description and the answers, never the snapshot or the recording. With Ollama the questions run locally. With a hosted provider ([[SUSI-6]], [[SUSI-10]], [[SUSI-11]]), Sushi names the provider the description will go to and asks first; declining falls back to three fixed questions: what you did, what you expected, whether it repeats. The same fixed questions are used without a working model. `docs/specs/model.md` gains the rule.
-- [ ] **Recording.** When the user chooses to reproduce, Sushi records what the diagnostic mode of [[SUSI-7]] records, in the same format, for the duration, with its notice. This switch lives in memory: Sushi still never creates the diagnostic file. This issue makes the recording a permanent part of Sushi, so it lifts the Cargo feature of [[SUSI-7]]. The recording turns off by itself when the user finishes it, leaves the flow or quits Sushi.
-- [ ] **Snapshot.** The report carries:
+- [x] **One way in.** The flow lives in the panel; the menu bar menu has one row for it and no second route. While a recording runs, the menu bar menu has the item that finishes it. When the panel does not show or does not stay open, as in [[SUSI-7]], the user still gets what support needs without a terminal: the build info and the diagnostic log from the settings window ([[SUSI-12]]).
+- [ ] **Describing.** The user describes the problem in free text, typed or dictated. Follow-up questions are optional, at most three, in the language of the description, and the user can skip them. The model receives only the description, never the answers, the snapshot or the recording. With Ollama the questions run locally. With a hosted provider ([[SUSI-6]], [[SUSI-10]], [[SUSI-11]]), Sushi names the provider the description will go to and asks first; declining with **Use standard questions** falls back to three fixed questions: what you did, what you expected, whether it repeats. The same fixed questions are used without a working model. The rule is RP-3 in `docs/specs/report.md`.
+- [ ] **Recording.** When the user chooses to reproduce, Sushi records what the diagnostic mode of [[SUSI-7]] records, in the same format, for the duration, into a file of its own, `report-recording.log`, with its notice. This switch lives in memory: the flow never creates `diagnostics.json`. This issue makes the recording a permanent part of Sushi, without the Cargo feature [[SUSI-7]] started with. The recording turns off by itself when the user finishes it, leaves the flow or quits Sushi.
+- [x] **Snapshot.** The report carries:
   - the build info block of [[SUSI-8]];
   - the state of the panel: which view was open, the length of the version chain, whether an edit was running;
   - whether each settings file is present and valid, without its contents, and Sushi's messages about them by kind, without the quoted values;
   - the kind of library folder (default, custom or from the environment) without its path, and the number of actions and prompts;
   - the hotkey setup and the conflicts Sushi detected, the keyboard input source and the appearance;
-  - the model provider, whether it is reachable, the Ollama version and whether the model is present;
-  - the recording, if one was made.
-- [ ] **Anonymizing.** The snapshot and the recording Sushi collects are built only from the fields the specification lists; nothing else can enter them. They never hold:
+  - the active provider and its model, the connected providers and how the last hosted edit ended; for Ollama, whether it runs, its version and whether the model is present. A hosted provider is not contacted;
+  - the size of the recording, if one was made.
+- [x] **Anonymizing.** The snapshot and the recording Sushi collects are built only from the fields the specification lists; nothing else can enter them. They never hold:
   - prompt text, drafts, library names or contents, dictionary terms or action names;
   - API keys or file paths;
   - the user or computer name;
   - other apps' window titles.
 
   Bundle IDs of other apps stay, and the report says so. The description and the answers are the user's words and are kept as written. A test plants a unique marker in every source of state and finds none in the report. The sources are the draft, each version of the chain, library files and their names, the dictionary, `rules.json`, the keys of connected providers (`model.json` and the Keychain), `library-path.txt`, a window title and the home folder name.
-- [ ] **The report as text.** In the panel, the user sees the whole report as one text before they copy or save it, and can edit any part of it, the snapshot included, or remove a part; the recording is listed with its size and can be left out. **Copy** puts the text on the clipboard; **Save** writes the text and the recording to a folder and shows it in Finder. Sushi never sends the report. Hosted follow-up questions send only the description and the answers, with explicit consent; the flow makes no other network request.
-- [ ] **Format and size.** A report has a versioned format in the specification, readable by a person and by an agent. The text fits a chat message or an email; the recording goes as a separate file. A recording over the size limit is cut from the start, and the report says so.
-- [ ] **The promise stays true.** The site, the README and `docs/specs/` say what a report contains and that the user sends it themselves; *nothing leaves your Mac without your say* stays true.
-- [ ] **Specification and tests.** The flow is a specification in `docs/specs/`, with browser scenarios for each step and a check that the flow makes no network request apart from the agreed follow-up questions. A guide page on the site replaces the manual steps of *Report a problem* in `docs/content/guide/troubleshooting.mdx`. The flow's own text is English, as the rest of Sushi.
+- [ ] **The report as text.** In the panel, the user sees the whole report as one text before they copy or save it, and can edit any part of it, the snapshot included, or remove a part; the recording is listed with its size and can be left out. **Copy** puts the text on the clipboard; **Save…** writes the text and the recording to a folder and shows it in Finder. Sushi never sends the report. Hosted follow-up questions send only the description, with explicit consent; the flow makes no other network request.
+- [x] **Format and size.** A report has a versioned format in the specification, readable by a person and by an agent. The text fits a chat message or an email; the recording goes as a separate file. A recording over the size limit is cut from the start, and the report says so.
+- [x] **The promise stays true.** The site, the README and `docs/specs/` say what a report contains and that the user sends it themselves; *nothing leaves your Mac without your say* stays true.
+- [x] **Specification and tests.** The flow is a specification in `docs/specs/`, with browser scenarios for each step and a check that the flow makes no network request apart from the agreed follow-up questions. A guide page on the site replaces the manual steps of *Report a problem* in `docs/content/guide/troubleshooting.mdx`. The flow's own text is English, as the rest of Sushi.
 
 Builds on [[SUSI-7]] (the recording) and [[SUSI-8]] (the build info).
 
@@ -104,6 +104,12 @@ Where reports could go: candidates, not a decision.
 - **Sentry:** not a candidate. It adds a third party or a heavy server and still leaves the friendly form to build.
 
 To check before choosing: the URL length GitHub accepts, how issue-form fields map to query parameters, and attachments through the sharing service with mail clients other than Mail.
+-->
+
+<!-- 2026-11-24T12:02Z https://github.com/octopot/sushi/issues/13#issuecomment-7130914688
+Reworded after v0.3.0 in four places: the model gets the description only, never the answers; the recording goes to a file of its own; the snapshot says how the last hosted edit ended instead of asking a provider; the button is **Save…**. Ticked criteria are proven by the tests the Verification table of `docs/specs/report.md` names.
+
+Left to check by hand in the installed app: the menu row starts the flow, a dictated description, **Finish recording** from the menu bar menu, and **Save…** showing the folder in Finder.
 -->
 
 <!-- 2026-11-24T15:00Z https://github.com/octopot/sushi/issues/13#issuecomment-7129470617

@@ -35,14 +35,13 @@ settings window in a build of the same code; no scenario was run by its steps.
   keychain password: the key was stored through `security`, which read it
   after the upgrade without a prompt; the edit itself was not run.
 - [ ] **The build date of v0.3.0 is wrong**: `sushi version` and **Copy build
-  info** say `2023-06-17`. `cd` takes the date from the commit time of the tag
-  (BI-3), and the commits of this repository carry planned dates, not the time
-  they were made. Needs an issue for the next patch: take the date from the
-  tag or from the run. The commit hash in the same block names the build
-  correctly.
-- [ ] **The criteria of #7, #11, #12, #13, #14, #15 and #17** are ticked and
-  the issues closed as the checks above pass; #12 still describes a menu item
-  that moved to About and needs its criterion reworded first.
+  info** say `2023-06-17`, because `cd` dated the build by the commit time and
+  the commits of this repository carry dates of their own (#12). Fixed on main:
+  the date is the time the tag was made (BI-3). Proven when the next release
+  says the day of its tag; `release.mjs package` fails `cd` otherwise.
+- [ ] **The issues of M2** (#7, #11, #12, #13, #14, #15, #17) are reworded to
+  what shipped, and the criteria the tests prove are ticked. The rest closes
+  as the checks above pass; each issue's last comment lists what is left.
 
 ### After v0.2.1
 
@@ -102,11 +101,11 @@ opened it again with the signature intact.
   the download page, and ⌘K must show the same note. With only the
   command-line tool, the first edit must start `ollama serve`, and the server
   must outlive Susi. If any of these fails, fix it in the next patch.
-- [ ] **After a `brew upgrade` of Sushi**: Homebrew reopens the app without
-  `--hidden` (seen after 0.1.0 → 0.1.1, and on 2026-11-24 after the upgrade
-  to 0.3.0: Sushi ran with `--hidden` before and without it after), so the
-  panel shows after an upgrade. Decide whether Sushi should start hidden when
-  Homebrew relaunches it; the release notes say that Homebrew opens it again.
+- [ ] **After a `brew upgrade` of Sushi**: Homebrew opens the app again with
+  `open -b`, an ordinary start, and until v0.3.0 the panel showed after every
+  upgrade. Fixed on main: a start shows the panel only on the first run on a
+  Mac (PN-11). Proven when the upgrade to the next release leaves the panel
+  closed and Caps Lock shows it.
 - [ ] **On every upgrade until Developer ID**: Homebrew warns that "sushi's
   signer changed so macOS may prompt at next launch": every ad-hoc build has a
   new signature. After 0.1.0 → 0.1.1 on this Mac Susi was running again
