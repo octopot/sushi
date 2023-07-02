@@ -114,7 +114,7 @@ fn show_launcher(app: &AppHandle, toggle: bool, reason: &'static str) {
             let Some(native) = native else {
                 return;
             };
-            // Shown over an open sheet: the sheet takes the keyboard back, the editor waits (PN-8).
+            // Shown over its open sheet: the sheet takes the keyboard back, the editor waits (PN-8).
             if window.is_visible().unwrap_or(false) && unsafe { sushi_present_sheet(native) } {
                 diagnostics::record("show: keyboard back to the panel's sheet");
                 return;
@@ -129,11 +129,15 @@ fn show_launcher(app: &AppHandle, toggle: bool, reason: &'static str) {
                 sushi_prepare_window(native);
                 sushi_watch_sheets(native, sheet_lost);
             }
-            let _ = window.show();
-            unsafe {
-                sushi_present(native);
-                sushi_refresh_shadow(native);
+            // The key hid the panel with its sheet: the show brings both back, and the sheet has
+            // the keyboard (PN-8).
+            if unsafe { sushi_present_sheet(native) } {
+                diagnostics::record("show: the panel with its sheet, the sheet has the keyboard");
+            } else {
+                let _ = window.show();
+                unsafe { sushi_present(native) };
             }
+            unsafe { sushi_refresh_shadow(native) };
             let _ = window.emit("launcher-shown", ());
             // PR-10 on a Mac without Writing Tools: a sheet on the first show.
             if std::env::var_os("SUSHI_TEST_SHEET").is_some() {

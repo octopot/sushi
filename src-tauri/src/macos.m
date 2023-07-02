@@ -495,14 +495,26 @@ bool sushi_panel_keeps(void *native) {
     return panel && (panel.attachedSheet || in_family(panel, NSApp.keyWindow.sheetParent));
 }
 
-// On a show while a sheet is attached, the sheet takes the keyboard back, not the editor.
-// Returns whether it did. Main thread only.
+// Sushi asked macOS to make it the active app for a sheet and waits for the answer.
+static BOOL activating;
+
+// On a show while a sheet is attached, the panel comes forward and the sheet takes the keyboard,
+// not the editor. The panel is the only window of Sushi that takes the keyboard without Sushi
+// being the active app; a sheet is an ordinary window. It got the keyboard from the panel when
+// it began, and it cannot get it that way again, because a panel under a sheet does not take
+// the keyboard. So this show makes Sushi the active app, and macOS gives the keyboard to the
+// sheet; hiding the panel gives the app underneath its place back (sushi_restore_frontmost).
+// Returns whether a sheet was there. Main thread only.
 bool sushi_present_sheet(void *native) {
     if (!NSThread.isMainThread) return false;
     NSWindow *panel = (__bridge NSWindow *)native;
     NSWindow *sheet = deepest_sheet(panel);
     if (!sheet) return false;
     [panel orderFrontRegardless];
+    if (!NSApp.active) {
+        activating = YES;
+        [NSApp activateIgnoringOtherApps:YES];
+    }
     [sheet makeKeyAndOrderFront:nil];
     return true;
 }
@@ -511,6 +523,8 @@ bool sushi_present_sheet(void *native) {
 // for a click in another app with the sheet in front, lost() hides the panel. The sheet's
 // notification comes before the new key window is known, so this waits one run-loop turn:
 // - the panel is hidden (the hotkey hid it with the sheet): nothing to do;
+// - Sushi is becoming the active app for the sheet (sushi_present_sheet): the keyboard is on
+//   its way to the sheet, and what the windows report until then is not a loss;
 // - the panel has the keyboard (AppKit gives it back when the sheet closes), or another of
 //   its sheets has it (a sheet of the sheet): the panel stays;
 // - no window has it and no sheet is attached: the sheet closed without giving it back, so
@@ -521,11 +535,18 @@ void sushi_watch_sheets(void *native, void (*lost)(void)) {
     static id observer;
     if (observer) return;
     NSWindow *panel = (__bridge NSWindow *)native;
+    static id active;
+    active = [NSNotificationCenter.defaultCenter addObserverForName:NSApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+        if (!activating) return;
+        activating = NO;
+        NSWindow *sheet = deepest_sheet(panel);
+        if (panel.visible && sheet && !sheet.keyWindow) [sheet makeKeyAndOrderFront:nil];
+    }];
     observer = [NSNotificationCenter.defaultCenter addObserverForName:NSWindowDidResignKeyNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
         NSWindow *window = note.object;
         if (window == panel || !in_family(panel, window)) return;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (!panel.visible) return;
+            if (!panel.visible || activating) return;
             NSWindow *key = NSApp.keyWindow;
             if (key == panel || in_family(panel, key.sheetParent)) return;
             if (!key && !panel.attachedSheet) {
