@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-19T15:33:01Z
-updatedAt: 2026-11-24T12:03:53Z
-lastEditedAt: 2026-11-24T12:03:35Z
+updatedAt: 2026-11-24T13:45:01Z
+lastEditedAt: 2026-11-24T13:45:01Z
 closedAt: null
 ---
 
@@ -60,9 +60,9 @@ Without network →  "OpenRouter is not reachable. Edit with Ollama"
 
 ## Acceptance criteria
 
-- [ ] **Connect.** **Connect…** on OpenRouter in Settings ▸ Model first says in one sheet what goes to OpenRouter (the instruction and the selected text, or the whole prompt when nothing is selected), who pays and which model answers, then signs in through the browser with PKCE. The user copies no key and edits no file. The default model is named in the specification.
+- [x] **Connect.** **Connect…** on OpenRouter in Settings ▸ Model first says in one sheet what goes to OpenRouter (the instruction and the selected text, or the whole prompt when nothing is selected), who pays and which model answers, then signs in through the browser with PKCE. The user copies no key and edits no file. The default model is named in the specification.
 - [x] **Which model answers.** The **Model** menu shows the active provider and model with a check mark, and switching between Ollama and a connected provider takes one click. The hint after an edit names the model that answered.
-- [ ] **Cancel and disconnect.** A denial in the browser, no answer within 5 minutes (a closed browser ends here) or a failed exchange keeps the previous choice and says why; **Cancel** on Sushi's sheet changes nothing. **Disconnect…** in Settings ▸ Model asks first, then forgets the key and says where it can be deleted on OpenRouter; disconnecting the active provider makes Ollama active, disconnecting another one keeps the current choice.
+- [ ] **Cancel and disconnect.** A denial in the browser, no answer within 5 minutes or a failed exchange keeps the previous choice and says why; **Cancel** on Sushi's sheet changes nothing, and while the browser has not answered, **Cancel** next to *Connecting…* in Settings ▸ Model ends the wait the same way, for a tab the user closed. **Disconnect…** in Settings ▸ Model asks first, then forgets the key and says where it can be deleted on OpenRouter; disconnecting the active provider makes Ollama active, disconnecting another one keeps the current choice.
 - [ ] **The key.** The key lives in the macOS Keychain, never reaches the page, the hint or an error message. After `brew upgrade` the key is read without a Keychain prompt; if the ad-hoc signed build cannot give that, the issue names another store. A key already in `model.json` from v0.2.1 keeps working: it moves to the Keychain and leaves the file only after it is stored there, while `reasoning` and `tier` stay as they were.
 - [x] **What leaves the Mac.** An edit through OpenRouter sends the instruction and the target text with Sushi's system instruction, with `provider.data_collection: "deny"`. Nothing else of the prompt leaves the Mac.
 - [x] **Failures.** A failed OpenRouter edit (no network, a revoked key, no credits, rate limit, a server error) stops with a plain message and **Edit with Ollama**, which runs the same edit on the same text locally. A revoked key also offers **Connect again**.
@@ -77,4 +77,12 @@ OpenAI ([[SUSI-10]]) and Anthropic ([[SUSI-11]]). The settings window where conn
 Reworded after v0.3.0 to what was built: connecting and disconnecting OpenRouter live in Settings ▸ Model (#17), and the **Model** menu keeps the choice and **Model settings…**. The callback question is settled: a loopback address with a random path.
 
 Ticked criteria are proven by the tests the Verification table of `docs/specs/model.md` names. Left to check by hand, with a real OpenRouter account: the sign-in through the browser and the example edit of this issue, closing the settings window while the browser waits (PR-15 of `docs/specs/panel.md`), **Disconnect…**, and the first hosted edit after a `brew upgrade` without a keychain prompt.
+-->
+
+<!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/7#issuecomment-7133265726
+Checked by hand with a real account in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2: **Disconnect…**, the sign-in through the browser, the example edit of this issue, and closing the settings window while the browser waits, for an approval and for a denial (PR-15).
+
+Two things the run found. With no session at openrouter.ai, signing in on the page Sushi opened ended in OpenRouter's own error, *Unauthorized request*; signing in first and connecting again worked. And after the browser tab was closed, Settings showed *Connecting…* with no way out until the five minutes passed. From v0.3.1 **Cancel** next to *Connecting…* ends the wait at once and changes nothing (MD-14, ST-22), and the troubleshooting page says what to do about the error.
+
+Left by hand: **Cancel** in the installed app, a hosted edit with the provider not reachable (PR-21, started with a dead proxy instead of turning the network off), and the first hosted edit after `brew upgrade` to v0.3.1 without a keychain prompt.
 -->

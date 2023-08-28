@@ -7,8 +7,8 @@ url: https://github.com/octopot/sushi/issues/17
 title: "app: a settings window over the files, a simpler menu and the key that shows Sushi"
 issueType: Feature
 labels:
-  - "impact: high"
   - "scope: code"
+  - "impact: high"
 assignees:
   - kamilsk
 milestone: "[[SUSI-M2]]"
@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-24T10:56:32Z
-updatedAt: 2026-11-24T12:03:50Z
-lastEditedAt: 2026-11-24T12:03:32Z
+updatedAt: 2026-11-24T13:44:58Z
+lastEditedAt: 2026-11-24T13:44:58Z
 closedAt: null
 ---
 
@@ -68,9 +68,9 @@ window gets focus again. Break the file → the pane says what is wrong and wher
 - [x] **The schema decides.** A value the CUE definitions in `docs/specs/files.cue` reject is never written: the control does not offer it, or the field says what is wrong next to it and the file stays as it was. Files written through every save path pass `cue vet`, files the window refuses fail it, and a check fails when the choices the window offers differ from the schema's.
 - [x] **Hand edits keep working.** A file edited outside the window shows there when the window gets focus. Sushi never overwrites a change it has not seen, whoever writes: the window, the menu or a connect flow. When the file changed under a draft, the window keeps both and lets the user choose. An invalid file is reported in its pane with the message the panel gives, and the pane offers to open the file, or to start over from the defaults with the broken file kept aside. A file that is a symbolic link is shown and not written.
 - [x] **One broken file breaks one thing.** An invalid `dictionary.json` no longer stops the actions, and an invalid `rules.json` no longer hides the dictionary (LF-4 changes).
-- [ ] **The key.** The user chooses Caps Lock or a combination. A combination is recorded by pressing it, and while it is recorded the current key does not show the panel. The pane says which key is in effect and, when it is not the chosen one, why and what to do about it. A combination Sushi cannot register is not saved, and the previous key keeps working.
+- [x] **The key.** The user chooses Caps Lock or a combination. A combination is recorded by pressing it, and while it is recorded the current key does not show the panel. The pane says which key is in effect and, when it is not the chosen one, why and what to do about it. A combination Sushi cannot register is not saved, and the previous key keeps working.
 - [x] **The keys of the panel** are listed in the same pane, grouped as in the keyboard guide.
-- [ ] **Model.** The pane shows where edits run and lets the user switch, connect and disconnect each provider with the flows of [[SUSI-6]], [[SUSI-10]] and [[SUSI-11]], and choose the model and the options `model.json` holds for it, telling apart what the file sets from what an edit sends. Before connecting, the pane says what leaves the Mac and who pays. A key never reaches the page (MD-5).
+- [x] **Model.** The pane shows where edits run and lets the user switch, connect and disconnect each provider with the flows of [[SUSI-6]], [[SUSI-10]] and [[SUSI-11]], and choose the model and the options `model.json` holds for it, telling apart what the file sets from what an edit sends. Before connecting, the pane says what leaves the Mac and who pays. A key never reaches the page (MD-5).
 - [x] **Actions.** Actions can be added, duplicated, edited, reordered and removed, with their phrases and their kind (a model edit or a prefix, whitespace kept exactly). A removal can be undone at once. A phrase that also finds another action is flagged. A user never types an `id`.
 - [ ] **Library.** The pane shows which folder the library reads and where that choice comes from (LF-11), lets the user choose another folder or return to the default, and says when `SUSHI_LIBRARY_DIR` decides. The dictionary's terms can be added, edited and removed there, and the pane says they are a reference and are not applied to text.
 - [x] **Docs and tests.** A specification of the window in `docs/specs/`, with the menu in `docs/specs/panel.md` and the files Sushi writes in `docs/specs/local-files.md`; the guide pages name the window instead of hand edits where it replaces them. Rust tests cover reading, validating and writing each file, including a change on disk in between; browser scenarios cover each pane in both appearances with frames for review; the regression scenarios of the panel gain the window's transitions.
@@ -81,4 +81,10 @@ Changing the keys inside the panel. Opening Sushi at login. Themes and the size 
 
 <!-- 2026-11-24T12:02Z https://github.com/octopot/sushi/issues/17#issuecomment-7130910399
 After v0.3.0: ticked criteria are proven by the tests the Verification table of `docs/specs/settings.md` names and by the run of the real window recorded in `docs/specs/panel.md`. Left to check by hand: PR-11 to PR-15 of `docs/specs/panel.md` (the panel with the settings window, the key hint in the menu, the key recorder, the connect sheets), the folder picker as a sheet, and one pass with VoiceOver.
+-->
+
+<!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/17#issuecomment-7133264821
+Checked by hand in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2: the rows of the menu and its key hint (PR-12), the panel with the settings window (PR-11), the key recorder (PR-13), the connect sheets (PR-14, PR-15). They pass, with one correction to a scenario: a combination another app holds as a global shortcut (Raycast's, for example) never reaches the recorder, the other app answers and nothing is recorded or saved; PR-13 now says so. The refusal of a combination Sushi cannot register stays proven by the tests of ST-18.
+
+Left by hand: **Choose folder…** as a sheet of the window, the library path wrapping after a slash (v0.3.1), and one pass with VoiceOver.
 -->

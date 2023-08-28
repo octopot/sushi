@@ -14,13 +14,13 @@ assignees:
 milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-23T10:49:46Z
-updatedAt: 2026-11-24T12:03:48Z
-lastEditedAt: 2026-11-24T12:03:30Z
-closedAt: null
+updatedAt: 2026-11-24T13:45:19Z
+lastEditedAt: 2026-11-24T13:44:55Z
+closedAt: 2026-11-24T13:45:19Z
 ---
 
 # rewrite: connect Claude through the Anthropic API
@@ -46,9 +46,9 @@ Without network →  "Claude is not reachable. Edit with Ollama"
 ## Acceptance criteria
 
 - [x] **Way to connect.** A comment on this issue compares the Console API key and Anthropic's OAuth apps by effort for the user, who pays, what they require (billing, roles, a backend, review) and availability, and names the choice. A subscription token is never used.
-- [ ] **Connect.** **Connect…** on Claude in Settings ▸ Model uses the flow of [[SUSI-6]]: one sheet says what goes to Anthropic (the instruction and the selected text, or the whole prompt), who pays and which model answers, and takes a key pasted once. Sushi checks the key at once and says what is wrong; the user edits no file.
+- [x] **Connect.** **Connect…** on Claude in Settings ▸ Model uses the flow of [[SUSI-6]]: one sheet says what goes to Anthropic (the instruction and the selected text, or the whole prompt), who pays and which model answers, and takes a key pasted once. Sushi checks the key at once and says what is wrong; the user edits no file.
 - [x] **What leaves the Mac.** An edit sends the instruction and the target text with Sushi's system instruction. Nothing else of the prompt leaves the Mac.
-- [ ] **The key and the menu.** The credential lives where [[SUSI-6]] keeps keys and never reaches the page, the hint or an error message. The Model menu shows Claude as active; cancelling and **Disconnect…** in Settings ▸ Model follow the rules of [[SUSI-6]].
+- [x] **The key and the menu.** The credential lives where [[SUSI-6]] keeps keys and never reaches the page, the hint or an error message. The Model menu shows Claude as active; cancelling and **Disconnect…** in Settings ▸ Model follow the rules of [[SUSI-6]].
 - [x] **Failures.** No network, a rejected key, no credits, rate limit, an overloaded API or a server error stop with a plain message and **Edit with Ollama**.
 - [x] **Docs and tests.** `docs/specs/model.md` gains the provider; Rust tests run against a local mock server, an ignored live test runs with `ANTHROPIC_API_KEY`; the model guide names Claude.
 
@@ -68,4 +68,8 @@ How Sushi connects to Claude: the choice made in v0.3.0.
 **Choice: the Console API key**, pasted into a secure field of the sheet that **Connect…** opens in Settings ▸ Model, checked at once and kept in the login keychain as *Sushi: Claude*. The rules are MD-4, MD-6, MD-10 and MD-13 in `docs/specs/model.md`.
 
 The body is reworded to what v0.3.0 shipped: connecting and disconnecting live in Settings ▸ Model (#17), not in the menu, and *Effort* is an option of the provider there. Ticked criteria are proven by the tests the Verification table of `docs/specs/model.md` names. Left to check by hand: connecting with a real Console key and one edit through Claude; so far it ran against a mock server only.
+-->
+
+<!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/15#issuecomment-7133263804
+Checked by hand with a real Console key in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2: a refused key, a real key, one edit through Claude, *Effort* changed and saved in `model.json`, and **Disconnect…**. Every criterion holds. The line under the key field described in #14 serves this sheet too.
 -->

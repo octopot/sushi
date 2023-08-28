@@ -15,33 +15,42 @@ sushi version v0.3.0` is verified as the Releaser App and the cask's `sha256`
 matches `checksums.txt`. This Mac upgraded through the cask from a running
 Sushi: 0.3.0 of the tag's commit, not quarantined, the signature intact, the
 settings files unchanged, and the provider key in the keychain still read
-through `security` without a prompt. The owner looked over the menu and the
-settings window in a build of the same code; no scenario was run by its steps.
+through `security` without a prompt.
 
-- [ ] **The panel scenarios new in v0.3.0**: run PR-10 to PR-15 of the
-  [panel scenarios](../docs/specs/panel.md#regression-scenarios) and the menu
-  of PN-7 by hand in the installed app, and add a row to its runs. Not run
-  before the release. A scenario that fails is fixed in the next patch.
+The owner ran the scenarios by hand the same day, on the v0.3.0 code with the
+fixes then on main; the row is in [docs/specs/runs.md](../docs/specs/runs.md).
+PR-11 to PR-17, PR-19, PR-20, PR-22 to PR-25 passed; #14 and #15 are closed.
+
+- [ ] **PR-10 again, with *Log panel activity* on**: after Caps Lock hid the
+  panel with its sheet, the next Caps Lock made it flicker. Changed in PN-8:
+  that show makes Sushi the active app, so the sheet gets the keyboard. Not
+  seen in the installed app yet; a failure leaves the log of Settings ▸ About.
 - [ ] **PR-9 on the Mac where the panel hid** (#11): the Summary of Writing
   Tools over the panel, with Caps Lock on. The fix uses the condition the
-  reporter verified in their own patch, but the released code never met a live
-  sheet. #11 closes on this run; if the panel still hides, the diagnostic log
-  of Settings ▸ About says which window took the keyboard.
-- [ ] **A hosted provider with a real account** (#7, #14, #15): connect
-  OpenRouter by the sign-in in the browser, OpenAI and Claude by a key, and
-  run the example edit of #7. Tested against a mock server only. A failure the
-  message does not explain is a bug for the next patch.
-- [ ] **The first hosted edit after the upgrade** must not ask for the
-  keychain password: the key was stored through `security`, which read it
-  after the upgrade without a prompt; the edit itself was not run.
+  reporter verified in their own patch. #11 closes on this run and PR-10; if
+  the panel still hides, the diagnostic log says which window took the keyboard.
+- [ ] **What the run changed, in the installed app**: PR-28 (**Cancel** while
+  the browser waits, #7), PR-24's ⌘↵ after a click (#13), the line under the
+  key field of PR-22, and PR-21 with a dead proxy (#7). The tests cover each;
+  nobody has seen them in the app.
+- [ ] **Not run yet**: PR-26 (**Choose folder…** as a sheet, the path that
+  wraps after a slash) and PR-27 (VoiceOver), which #17 waits for.
+- [ ] **The first hosted edit after the upgrade to v0.3.1** must not ask for
+  the keychain password (#7): after v0.3.0 the key was read through `security`
+  without a prompt, but the edit itself was not run before the key was
+  replaced by a new sign-in.
 - [ ] **The build date of v0.3.0 is wrong**: `sushi version` and **Copy build
   info** say `2023-06-17`, because `cd` dated the build by the commit time and
   the commits of this repository carry dates of their own (#12). Fixed on main:
   the date is the time the tag was made (BI-3). Proven when the next release
   says the day of its tag; `release.mjs package` fails `cd` otherwise.
-- [ ] **The issues of M2** (#7, #11, #12, #13, #14, #15, #17) are reworded to
-  what shipped, and the criteria the tests prove are ticked. The rest closes
-  as the checks above pass; each issue's last comment lists what is left.
+- [ ] **Recording a problem is hard to drive** (#13): the owner found
+  repeating the steps under a recording awkward and asked why the panel
+  cannot be moved from the middle of the screen. Decide what to change; it
+  becomes an issue then.
+- [ ] **Scenarios an agent can run** (#18): every scenario in
+  `docs/specs/*.feature` is tagged `@hands`. Each one the app lets an agent
+  drive moves to `@agent`, and the checklist of a release shrinks by it.
 
 ### After v0.2.1
 
@@ -53,8 +62,8 @@ installed app passed, and the reporter confirmed the full-screen, click-away
 and Ollama-window fixes on their Mac; #3, #4, #5 and #6 are closed.
 
 - [ ] **On a second display**: run PR-7 of the
-  [panel scenarios](../docs/specs/panel.md#regression-scenarios) and add a row
-  to its runs. Not run: this Mac has one display. The Stage Manager half of
+  [scenarios](../docs/specs/panel.md#regression-scenarios) and add a row
+  to [the runs](../docs/specs/runs.md). Not run: this Mac has one display. The Stage Manager half of
   PR-7 passed on 2026-11-23.
 
 ### After v0.2.0

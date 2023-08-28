@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T08:57:03Z
-updatedAt: 2026-11-24T12:03:59Z
-lastEditedAt: 2026-11-24T12:03:40Z
+updatedAt: 2026-11-24T13:45:06Z
+lastEditedAt: 2026-11-24T13:45:06Z
 closedAt: null
 ---
 
@@ -63,8 +63,8 @@ sushi:
   - the signing mode, read at run time from the app's own signature.
 
   A dev build says `build: debug`. The block holds nothing about the user: no paths, names or settings.
-- [ ] The menu bar menu has no version item: **About Sushi** opens Settings ▸ About, which shows `Sushi <version>`. **Copy build info** puts the block on the clipboard, and **Build details** shows the block and the short hash, `<short hash>-dirty` for a dirty build and `unknown` without git. It is not `PredefinedMenuItem::about`: the standard About panel can't be brought forward from an app without a Dock icon, and its version line can't be copied. The stage build never touches the clipboard.
-- [ ] `sushi version` as the first argument is handled at the top of `main()`, before the single-instance check and any AppKit call. It prints the block and exits 0 whether or not Sushi is running, and a running Sushi does not show its panel.
+- [x] The menu bar menu has no version item: **About Sushi** opens Settings ▸ About, which shows `Sushi <version>`. **Copy build info** puts the block on the clipboard, and **Build details** shows the block and the short hash, `<short hash>-dirty` for a dirty build and `unknown` without git. It is not `PredefinedMenuItem::about`: the standard About panel can't be brought forward from an app without a Dock icon, and its version line can't be copied. The stage build never touches the clipboard.
+- [x] `sushi version` as the first argument is handled at the top of `main()`, before the single-instance check and any AppKit call. It prints the block and exits 0 whether or not Sushi is running, and a running Sushi does not show its panel.
 - [x] **One block, by contract.** A specification, `docs/specs/build-info.md`, fixes the block: its fields, their order, their sources, the one-line form `Sushi <version> (<short hash>)`, and the rule that **Copy build info**, **Build details** and `sushi version` give the same text byte for byte. All three call one function, and nothing else in the code formats build info. The run-time fields are read the same way in both places, without a window. A Rust test renders a fixed set of values and compares the block with the example in the spec, byte for byte, and checks that the one-line form is the block's version plus the first seven characters of its hash. The diagnostic log of [[SUSI-7]] starts with the same block.
 - [x] `release.mjs package` runs `sushi version` on the built bundle and fails when a field is missing or says `unknown`, or when the version differs from the version files. In `cd` it also fails when the commit is not the tag's commit, the build is marked dirty, the build is not a release build, or the date is not the time the tag was made.
 - [x] The docs are updated:
@@ -86,4 +86,8 @@ sushi:
 v0.3.0 shipped this, with one defect: `sushi version` and **Copy build info** say `build date: 2023-06-17`. `cd` dated the build by the commit time of the tag's commit, and the commits of this repository carry dates of their own. Fixed on main for the next release: the date is the time the release tag was made (`release.mjs date`, BI-3), and `release.mjs package` expects that date in the bundle. The commit hash in the same block named the build correctly all along.
 
 The body is reworded to what was built: the menu has no version row; **About Sushi** opens Settings ▸ About (#17) with **Copy build info** and **Build details**. Ticked criteria are proven by the tests the Verification table of `docs/specs/build-info.md` names. Left: the date criterion, proven by the next release; and by hand, **Copy build info** against `sushi version` in the installed app, and `sushi version` while Sushi runs without the panel showing.
+-->
+
+<!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/12#issuecomment-7133267709
+Checked by hand in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2: **Copy build info** and `sushi version` give the same text, and `sushi version` with Sushi running does not show the panel. Left: the build date, which v0.3.1 proves when its tag dates the build.
 -->

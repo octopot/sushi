@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T08:40:41Z
-updatedAt: 2026-11-24T12:03:56Z
-lastEditedAt: 2026-11-24T12:03:37Z
+updatedAt: 2026-11-24T13:45:03Z
+lastEditedAt: 2026-11-24T13:45:03Z
 closedAt: null
 ---
 
@@ -45,7 +45,7 @@ On one user's Mac so far, ⌘A in the panel closes it, every time. After that, a
 ## Acceptance criteria
 
 - [ ] On a Mac where the bug reproduces, the PoC no longer hides the panel: ⌘A selects all and the panel stays open; Caps Lock shows it and it stays open.
-- [ ] PN-5 keeps holding and PR-5 passes: a click in another app, another window or on the desktop hides the panel, and so does an action that opens another app.
+- [x] PN-5 keeps holding and PR-5 passes: a click in another app, another window or on the desktop hides the panel, and so does an action that opens another app.
 - [x] A diagnostic mode records every show and every hide with its reason: hotkey toggle, Esc or copy from the page, close request, loss of focus. It also records every press and release of the hotkey, with the time.
 - [ ] On a loss of focus the record holds what Sushi can see without any permission: its own key window (class and level), whether Sushi is active, the frontmost app with its bundle ID, the on-screen windows above the normal level (owner, level and size), and the last combination with ⌘ or ⌃ the panel received. It never records the prompt, typed characters or other apps' window titles.
 - [x] The record is a plain-text file under `~/Library/Logs` with a size limit. The user can open it and send it without the developer tools.
@@ -135,4 +135,12 @@ Beyond it, because their patch leaves these open:
 Simplified on our side: the deferred decision for the panel's own loss and its `from_panel` branch, the `kept` callback, and the observer's second callback are gone. Without a sheet the panel hides exactly as in v0.2.1. `SUSHI_TEST_SHEET=1` stays for PR-10, but attaches its sheet on the first show only, so PR-4 and PR-5 can follow in the same run. Kept: the walk up `sheetParent` and `deepest_sheet`, which the settings window shares.
 
 Not confirmed yet: none of our code has run against a live sheet. To close: PR-9 on the affected Mac, now with Caps Lock on, and PR-10 in a separate session, each recorded in the runs of `docs/specs/panel.md`.
+-->
+
+<!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/11#issuecomment-7133266725
+PR-10 in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2, the first time our code met a live sheet. Passed: the test sheet shows over the panel and the panel stays; **Show Sushi** keeps the sheet in front; a click in another app hides both and focus stays there; after **OK** typing lands in the editor and a click elsewhere hides the panel (PR-5).
+
+Failed: after Caps Lock hid the panel with its sheet, the next Caps Lock made the panel flicker, show and hide at once; only **Show Sushi** from the menu brought it back. The likely cause, not yet seen in a log: the sheet got the keyboard from the panel when it began, but a panel under a sheet does not take the keyboard again, and a sheet is an ordinary window that has the keyboard only in the active app. The show asked for it, the sheet lost it in the same turn, and the watcher of the panel's sheets read that as a click elsewhere.
+
+Changed for v0.3.1 (PN-8): a show with a sheet attached brings the panel forward, makes Sushi the active app and gives the keyboard to the sheet; what the windows report until Sushi is active is not a loss. Hiding gives the app underneath its place back. Not confirmed: this needs PR-10 again in the installed build, with *Log panel activity* on. PR-9 on the affected Mac is still to come.
 -->
