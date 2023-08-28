@@ -577,8 +577,8 @@ document.addEventListener('keydown', event => {
   if (!event.metaKey || event.ctrlKey || event.altKey) return
   // ⌘, opens the settings window, from any view of the panel (SUSI-12).
   if (!event.shiftKey && event.code === 'Comma' && desktop) return stop(() => call('prefs_open', { pane: null }).catch(fail))
-  if (report.isOpen) return
   const code = event.code
+  if (report.isOpen) return code === 'Enter' || code === 'NumpadEnter' ? stop(() => report.submit()) : undefined
   if (!event.shiftKey && code === 'KeyK') return stop(() => actions.isOpen ? actions.close() : openActions())
   if (!event.shiftKey && code === 'KeyL') return stop(() => library.isOpen ? library.close() : openLibrary())
   if (code === 'Enter' || code === 'NumpadEnter') return stop(() => workspace.inert || copy(event.shiftKey))

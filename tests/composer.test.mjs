@@ -926,6 +926,12 @@ test('Sushi composer', async t => {
     await page.getByRole('button', { name: 'Save…' }).click()
     await page.waitForFunction(() => window.fixture.saves.length === 1)
     assert.deepEqual(await page.evaluate(() => window.fixture.saves[0]), { text: 'Edited by the user.', recording: false })
+    // In the app's WebKit a click on a button or a checkbox takes the focus from the field and
+    // gives it to nothing: ⌘↵ still copies.
+    await page.evaluate(() => document.activeElement?.blur())
+    const copied = await page.evaluate(() => window.fixture.copies.length)
+    await page.keyboard.press('Meta+Enter')
+    await page.waitForFunction(n => window.fixture.copies.length === n + 1, copied)
     await page.keyboard.press('Escape')
     await prompt(page).waitFor()
     assert.equal(await editorText(page), draft, 'the draft is as it was')

@@ -55,14 +55,11 @@ export class Report {
     this.root.setAttribute('aria-label', 'Report a problem')
     this.root.hidden = true
     parent.append(this.root)
-    this.root.addEventListener('keydown', event => {
-      if (event.metaKey && !event.ctrlKey && !event.altKey && (event.code === 'Enter' || event.code === 'NumpadEnter')) {
-        event.preventDefault()
-        event.stopPropagation()
-        if (!event.repeat) this.primary?.()
-      }
-    })
   }
+
+  /** ⌘↵: the step's main button. The panel calls it wherever the focus is: in the app's WebKit
+   *  a click on a button or a checkbox takes the focus from the field and gives it to nothing. */
+  submit() { this.primary?.() }
 
   get isOpen() { return !this.root.hidden }
   /** The flow is under way, open or waiting for a recording. */
