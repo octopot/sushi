@@ -487,6 +487,7 @@ fn main() {
             preferences::prefs_model_select,
             preferences::prefs_model_option,
             preferences::prefs_connect,
+            preferences::prefs_connect_cancel,
             preferences::prefs_disconnect,
             preferences::prefs_actions_save,
             preferences::prefs_dictionary_save,

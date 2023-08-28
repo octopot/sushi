@@ -609,6 +609,52 @@ void sushi_focus_snapshot(void *native, void (*done)(const char *)) {
 }
 
 // ——— Connecting a provider (docs/specs/model.md, MD-14 and MD-13) ———
+// What the key field holds, said under it: a long key scrolls a secure field and leaves a few
+// dots in view, which reads as a paste that went wrong. The first and last characters are the
+// ones a provider's keys page shows, so the two can be compared; a short text shows its length
+// only.
+static NSString *key_note(NSString *text) {
+    NSString *key = [text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    NSUInteger count = key.length;
+    if (!count) return @"";
+    if (count == 1) return @"1 character";
+    if (count < 20) return [NSString stringWithFormat:@"%lu characters", (unsigned long)count];
+    return [NSString stringWithFormat:@"%@…%@ · %lu characters", [key substringToIndex:7], [key substringFromIndex:count - 4], (unsigned long)count];
+}
+
+@interface SushiKeyNote : NSObject <NSTextFieldDelegate>
+@property(nonatomic, weak) NSTextField *note;
+@end
+
+@implementation SushiKeyNote
+- (void)controlTextDidChange:(NSNotification *)notification {
+    NSTextField *field = notification.object;
+    self.note.stringValue = key_note(field.stringValue);
+}
+@end
+
+// The secure field of a connect screen with its note, as an alert's accessory view.
+static NSView *key_accessory(const char *placeholder, NSSecureTextField *__strong *out) {
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 340, 44)];
+    NSSecureTextField *field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 20, 340, 24)];
+    if (placeholder) field.placeholderString = @(placeholder);
+    NSTextField *note = [NSTextField labelWithString:@""];
+    note.frame = NSMakeRect(2, 0, 336, 16);
+    note.font = [NSFont systemFontOfSize:NSFont.smallSystemFontSize];
+    note.textColor = NSColor.secondaryLabelColor;
+    note.lineBreakMode = NSLineBreakByTruncatingMiddle;
+    SushiKeyNote *watcher = [SushiKeyNote new];
+    watcher.note = note;
+    field.delegate = watcher;
+    // The field does not keep its delegate; the view does.
+    static char kept;
+    objc_setAssociatedObject(view, &kept, watcher, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [view addSubview:field];
+    [view addSubview:note];
+    *out = field;
+    return view;
+}
+
 // An alert in front of every app; returns the button pressed, 0 for the first. buttons holds
 // the titles separated by '\n'. With secure set, the alert has a secure text field for a pasted
 // key, whose text is written to secure (at most size bytes, NUL-terminated): the key never
@@ -622,9 +668,7 @@ int sushi_alert(const char *title, const char *text, const char *buttons, char *
         NSSecureTextField *field = nil;
         if (secure && size) {
             secure[0] = 0;
-            field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 0, 340, 24)];
-            if (placeholder) field.placeholderString = @(placeholder);
-            alert.accessoryView = field;
+            alert.accessoryView = key_accessory(placeholder, &field);
             [alert layout];
             alert.window.initialFirstResponder = field;
         }
@@ -688,9 +732,7 @@ bool sushi_alert_sheet(void *native, const char *title, const char *text, const 
     for (NSString *button in [@(buttons) componentsSeparatedByString:@"\n"]) [alert addButtonWithTitle:button];
     NSSecureTextField *field = nil;
     if (secure) {
-        field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 0, 340, 24)];
-        if (placeholder) field.placeholderString = @(placeholder);
-        alert.accessoryView = field;
+        alert.accessoryView = key_accessory(placeholder, &field);
         [alert layout];
         alert.window.initialFirstResponder = field;
     }

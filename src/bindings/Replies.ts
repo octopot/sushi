@@ -60,6 +60,7 @@ export interface Replies {
   prefs_model_select: Saved<ModelPane>
   prefs_model_option: Saved<ModelPane>
   prefs_connect: ConnectOutcome
+  prefs_connect_cancel: null
   prefs_disconnect: DisconnectOutcome
   prefs_actions_save: Saved<ActionsPane>
   prefs_dictionary_save: Saved<LibraryPane>

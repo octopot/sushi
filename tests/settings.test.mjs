@@ -410,7 +410,8 @@ function stub({ state, shippedRules, shippedTerms, DIR, build }) {
         case 'prefs_model_option':
           return save('model.json', args.revision, model, { change: f => modify(f, settings => setOption(settings, args.provider, args.field, args.value)) })
         case 'prefs_connect': {
-          if (fixture.connectGate) await new Promise(resolve => { fixture.releaseConnect = resolve })
+          // Held as a sign-in that waits for the browser: released as connected, or cancelled.
+          if (fixture.connectGate && await new Promise(resolve => { fixture.releaseConnect = resolve }) === 'cancelled') return 'cancelled'
           fixture.keychain[args.provider] = true
           fixture.emit('prefs-changed', { file: 'keychain' })
           // Connecting makes the provider the one in use and writes its default section (MD-15).
@@ -419,6 +420,9 @@ function stub({ state, shippedRules, shippedTerms, DIR, build }) {
           if (next !== undefined) { f.text = next; fixture.emit('prefs-changed', { file: 'model.json' }) }
           return 'connected'
         }
+        case 'prefs_connect_cancel':
+          fixture.releaseConnect?.('cancelled')
+          return
         case 'prefs_disconnect': {
           fixture.keychain[args.provider] = false
           fixture.emit('prefs-changed', { file: 'keychain' })
@@ -713,7 +717,17 @@ test('Sushi settings window', async t => {
     await page.getByRole('button', { name: 'Connect…' }).click()
     await page.getByRole('button', { name: 'Connecting…' }).waitFor()
     assert.equal(await page.getByRole('button', { name: 'Connecting…' }).isDisabled(), true)
+    await page.getByText('Sushi waits for the browser for 5 minutes.').waitFor()
     await capture(page, 'model-connecting-dark')
+    // The browser never answers (a closed tab): Cancel ends the wait and nothing changes (MD-14).
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByRole('button', { name: 'Connect…' }).waitFor()
+    assert.equal((await calls(page, 'prefs_connect_cancel')).length, 1)
+    assert.equal(await page.getByRole('button', { name: 'Cancel' }).count(), 0)
+    assert.ok(!(await page.evaluate(() => window.fixture.keychain.openrouter)), 'a cancelled sign-in keeps no key')
+    assert.doesNotMatch(await row('OpenRouter').textContent(), /In use/, 'and chooses nothing')
+    await page.getByRole('button', { name: 'Connect…' }).click()
+    await page.getByRole('button', { name: 'Connecting…' }).waitFor()
     await fixture(page, () => window.fixture.releaseConnect())
     await page.getByText('Key saved').waitFor()
     // Rust makes a provider in use when it connects and writes its default section (MD-15, MD-10).

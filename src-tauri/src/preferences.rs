@@ -900,6 +900,13 @@ pub async fn prefs_connect(
     Ok(providers::run_connect(&app, provider, providers::Origin::Settings).await)
 }
 
+/// **Cancel** next to *Connecting…* while a sign-in waits for the browser (MD-14); the flow of
+/// `prefs_connect` then ends as cancelled.
+#[tauri::command]
+pub fn prefs_connect_cancel() {
+    providers::cancel_sign_in();
+}
+
 #[tauri::command]
 pub async fn prefs_disconnect(
     app: AppHandle,

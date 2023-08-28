@@ -184,15 +184,24 @@ export class ModelSettings implements Pane {
         label: pending === 'connect' ? 'Connecting…' : 'Connect…', kind: 'primary', id: 'model-connect-' + p.id,
         busy: pending === 'connect', onClick: () => this.flow(p, 'connect'),
       })
+      // A sign-in waits for the browser, which may never answer: a closed tab, a page that failed.
+      // While one of Sushi's sheets is open the window takes no clicks, so Cancel is reached only
+      // during that wait.
+      const waiting = pending === 'connect' && p.connect === 'sign-in'
+      const cancel = waiting ? button({
+        label: 'Cancel', kind: 'quiet', id: 'model-cancel-' + p.id,
+        onClick: () => { void call('prefs_connect_cancel').catch(e => this.ctx.error(e)) },
+      }) : null
       return h('div', {},
         inUse ? h('p', { class: 'detail-note warning-text', text: `Edits are set to run on ${p.name}, but no key is saved. Connect it, or use another row.` }) : null,
         row({ title: 'What leaves your Mac', detail: p.sends }),
         row({ title: 'Who pays', detail: p.pays }),
         h('div', { class: 'detail-actions' },
-          h('span', { class: 'card-note', text: pending === 'connect'
-            ? `Finish in the sheet Sushi opened${p.connect === 'sign-in' ? ', or in your browser' : ''}.`
+          h('span', { class: 'card-note', text: waiting
+            ? 'Finish in the sheet Sushi opened, or in your browser. Sushi waits for the browser for 5 minutes.'
+            : pending === 'connect' ? 'Finish in the sheet Sushi opened.'
             : p.connect === 'sign-in' ? `Sign in to ${p.name} in your browser. The key is kept in the keychain.` : 'Paste an API key once. It is kept in the keychain.' }),
-          connect))
+          cancel, connect))
     }
     const [model, ...rest] = p.options
     const open = this.advanced.has(p.id)

@@ -127,6 +127,7 @@ const commands: Handlers = {
   prefs_model_select: noWindow,
   prefs_model_option: noWindow,
   prefs_connect: noWindow,
+  prefs_connect_cancel: () => null,
   prefs_disconnect: noWindow,
   prefs_actions_save: noWindow,
   prefs_dictionary_save: noWindow,

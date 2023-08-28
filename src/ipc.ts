@@ -63,6 +63,8 @@ interface Args {
   /** `value` null removes the field from the provider's section. */
   prefs_model_option: { revision: string; provider: ProviderId; field: Field; value: string | null }
   prefs_connect: { provider: ProviderId }
+  /** Ends a sign-in that waits for the browser; `prefs_connect` then answers `cancelled`. */
+  prefs_connect_cancel: None
   prefs_disconnect: { provider: ProviderId }
   prefs_actions_save: { revision: string; rules: Rule[] }
   prefs_dictionary_save: { revision: string; terms: Term[] }

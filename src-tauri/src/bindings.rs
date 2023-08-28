@@ -90,6 +90,7 @@ replies! {
     preferences::prefs_model_select(_ _ _).await -> Result<Saved<ModelPane>, String>;
     preferences::prefs_model_option(_ _ _ _ _).await -> Result<Saved<ModelPane>, String>;
     preferences::prefs_connect(_ _).await -> Result<ConnectOutcome, String>;
+    preferences::prefs_connect_cancel() -> ();
     preferences::prefs_disconnect(_ _).await -> Result<DisconnectOutcome, String>;
     preferences::prefs_actions_save(_ _ _).await -> Result<Saved<ActionsPane>, String>;
     preferences::prefs_dictionary_save(_ _ _).await -> Result<Saved<LibraryPane>, String>;

@@ -109,8 +109,32 @@ impl Provider {
 
 /// Which providers have a key in the keychain, read at launch and kept up to date by the flow.
 static CONNECTED: Mutex<Vec<Provider>> = Mutex::new(Vec::new());
-/// A sign-in that waits for the browser; a new one ends it.
-static WAITING: Mutex<Option<oneshot::Sender<()>>> = Mutex::new(None);
+/// Why a sign-in stops waiting for the browser before the browser answers.
+#[derive(Debug, PartialEq)]
+enum Stop {
+    /// A new connect flow started.
+    Replaced,
+    /// The user cancelled it in the settings window.
+    Cancelled,
+}
+
+/// A sign-in that waits for the browser; a new one ends it, and so does Cancel in Settings.
+static WAITING: Mutex<Option<oneshot::Sender<Stop>>> = Mutex::new(None);
+
+/// Ends the sign-in that waits, if one does; whether one heard it.
+fn stop_waiting(stop: Stop) -> bool {
+    WAITING
+        .lock()
+        .ok()
+        .and_then(|mut waiting| waiting.take())
+        .is_some_and(|waiting| waiting.send(stop).is_ok())
+}
+
+/// **Cancel** in Settings ▸ Model while the browser waits for the sign-in: the flow ends as
+/// Cancel on Sushi's own screen does, and nothing changes (MD-14).
+pub fn cancel_sign_in() -> bool {
+    stop_waiting(Stop::Cancelled)
+}
 
 pub fn connected(provider: Provider) -> bool {
     CONNECTED.lock().is_ok_and(|c| c.contains(&provider))
@@ -630,11 +654,7 @@ impl From<String> for Failure {
 /// The whole connect flow to its end, the alerts included, with the screens where `origin`
 /// wants them. A new flow ends a sign-in that still waits for the browser.
 pub async fn run_connect(app: &AppHandle, provider: Provider, origin: Origin) -> ConnectOutcome {
-    if let Ok(mut waiting) = WAITING.lock() {
-        if let Some(earlier) = waiting.take() {
-            let _ = earlier.send(());
-        }
-    }
+    stop_waiting(Stop::Replaced);
     let before = previous(app);
     let outcome = connect(app, provider, origin).await;
     match outcome {
@@ -700,7 +720,10 @@ async fn connect(
             if pressed != 0 {
                 return Ok(None);
             }
-            sign_in(provider).await?
+            match sign_in(provider).await? {
+                Some(key) => key,
+                None => return Ok(None),
+            }
         }
         Connect::PasteKey => {
             let mut problem = String::new();
@@ -816,8 +839,9 @@ fn install(
     }))
 }
 
-/// OAuth PKCE with OpenRouter on a one-time loopback address (MD-14).
-async fn sign_in(provider: Provider) -> Result<String, String> {
+/// OAuth PKCE with OpenRouter on a one-time loopback address (MD-14). None when the user
+/// cancelled the wait for the browser.
+async fn sign_in(provider: Provider) -> Result<Option<String>, String> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .map_err(|e| format!("Could not wait for the browser: {e}."))?;
@@ -825,16 +849,27 @@ async fn sign_in(provider: Provider) -> Result<String, String> {
     let nonce = signin::random(16);
     let pkce = signin::Pkce::new();
     let callback = format!("http://127.0.0.1:{port}/callback/{nonce}");
-    let (send, cancelled) = oneshot::channel();
+    let (send, stopped) = oneshot::channel();
     if let Ok(mut waiting) = WAITING.lock() {
         *waiting = Some(send);
     }
     open(&signin::auth_url(&callback, &pkce.challenge));
     let code = tokio::select! {
         code = signin::wait_for_code(listener, &nonce, signin::WAIT) => code?,
-        _ = cancelled => return Err("A new sign-in replaced this one.".into()),
+        stop = stopped => return stopped_sign_in(stop.unwrap_or(Stop::Replaced)),
     };
-    signin::exchange(provider.api(), &code, &pkce.verifier).await
+    signin::exchange(provider.api(), &code, &pkce.verifier)
+        .await
+        .map(Some)
+}
+
+/// How a sign-in ends when it stops waiting: a cancel changes nothing and says nothing, a new
+/// flow says why this one ended.
+fn stopped_sign_in(stop: Stop) -> Result<Option<String>, String> {
+    match stop {
+        Stop::Cancelled => Ok(None),
+        Stop::Replaced => Err("A new sign-in replaced this one.".into()),
+    }
 }
 
 /// Forgets the key and says where to delete it; Ollama takes over if it was active (MD-16).
@@ -1247,6 +1282,36 @@ mod tests {
         .unwrap();
         let section = model::load(dir.path()).unwrap().openrouter.unwrap();
         assert_eq!(section.key.as_deref(), Some("sk-or-v1-other"));
+    }
+
+    #[test]
+    fn a_waiting_sign_in_ends_by_a_cancel_or_a_new_flow() {
+        // The slot is one for the app: this is the only test that fills it.
+        assert!(!cancel_sign_in(), "nothing waits");
+        let (send, mut stopped) = oneshot::channel();
+        *WAITING.lock().unwrap() = Some(send);
+        assert!(cancel_sign_in());
+        let stop = stopped.try_recv().unwrap();
+        assert_eq!(stop, Stop::Cancelled);
+        assert_eq!(
+            stopped_sign_in(stop),
+            Ok(None),
+            "a cancel changes and says nothing"
+        );
+        assert!(!cancel_sign_in(), "it ends once");
+
+        let (send, mut stopped) = oneshot::channel();
+        *WAITING.lock().unwrap() = Some(send);
+        assert!(stop_waiting(Stop::Replaced));
+        assert_eq!(
+            stopped_sign_in(stopped.try_recv().unwrap()),
+            Err("A new sign-in replaced this one.".into())
+        );
+        // A sign-in that already ended left its sender behind: nobody hears a cancel.
+        let (send, stopped) = oneshot::channel::<Stop>();
+        *WAITING.lock().unwrap() = Some(send);
+        drop(stopped);
+        assert!(!cancel_sign_in());
     }
 
     #[test]
