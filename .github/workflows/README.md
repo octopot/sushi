@@ -2,7 +2,7 @@
 
 | Workflow | Name | Runs on | Does |
 | --- | --- | --- | --- |
-| [ci](#ci) | Continuous integration | PR and push to main (app, shipped examples, tests, release inventory), `v*` tag, monthly, manual | Frontend tests in headless Chrome, Rust format, lint and tests, the cask template, release helpers, settings and workflows |
+| [ci](#ci) | Continuous integration | PR and push to main (app, shipped examples, specifications, tests, release inventory), `v*` tag, monthly, manual | Frontend tests in headless Chrome, Rust format, lint and tests, the cask template, release helpers, acceptance scenarios, settings and workflows |
 | [cd](#cd) | Continuous delivery | `v*` tag, manual | Check the tag, build and package the app, publish the release and the Homebrew cask; a snapshot on manual runs |
 | [docs](#docs) | Documentation delivery | PR and push to main (`docs/`, the app's `index.html`, `src/`, `package.json`, `tsconfig.json`), monthly, manual, reusable | Build the site; deploy it to Pages from main |
 | [doctor](#doctor) | Repository doctor | daily, manual | Compare the repository with GitHub and explain fixes |
@@ -109,11 +109,16 @@ flowchart LR
 - Runs on PRs and pushes to main that touch the app (`src/`, `src-tauri/`,
   `index.html`, the npm manifests, `tsconfig.json`), the shipped examples the
   frontend imports and the app embeds (`docs/specs/examples/`, with their
-  schema `docs/specs/files.cue`), the tests, the `Makefile` or the release
-  inventory in `.github/`; on `v*` tags; monthly; manually.
+  schema `docs/specs/files.cue`), the specifications and their acceptance
+  scenarios (`docs/specs/*.md`, `docs/specs/*.feature`), the tests, the
+  `Makefile` or the release inventory in `.github/`; on `v*` tags; monthly;
+  manually.
 - Every gate of the release runs here first: a broken release helper or hook,
   version files that disagree, a cask template `brew style` rejects or an
   invalid workflow fails on main, not on the tag.
+- The release job also checks the acceptance scenarios against the
+  specifications (`scenarios.mjs lint`): a scenario tagged with a rule that no
+  longer exists, or a `PR-n` in a specification without a scenario, fails.
 - `npm test` uses the Google Chrome of the runner image; the model and the
   system calls are stubbed. The Rust test that edits through a running Ollama
   is `#[ignore]`d and runs only in `npm run test:local`.
@@ -313,7 +318,7 @@ flowchart LR
 ## Local checks
 
 ```sh
-make verify                         # lint, npm test, cargo test, release helpers, cue vet, actionlint
+make verify                         # lint, npm test, cargo test, release helpers, scenarios, cue vet, actionlint
 node --test .github/scripts/*.test.mjs
 make dist                           # artifacts/: the archive, checksums.txt and the cask; nothing is published
 make release-check TAG=vX.Y.Z       # after tagging, before the push

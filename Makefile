@@ -85,12 +85,23 @@ config-vet: examples-vet
 	$(AT) node .github/scripts/files-schema.mjs
 .PHONY: config-vet
 
+# The acceptance scenarios of docs/specs/*.feature against the specifications: ids, tags,
+# the rules they name, and the index in panel.md.
+scenarios:
+	$(AT) node .github/scripts/scenarios.mjs lint
+.PHONY: scenarios
+
+# make checklist ARGS='--tag smoke', or --rule PN-8, --id PR-10, --skip account, --out <file>
+checklist:
+	$(AT) node .github/scripts/scenarios.mjs checklist $(ARGS)
+.PHONY: checklist
+
 workflows-check:
 	$(AT) if command -v actionlint >/dev/null; then actionlint; else echo 'actionlint is not installed; skipping the workflow check' >&2; fi
 .PHONY: workflows-check
 
 # What the pre-push hook runs on every push and ci runs on main.
-verify: lint test release-helpers-test config-vet workflows-check
+verify: lint test release-helpers-test scenarios config-vet workflows-check
 .PHONY: verify
 
 version:

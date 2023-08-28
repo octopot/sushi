@@ -17,6 +17,9 @@ on:
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
       - 'docs/specs/files.cue'
+      # the acceptance scenarios are checked against the rules of the specifications
+      - 'docs/specs/*.feature'
+      - 'docs/specs/*.md'
       # the site's demo stub is type-checked against src/ipc.ts
       - 'docs/demo/**'
       - 'src-tauri/**'
@@ -42,6 +45,9 @@ on:
       # the frontend imports and the app embeds the shipped examples
       - 'docs/specs/examples/**'
       - 'docs/specs/files.cue'
+      # the acceptance scenarios are checked against the rules of the specifications
+      - 'docs/specs/*.feature'
+      - 'docs/specs/*.md'
       # the site's demo stub is type-checked against src/ipc.ts
       - 'docs/demo/**'
       - 'src-tauri/**'
@@ -168,6 +174,8 @@ jobs:
       # here, not on a tag
       - name: Check release helpers
         run: node --test .github/scripts/*.test.mjs
+      - name: Check the acceptance scenarios
+        run: node .github/scripts/scenarios.mjs lint
       - name: Check the version files agree
         run: node .github/scripts/release.mjs version
       - name: Install CUE and actionlint

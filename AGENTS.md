@@ -23,6 +23,7 @@ Sushi is a local prompt composer for macOS with an icon in the menu bar. Caps Lo
 | Action and dictionary files | [src-tauri/src/settings.rs](src-tauri/src/settings.rs), [examples and CUE schemas](docs/specs/local-files.md). |
 | Glass, the icon menu, the global hotkey, showing the window, the active Space, returning focus, copying, capture mode | [src-tauri/src/main.rs](src-tauri/src/main.rs) registers the commands and manages the window. [src-tauri/src/macos.m](src-tauri/src/macos.m) calls AppKit. Window parameters and Liquid Glass are in [src-tauri/tauri.conf.json](src-tauri/tauri.conf.json). |
 | The site, the release notes and the specifications | [docs/](docs/README.md): the Nextra site published at sushi.octolab.org, `docs/content/changelog/` and `docs/specs/`. |
+| A check only a real macOS session can make | The scenario in `docs/specs/<spec>.feature`, beside the specification of its rules; [.github/scripts/scenarios.mjs](.github/scripts/scenarios.mjs) checks them and renders the checklist. |
 | Release pipeline, the cask, the hooks | [.github/workflows/README.md](.github/workflows/README.md), [.github/scripts/release.mjs](.github/scripts/release.mjs), the cask template [.github/homebrew/sushi.rb](.github/homebrew/sushi.rb), and [Releasing](#releasing) below. |
 
 **Interface text uses sentence case.** A capital goes to the first word and to names: Sushi, Caps Lock, Ollama, Finder, the panes of the settings window. `Report a problem…`, `Copy build info`, `Model settings…`; not `Report a Problem…`. The tests and the specifications quote labels as the app shows them, so a label changes in all three.
@@ -50,9 +51,10 @@ Run commands from the repository root. In a fresh checkout install the dependenc
 | A change to the file library or settings | `cargo test --manifest-path src-tauri/Cargo.toml --release` | Rust checks reading Markdown and frontmatter, allowed paths, first creation, validation and writing of the settings files in a temporary folder, a change on disk between a read and a write, and the menu's rows. |
 | A change to a settings file's format, its validator or a choice the window offers | `make config-vet` | `cue vet` of the examples, then a Rust test writes files through the window's save paths and `.github/scripts/files-schema.mjs` checks them and the window's choices against `docs/specs/files.cue`. |
 | A change to the instruction, the model or its call | `npm run test:local` | The browser scenario and the Rust tests, including a real Russian edit through an already running Ollama. If the server is off, the test says so. |
-| Everything the pre-push hook and ci check | `make verify` | `tsc`, `cargo fmt --check`, `cargo clippy -D warnings`, `npm test`, the Rust tests, the release helper tests, `make config-vet` and `actionlint`. |
+| Everything the pre-push hook and ci check | `make verify` | `tsc`, `cargo fmt --check`, `cargo clippy -D warnings`, `npm test`, the Rust tests, the release helper tests, `make scenarios`, `make config-vet` and `actionlint`. |
 | A change to packaging or preparing a build | `make dist`, then `codesign --verify --deep --strict src-tauri/target/release/bundle/macos/Sushi.app` | The bundle, `artifacts/sushi_<version>_darwin-arm64.zip`, `checksums.txt` and the cask for those bytes, as `cd` builds them, without launching the app or publishing anything. |
-| The hotkey, Space, dictation, returning focus, the settings window or the menu | `npm run app` inside a separate macOS graphical session | The [regression scenarios](docs/specs/panel.md#regression-scenarios) of the panel: full screen, dictation, focus after hiding, a click elsewhere, Mission Control, the panel with the settings window, the menu's key hint, the key recorder, the connect sheets and the quiet start. Add a row to its runs with the build and the result. |
+| The hotkey, Space, dictation, returning focus, the settings window, the menu, a native sheet or a provider's real API | `make checklist ARGS='--rule PN-8'` (or `--id PR-10`, `--tag smoke`), then `npm run app` inside a separate macOS graphical session | The [acceptance scenarios](docs/specs/panel.md#regression-scenarios), Gherkin in `docs/specs/*.feature` beside each specification: full screen, dictation, focus after hiding, a click elsewhere, Mission Control, the panel with the settings window, the menu, the key recorder, the connect sheets, each provider with a real account, a report by hand and the quiet start. The checklist gives the setup, the actions and a box per expectation, for a person or an agent. Add a row to [docs/specs/runs.md](docs/specs/runs.md) with the build, who ran it and the result. |
+| A change to a scenario, or to a rule a scenario names | `make scenarios` | Every scenario has one ID (`PR-n`), one runner (`@hands` or `@agent`) and rules that exist; every `PR-n` the specifications mention is a scenario; the index in `docs/specs/panel.md` is current (`node .github/scripts/scenarios.mjs index --write` writes it). |
 
 ### Background capture of the real window
 
@@ -144,6 +146,13 @@ gh api repos/octolab/homebrew-tap/contents/Casks/sushi.rb -q .sha
   use (ad-hoc, or Developer ID with notarization).
 - Record the cask `sha` (empty before the first release): after a prerelease
   it must be unchanged.
+
+- The acceptance scenarios are run on the candidate build. The agent renders the
+  checklist into `.agents/release/vX.Y.Z/`: `make checklist ARGS='--tag smoke --rule PN-8 --out …'`
+  with `@smoke` and the scenarios of every rule the release changed, or the whole
+  set before a minor release. The owner or an agent runs it, in a real macOS
+  session; the result becomes a row in [docs/specs/runs.md](docs/specs/runs.md),
+  and a scenario that failed is fixed or filed before the tag.
 
 On the candidate commit:
 
