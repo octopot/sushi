@@ -71,7 +71,7 @@ const callbacks: ((payload: unknown) => void)[] = []
 const listeners: Partial<Record<keyof Events, (message: unknown) => void>> = {}
 /** Delivers an event from the native side, with the payload src/ipc.ts declares for it. */
 /** Every event of src/ipc.ts; one the page listens for but the demo never sends stops it here. */
-const events: string[] = Object.keys({ 'launcher-shown': true, 'startup-notes': true, 'report-open': true, 'report-recording': true, 'prefs-changed': true, 'prefs-pane': true } satisfies Record<keyof Events, true>)
+const events: string[] = Object.keys({ 'launcher-shown': true, 'startup-notes': true, 'report-open': true, 'report-panel': true, 'report-recording': true, 'prefs-changed': true, 'prefs-pane': true } satisfies Record<keyof Events, true>)
 const fire = <K extends keyof Events>(event: K, payload: Events[K]) => listeners[event]?.({ event, payload })
 const pending = new Map<string, () => void>()
 
@@ -118,6 +118,7 @@ const commands: Handlers = {
   report_record: () => null,
   report_end: () => null,
   report_draft: () => ({ text: 'In the app, the report holds your description, the build and the state of Sushi.' }),
+  report_panel: () => null,
   report_save: () => null,
   // The demo has no settings window: ⌘, says what it does in the app; the window's own calls never come.
   prefs_open: () => (emit({ type: 'notice', text: 'In the app, ⌘, opens the settings window.' }), null),

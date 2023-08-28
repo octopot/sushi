@@ -82,7 +82,8 @@ replies! {
     report::report_questions(_ _ _).await -> Result<Vec<String>, String>;
     report::report_record(_ _) -> ();
     report::report_end(_) -> ();
-    report::report_draft(_ _ _ _).await -> Result<ReportDraft, String>;
+    report::report_draft(_ _ _).await -> Result<ReportDraft, String>;
+    report::report_panel(_) -> ();
     report::report_save(_ _ _).await -> Result<(), String>;
     preferences::prefs_load(_).await -> Result<Prefs, String>;
     preferences::prefs_keyboard_save(_ _ _ _) -> Result<Saved<KeyboardPane>, String>;

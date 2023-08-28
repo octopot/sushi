@@ -1,6 +1,6 @@
 ---
 title: Report a problem
-description: Turn what went wrong into a report you read, edit and send yourself, from the menu bar menu, even when the panel does not stay open.
+description: Turn what went wrong into a report you read, edit and send yourself, in a window that stays open while you look things up.
 ---
 
 # Report a problem
@@ -9,24 +9,26 @@ When Sushi misbehaves, it can put together the report a developer needs: your de
 
 ## Start
 
-Click the Sushi icon in the menu bar and choose **Report a problem…**, or click **Report a problem…** in Settings ▸ About. Starting records nothing and sends nothing; **Esc** leaves at any step.
+Click the Sushi icon in the menu bar and choose **Report a problem…**, or click **Report a problem…** in Settings ▸ About. The report opens in a window of its own. Starting records nothing and sends nothing; **Esc** leaves at any step.
+
+The window stays open while you look something up in another app or in Sushi itself: the panel works as usual, and the window shows in Mission Control. Drag it by its title to move it aside. Closing it with **⌘W** keeps what you wrote; **Report a problem…** brings it back.
 
 1. **What went wrong?** Type or dictate a few sentences in your own words, then press **⌘↵**.
 2. **A few questions.** Up to three, all optional; **Skip** passes them. With the local model the questions come from Ollama on your Mac, in the language you wrote in. When **Model** is set to a hosted provider, Sushi asks first: **Ask OpenRouter** sends your description there, and **Use standard questions** keeps it on your Mac.
-3. **Reproduce it now?** **Start recording** lets you repeat the steps with the panel as usual. Sushi records when the panel shows and hides, the keys you press with ⌘ or ⌃, and which app takes the keyboard, never your text. The top of the panel says *Recording for a problem report*; when you are done, click **Finish recording** there or in the menu bar menu.
-4. **Your report.** Read the whole text and edit any part of it. **Copy** puts it on the clipboard for a chat or an email. **Save…** writes it, with the recording if you keep it, to a folder and shows it in Finder, so you can attach the files.
+3. **Reproduce it now?** **Start recording**, then repeat the steps with the panel as usual; the report's window waits. Sushi records when the panel shows and hides, the keys you press with ⌘ or ⌃, and which app takes the keyboard, never your text. The top of the panel says *Recording for a problem report*; when you are done, click **Finish recording** in the window, at the top of the panel or in the menu bar menu.
+4. **Your report.** Read the whole text and edit any part of it. **Copy** (**⌘↵**) puts it on the clipboard for a chat or an email and keeps the window open. **Save…** writes it, with the recording if you keep it, to a folder and shows it in Finder, so you can attach the files.
 
 ## When the panel does not stay open
 
-The report is written in the panel, so it needs the panel. When the panel does not show or hides at once, open **Settings…** from the menu bar menu and go to About: **Copy build info** copies which build you run, and **Log panel activity** records why the panel hides, as [described below](#record-without-a-report). Repeat the steps, click **Show log**, and send the log with the build info and a few words of your own.
+The report does not need the panel: its window opens from the menu bar menu even when the panel does not show or hides at once, and a recording still says why. For a longer look, open **Settings…** and go to About: **Log panel activity** records why the panel hides, as [described below](#record-without-a-report), and **Copy build info** copies which build you run.
 
-While a recording for a report runs, **Finish recording** in the menu bar menu ends it and shows the panel at the report.
+While a recording for a report runs, **Finish recording** in the menu bar menu ends it and brings the report's window forward.
 
 ## What the report holds
 
 - Your description and answers, as you wrote them.
 - The build: the same block **Copy build info** in Settings ▸ About copies.
-- The state of Sushi: which view was open, how many versions the prompt has, whether an edit was running; whether each settings file is present and valid, without its contents; where the library comes from and how many prompts and templates it has; the key that shows the panel, the keyboard input source and the appearance; which model is in use, which providers are connected and whether Ollama runs.
+- The state of Sushi: which view the panel shows, how many versions the prompt has, whether an edit is running; whether each settings file is present and valid, without its contents; where the library comes from and how many prompts and templates it has; the key that shows the panel, the keyboard input source and the appearance; which model is in use, which providers are connected and whether Ollama runs.
 - The recording's size, when there is one. The recording names other apps by their bundle ID, such as `com.apple.Safari`, never by what you did in them.
 
 It never holds your prompt or its versions, the names or text of your library files, dictionary terms, your actions, API keys, file paths, your name or your Mac's name, or the titles of other apps' windows. The exact list is in the [specification](https://github.com/octopot/sushi/blob/main/docs/specs/report.md).

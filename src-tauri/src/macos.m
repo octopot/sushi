@@ -535,8 +535,8 @@ void sushi_watch_sheets(void *native, void (*lost)(void)) {
     static id observer;
     if (observer) return;
     NSWindow *panel = (__bridge NSWindow *)native;
-    static id active;
-    active = [NSNotificationCenter.defaultCenter addObserverForName:NSApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+    // The notification center keeps this observer for as long as Sushi runs.
+    [NSNotificationCenter.defaultCenter addObserverForName:NSApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
         if (!activating) return;
         activating = NO;
         NSWindow *sheet = deepest_sheet(panel);

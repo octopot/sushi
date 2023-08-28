@@ -1,0 +1,98 @@
+/* The window of Report a problem. The palette comes from src/tokens.css; the surface is the
+   opaque one of the settings window, so the two normal windows of Sushi look alike. */
+@import './tokens.css';
+
+:root { --window-bg: #242427; }
+@media (prefers-color-scheme: light) {
+  :root { --window-bg: #f6f6f8; }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--window-bg); }
+body {
+  font: 15px/1.4 var(--font);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button {
+  border: 0;
+  background: none;
+  cursor: default;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button:focus-visible { outline: 2px solid Highlight; outline-offset: 1px; }
+
+/* Under the window's own buttons: the strip that moves the window. */
+.titlebar { position: fixed; inset: 0 0 auto; height: 38px; }
+#report { position: fixed; inset: 0; }
+
+.keys { display: inline-flex; gap: 3px; flex: none; }
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: var(--key);
+  color: var(--key-text);
+  font: 500 12px/1 var(--font);
+}
+kbd.wide { padding: 0 6px; font-size: 11.5px; letter-spacing: 0.01em; }
+
+.report {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 26px;
+}
+/* The window's title, where macOS would draw it. */
+.report-title { flex: none; height: 38px; line-height: 38px; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); }
+.report-body { flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-top: 10px; }
+.report h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.report p { margin: 0; line-height: 1.45; }
+.report .muted { color: var(--muted); }
+.report label { font-size: 14px; color: var(--muted); }
+.report textarea {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: var(--hover);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+  caret-color: var(--accent);
+  user-select: text;
+}
+.report textarea:focus { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent); }
+.report textarea::placeholder { color: var(--placeholder); }
+.report textarea.text { flex: 1; min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.report .attachment { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.report-status { min-height: 22px; padding-top: 4px; font-size: 13px; color: var(--muted); }
+.report-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; height: 56px; flex: none; }
+.report-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.report-footer button:hover { background: var(--hover); }
+.report-footer button.primary { color: var(--accent); }
+.report-footer button:first-child { margin-right: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

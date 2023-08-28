@@ -62,7 +62,7 @@ Everything Sushi knows besides the current draft lives in plain files on the Mac
 ### The diagnostic log
 
 - **LF-22. What it records.** `~/Library/Logs/me.octopot.sushi/diagnostics.log` is plain UTF-8 text, one record per line, each starting with the UTC time in milliseconds. Each session starts with the build info block ([BI-1](build-info.md#rules)) and `recording started`. It records:
-  - every show with its reason: `hotkey`, `menu`, `reopen`, `second-launch`, `launch` or `settings` (**Report a problem…** in Settings), and a show over the open panel that gives the keyboard back to its sheet ([PN-8](panel.md#hiding));
+  - every show with its reason: `hotkey`, `menu`, `reopen`, `second-launch` or `launch`, and a show over the open panel that gives the keyboard back to its sheet ([PN-8](panel.md#hiding));
   - every hide with its reason: `hotkey` (the toggle), `esc` or `copy` from the page, `page` for another request of the page, `close-request`, `focus-lost` or `settings` (the settings window opened, PN-9);
   - every press and release of the hotkey, a repeat while held marked as ignored;
   - every key combination with ⌘ or ⌃ the panel received, as modifiers and one key name (`⌘A`), never other keys or text;

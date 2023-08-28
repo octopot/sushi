@@ -1104,12 +1104,8 @@ pub async fn prefs_action(
                 .map_err(|e| format!("Could not open the library folder: {e}"))
         }
         AboutAction::Report => {
-            if !crate::staged() {
-                // On the main thread, as from the menu: the panel shows, then hears the event.
-                let handle = app.clone();
-                app.run_on_main_thread(move || crate::open_report(&handle, "settings"))
-                    .map_err(|e| e.to_string())?;
-            }
+            // The same window the menu opens (RP-1).
+            crate::report_window::open(&app);
             Ok(())
         }
         AboutAction::Models => {

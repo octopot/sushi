@@ -45,12 +45,9 @@ interface Args {
   report_record: { on: boolean }
   /** The flow ended: the recording stops and belongs to no report any more (RP-5). */
   report_end: None
-  /** The panel's state for the snapshot: never the prompt's text (RP-6). */
-  report_draft: {
-    description: string
-    answers: { question: string; answer: string }[]
-    panel: { view: 'editor' | 'actions' | 'library' | 'report'; versions: number; editing: boolean }
-  }
+  report_draft: { description: string; answers: { question: string; answer: string }[] }
+  /** The panel's answer to `report-panel`, its state for the snapshot: never the prompt's text (RP-6). */
+  report_panel: { panel: { view: 'editor' | 'actions' | 'library'; versions: number; editing: boolean } }
   report_save: { text: string; recording: boolean }
   // The settings window (SUSI-12). Every save carries the revision of the file it read.
   prefs_load: None
@@ -98,10 +95,13 @@ export interface Events {
   'launcher-shown': null
   /** Problems found while starting, joined into one message (hotkey.rs). */
   'startup-notes': string
-  /** Report a problem was chosen in the menu bar menu or in Settings ▸ About (main.rs). From
-      Settings, leaving the flow hides the panel, and the keyboard goes back to Settings. */
-  'report-open': { origin: 'menu' | 'settings' }
-  /** The recording of a report started or finished, in the panel or the menu (report.rs). */
+  /** To the report's window only: Report a problem was chosen again, in the menu bar menu or in
+      Settings ▸ About, and the flow shows where it is (report_window.rs). */
+  'report-open': null
+  /** To the panel only: the report is being built and asks what the panel shows; the page
+      answers with `report_panel` (report.rs). */
+  'report-panel': null
+  /** The recording of a report started or finished, in its window, the panel or the menu (report.rs). */
   'report-recording': boolean
   /** To the settings window only: something outside it changed a file, the keychain or the
       recording state (preferences.rs, `changed`); the page loads again. */

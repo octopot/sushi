@@ -110,7 +110,7 @@ pub fn stage(app: &AppHandle, pane: Option<PaneId>) -> Option<WebviewWindow> {
 pub fn open(app: &AppHandle, pane: Option<PaneId>) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
-        crate::hide_for_settings(&handle);
+        crate::hide_for_window(&handle);
         unsafe { sushi_remember_frontmost() };
         let window = match handle.get_webview_window(LABEL) {
             Some(window) => {
@@ -163,7 +163,11 @@ fn close(window: &tauri::Window) {
     // Only while Sushi has the keyboard: a window closed from elsewhere must not pull an app
     // to the front.
     if !panel && !crate::staged() && unsafe { sushi_is_active() } {
-        unsafe { sushi_restore_frontmost() };
+        // The report stays open when Settings closes, and has the keyboard next.
+        match crate::report_window::shown(app) {
+            Some(report) => take_keyboard(&report),
+            None => unsafe { sushi_restore_frontmost() },
+        }
     }
 }
 

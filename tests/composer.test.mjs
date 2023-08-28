@@ -73,7 +73,7 @@ test('Sushi composer', async t => {
         copies: [], hidden: 0, reads: [], requests: [], replies: [], cancelled: [], warmed: 0, warmers: [], downloads: 0, openedDictionary: 0,
         delay: false, callbacks: [], listeners: {},
         hideReasons: [], diagnostics: { file: false, report: false }, combinations: [], connects: [],
-        reportStart: { fixed: ['What were you doing?', 'What did you expect?', 'Does it repeat?'] }, questions: [], recordings: [], drafts: [], saves: [],
+        recordings: [], panels: [],
       }
       // Simulates a full localStorage for the draft: 'always', or only for chains longer than three versions.
       const setItem = Storage.prototype.setItem
@@ -103,24 +103,11 @@ test('Sushi composer', async t => {
             case 'diagnostics_state': return state.diagnostics
             case 'diagnostics_key': state.combinations.push(args.combination); return
             case 'provider_connect': state.connects.push(args.provider); return
-            case 'report_start':
-              if (state.holdStart) return new Promise(resolve => { state.releaseStart = () => resolve(state.reportStart) })
-              return state.reportStart
-            case 'report_questions':
-              state.questions.push(args)
-              return state.questionReply ?? ['Что вы делали?', 'Повторяется ли?']
             case 'report_record':
               state.recordings.push(args.on)
               state.diagnostics = { ...state.diagnostics, report: args.on }
               return
-            case 'report_end':
-              state.ends = (state.ends ?? 0) + 1
-              state.diagnostics = { ...state.diagnostics, report: false }
-              return
-            case 'report_draft':
-              state.drafts.push(args)
-              return { text: 'Sushi problem report · format 1\n\n## What went wrong\n\n' + args.description + '\n', recording: state.recordings.includes(true) ? 2048 : undefined }
-            case 'report_save': state.saves.push(args); return
+            case 'report_panel': state.panels.push(args.panel); return
             case 'prefs_open': state.prefs = [...(state.prefs ?? []), args.pane]; return
             case 'rewrite':
               state.requests.push(args)
@@ -885,147 +872,32 @@ test('Sushi composer', async t => {
     assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc', 'copy'])
   })
 
-  await t.test('Report a problem: describe, answer, record, edit, then copy or save; the prompt stays out (RP-1 to RP-9)', async t => {
+  await t.test('Report a problem lives in its own window: the panel says what it shows and can finish a recording (RP-5, RP-6)', async t => {
     const page = await start(t)
-    const outside = []
-    page.on('request', request => { if (!request.url().startsWith(new URL(page.url()).origin)) outside.push(request.url()) })
-    const draft = 'Unique draft text Zebra7Marker'
-    await page.keyboard.insertText(draft)
-    await emit(page, 'report-open', { origin: 'menu' })
-    const field = page.getByRole('textbox', { name: 'What went wrong' })
-    await field.waitFor()
-    assert.equal(await page.evaluate(() => window.fixture.recordings.length), 0, 'starting records nothing')
-    await page.keyboard.press('Meta+Enter')
-    await page.locator('.report-status', { hasText: 'Describe the problem first.' }).waitFor()
-    await field.fill('Панель закрывается после ⌘A.')
-    await capture(page, '25-report-describe')
-    await page.keyboard.press('Meta+Enter')
-    // Ollama asks in the language of the description; the model gets the description only.
-    await page.getByRole('textbox', { name: 'Что вы делали?' }).fill('Нажимал ⌘A')
-    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [{ description: 'Панель закрывается после ⌘A.', consent: null }])
-    await page.keyboard.press('Meta+Enter')
-    await page.getByRole('button', { name: 'Start recording' }).click()
+    await page.keyboard.insertText('Unique draft text Zebra7Marker')
+    // The report is built in another window and asks the panel for its state, never for its text.
+    await emit(page, 'report-panel')
+    await page.waitForFunction(() => window.fixture.panels.length === 1)
+    assert.deepEqual(await page.evaluate(() => window.fixture.panels[0]), { view: 'editor', versions: 1, editing: false })
+    await page.keyboard.press('Meta+l')
+    await libraryInput(page).waitFor()
+    await emit(page, 'report-panel')
+    await page.waitForFunction(() => window.fixture.panels.length === 2)
+    assert.equal(await page.evaluate(() => window.fixture.panels[1].view), 'library')
+    assert.ok(!JSON.stringify(await page.evaluate(() => window.fixture.panels)).includes('Zebra7Marker'), 'nothing of the prompt goes to the report')
+    await page.keyboard.press('Escape')
+    // While a recording runs, the top of the panel says so and can finish it; the panel stays usable.
+    await page.evaluate(() => { window.fixture.diagnostics = { file: false, report: true } })
+    await emit(page, 'report-recording', true)
     await page.locator('#status', { hasText: 'Recording for a problem report' }).waitFor()
-    assert.equal(await page.locator('.report').isHidden(), true, 'the panel is free to repeat the steps')
     await capture(page, '26-report-recording')
+    await prompt(page).press('End')
+    await page.keyboard.insertText('!')
     await page.locator('#status').getByRole('button', { name: 'Finish recording' }).click()
-    const report = page.getByRole('textbox', { name: 'Report' })
-    await report.waitFor()
-    assert.deepEqual(await page.evaluate(() => window.fixture.recordings), [true, false])
-    const [sent] = await page.evaluate(() => window.fixture.drafts)
-    assert.deepEqual(sent.answers, [{ question: 'Что вы делали?', answer: 'Нажимал ⌘A' }, { question: 'Повторяется ли?', answer: '' }])
-    assert.deepEqual(sent.panel, { view: 'editor', versions: 1, editing: false })
-    assert.ok(!JSON.stringify(sent).includes('Zebra7Marker'), 'nothing of the prompt goes to the report')
-    await page.getByText('Save the recording with the report (report-recording.log, 2.0 KB)').waitFor()
-    await capture(page, '27-report-text')
-    await report.fill('Edited by the user.')
-    await page.keyboard.press('Meta+Enter')
-    await page.locator('.report-status', { hasText: 'Sushi sends nothing' }).waitFor()
-    assert.equal(await page.evaluate(() => window.fixture.copies.at(-1)), 'Edited by the user.')
-    await page.getByRole('checkbox').uncheck()
-    await page.getByRole('button', { name: 'Save…' }).click()
-    await page.waitForFunction(() => window.fixture.saves.length === 1)
-    assert.deepEqual(await page.evaluate(() => window.fixture.saves[0]), { text: 'Edited by the user.', recording: false })
-    // In the app's WebKit a click on a button or a checkbox takes the focus from the field and
-    // gives it to nothing: ⌘↵ still copies.
-    await page.evaluate(() => document.activeElement?.blur())
-    const copied = await page.evaluate(() => window.fixture.copies.length)
-    await page.keyboard.press('Meta+Enter')
-    await page.waitForFunction(n => window.fixture.copies.length === n + 1, copied)
-    await page.keyboard.press('Escape')
-    await prompt(page).waitFor()
-    assert.equal(await editorText(page), draft, 'the draft is as it was')
-    assert.equal(await page.evaluate(() => window.fixture.hidden), 0, 'Esc leaves the flow, not the panel')
-    assert.deepEqual(outside, [], 'the flow makes no network request')
-  })
-
-  await t.test('Report from Settings ▸ About: leaving it hides the panel, so Settings has the keyboard again (RP-1)', async t => {
-    const page = await start(t)
-    const field = page.getByRole('textbox', { name: 'What went wrong' })
-    // Esc at the first step leaves the flow and hides the panel.
-    await emit(page, 'report-open', { origin: 'settings' })
-    await field.waitFor()
-    await page.keyboard.press('Escape')
-    await page.waitForFunction(() => window.fixture.hidden === 1)
-    assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc'])
-    // Copy finishes it the same way.
-    await emit(page, 'report-open', { origin: 'settings' })
-    await field.fill('It hides.')
-    await page.keyboard.press('Meta+Enter')
-    await page.getByRole('button', { name: 'Skip' }).click()
-    await page.getByRole('button', { name: 'Skip' }).click()
-    await page.getByRole('textbox', { name: 'Report' }).waitFor()
-    await page.keyboard.press('Meta+Enter')
-    await page.waitForFunction(() => window.fixture.hidden === 2)
-    assert.deepEqual(await page.evaluate(() => window.fixture.hideReasons), ['esc', 'copy'])
-    assert.equal(await page.locator('.report').isHidden(), true)
-    // From the menu the panel stays, as before.
-    await emit(page, 'report-open', { origin: 'menu' })
-    await field.waitFor()
-    await page.keyboard.press('Escape')
-    await prompt(page).waitFor()
-    assert.equal(await page.evaluate(() => window.fixture.hidden), 2)
-  })
-
-  await t.test('Report: a hosted provider gets the description only with consent; the menu can finish the recording (RP-3, RP-5)', async t => {
-    const page = await start(t)
-    await page.evaluate(() => { window.fixture.reportStart = { provider: 'Claude', fixed: ['What were you doing?', 'What did you expect?', 'Does it repeat?'] } })
-    // The form is there at once; what the user types before Sushi answers stays.
-    await page.evaluate(() => { window.fixture.holdStart = true })
-    await emit(page, 'report-open', { origin: 'menu' })
-    await page.getByRole('textbox', { name: 'What went wrong' }).fill('It flickers.')
-    // Next waits for that answer: Sushi does not yet know the description would go to Claude.
-    await page.keyboard.press('Meta+Enter')
-    await page.locator('.report-status', { hasText: 'One moment…' }).waitFor()
-    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [])
-    await page.evaluate(() => { window.fixture.holdStart = false; window.fixture.releaseStart() })
-    await page.waitForTimeout(50)
-    assert.equal(await page.getByRole('textbox', { name: 'What went wrong' }).inputValue(), 'It flickers.')
-    await page.keyboard.press('Meta+Enter')
-    await page.getByText('the description would go to Claude').waitFor()
-    await page.getByRole('button', { name: 'Use standard questions' }).click()
-    await page.getByRole('textbox', { name: 'What did you expect?' }).waitFor()
-    assert.deepEqual(await page.evaluate(() => window.fixture.questions), [], 'nothing was asked')
-    await page.getByRole('button', { name: 'Skip' }).click()
-    await page.getByRole('button', { name: 'Start recording' }).click()
-    await page.locator('#status', { hasText: 'Recording' }).waitFor()
-    // Finish recording in the menu bar menu, while the Library is open: the report takes its place.
-    await page.keyboard.press('Meta+l')
-    await libraryInput(page).waitFor()
-    await page.evaluate(() => { window.fixture.diagnostics = { file: false, report: false } })
-    await emit(page, 'report-recording', false)
-    await page.getByRole('textbox', { name: 'Report' }).waitFor()
-    await libraryInput(page).waitFor({ state: 'hidden' })
-    assert.equal(await page.locator('#status').isHidden(), true)
-    // Leaving the flow while it records turns the recording off.
-    await page.keyboard.press('Escape')
-    // This report starts from the Library, and is reopened later from the editor.
-    await page.keyboard.press('Meta+l')
-    await libraryInput(page).waitFor()
-    await emit(page, 'report-open', { origin: 'menu' })
-    await page.getByRole('textbox', { name: 'What went wrong' }).fill('Again.')
-    await page.keyboard.press('Meta+Enter')
-    await page.getByRole('button', { name: `Ask Claude` }).click()
-    await page.getByRole('textbox', { name: 'Что вы делали?' }).waitFor()
-    assert.deepEqual(await page.evaluate(() => window.fixture.questions.at(-1)), { description: 'Again.', consent: 'Claude' })
-    await page.keyboard.press('Meta+Enter')
-    await page.getByRole('button', { name: 'Start recording' }).click()
-    await page.locator('#status', { hasText: 'Recording' }).waitFor()
-    // Reopened while it records, the flow offers only to finish; nothing can skip past it.
-    await emit(page, 'report-open', { origin: 'menu' })
-    await page.getByRole('heading', { name: 'Recording…' }).waitFor()
-    assert.equal(await page.locator('.report').getByRole('button', { name: 'Skip' }).count(), 0)
-    await page.locator('.report').getByRole('button', { name: 'Finish recording' }).click()
-    const edited = page.getByRole('textbox', { name: 'Report' })
-    await edited.waitFor()
-    assert.equal(await page.evaluate(() => window.fixture.drafts.at(-1).panel.view), 'library', 'the view it started from')
-    await edited.fill('My own words.')
-    // A late finish from the menu leaves the report as the user edited it.
-    await emit(page, 'report-recording', false)
-    await page.waitForTimeout(100)
-    assert.equal(await edited.inputValue(), 'My own words.')
-    await page.keyboard.press('Escape')
-    await page.waitForFunction(() => window.fixture.ends === 2, 'leaving the flow ends the recording')
+    await page.waitForFunction(() => window.fixture.recordings.length === 1)
+    assert.deepEqual(await page.evaluate(() => window.fixture.recordings), [false])
+    await page.locator('#status').waitFor({ state: 'hidden' })
+    assert.equal(await page.evaluate(() => window.fixture.hidden), 0, 'the panel stays as it was')
   })
 
   await t.test('a free-form instruction leads when no action matches well', async t => {

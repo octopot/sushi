@@ -14,6 +14,7 @@ mod model;
 mod preferences;
 mod providers;
 mod report;
+mod report_window;
 mod rewrite;
 mod settings;
 mod settings_window;
@@ -56,9 +57,32 @@ extern "C" {
 
 /// Stage runs must never touch the clipboard, focus, other apps or Ollama's lifecycle.
 static STAGE: AtomicBool = AtomicBool::new(false);
-/// The panel was shown while the settings window had the keyboard: hiding it gives the keyboard
-/// back to that window, not to the app underneath (SUSI-12).
-static OVER_SETTINGS: AtomicBool = AtomicBool::new(false);
+/// The panel was shown while one of Sushi's own windows had the keyboard, the settings window
+/// or the report: its label. Hiding the panel gives the keyboard back to that window, not to
+/// the app underneath (PN-10).
+static OVER: Mutex<Option<&'static str>> = Mutex::new(None);
+
+/// Sushi's normal windows, in the order the panel asks them.
+const WINDOWS: [&str; 2] = [settings_window::LABEL, report_window::LABEL];
+
+/// A normal window of Sushi that is on screen.
+fn own_window(app: &AppHandle, label: &str) -> Option<tauri::WebviewWindow> {
+    app.get_webview_window(label)
+        .filter(|w| w.is_visible().unwrap_or(false))
+}
+
+/// The normal window of Sushi that has the keyboard, itself or through one of its sheets.
+fn keyboard_window(app: &AppHandle) -> Option<&'static str> {
+    WINDOWS.into_iter().find(|label| {
+        own_window(app, label).is_some_and(|window| settings_window::has_keyboard(&window))
+    })
+}
+
+fn set_over(label: Option<&'static str>) -> Option<&'static str> {
+    OVER.lock()
+        .map(|mut over| std::mem::replace(&mut *over, label))
+        .unwrap_or(None)
+}
 
 pub(crate) fn staged() -> bool {
     STAGE.load(Ordering::Relaxed)
@@ -119,11 +143,9 @@ fn show_launcher(app: &AppHandle, toggle: bool, reason: &'static str) {
                 diagnostics::record("show: keyboard back to the panel's sheet");
                 return;
             }
-            // Settings and its sheets are one family: shown over a folder picker, the panel gives
+            // A window and its sheets are one family: shown over a folder picker, the panel gives
             // the keyboard back to the picker.
-            let over =
-                settings_window::shown(&handle).is_some_and(|s| settings_window::has_keyboard(&s));
-            OVER_SETTINGS.store(over, Ordering::Relaxed);
+            set_over(keyboard_window(&handle));
             unsafe { sushi_remember_frontmost() };
             unsafe {
                 sushi_prepare_window(native);
@@ -165,9 +187,9 @@ extern "C" fn sheet_lost() {
     }
 }
 
-/// Hides the panel. Where the keyboard goes: to the settings window when the panel was shown
-/// over it (Esc, a copy, the hotkey), nowhere when a click already gave it to that window, and
-/// otherwise back to the app the user came from, as before (SUSI-2).
+/// Hides the panel. Where the keyboard goes: to the window of Sushi the panel was shown over,
+/// the settings window or the report (Esc, a copy, the hotkey), nowhere when a click already
+/// gave it to one of them, and otherwise back to the app the user came from, as before (SUSI-2).
 fn hide(app: &AppHandle, reason: &str) -> Result<(), String> {
     if staged() {
         return Ok(());
@@ -177,46 +199,32 @@ fn hide(app: &AppHandle, reason: &str) -> Result<(), String> {
             diagnostics::record(&format!("hide reason={reason}"));
         }
         let active = unsafe { sushi_is_active() };
-        let over = OVER_SETTINGS.swap(false, Ordering::Relaxed);
+        let over = set_over(None)
+            .filter(|_| reason != "focus-lost")
+            .and_then(|label| own_window(app, label));
         window.hide().map_err(|e| e.to_string())?;
         if active {
-            match settings_window::shown(app) {
-                Some(settings) if over && reason != "focus-lost" => {
-                    settings_window::take_keyboard(&settings)
-                }
-                // A click already gave the keyboard to Settings or one of its sheets.
-                Some(settings) if settings_window::has_keyboard(&settings) => (),
-                _ => unsafe { sushi_restore_frontmost() },
+            match over {
+                Some(under) => settings_window::take_keyboard(&under),
+                // A click already gave the keyboard to one of Sushi's windows or its sheets.
+                None if keyboard_window(app).is_some() => (),
+                None => unsafe { sushi_restore_frontmost() },
             }
         }
     }
     Ok(())
 }
 
-/// The settings window takes the keyboard: the panel hides without handing it to the app
-/// underneath, which gets it back when the window closes.
-pub(crate) fn hide_for_settings(app: &AppHandle) {
+/// A normal window of Sushi takes the keyboard, the settings window or the report: the panel
+/// hides without handing it to the app underneath, which gets it back when the window closes.
+pub(crate) fn hide_for_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             diagnostics::record("hide reason=settings");
             let _ = window.hide();
         }
     }
-    OVER_SETTINGS.store(false, Ordering::Relaxed);
-}
-
-/// The payload of `report-open`: where the flow started. From Settings, leaving the flow hides
-/// the panel, which gives the keyboard back to Settings; from the menu the panel stays (RP-1).
-#[derive(serde::Serialize, Clone)]
-struct ReportOpen {
-    origin: &'static str,
-}
-
-/// Report a problem starts in the panel (RP-1): from the menu (`menu`), or from Settings ▸ About
-/// (`settings`), where the panel shows over Settings.
-pub(crate) fn open_report(app: &AppHandle, origin: &'static str) {
-    show_launcher(app, false, origin);
-    let _ = app.emit("report-open", ReportOpen { origin });
+    set_over(None);
 }
 
 /// `reason`: `esc` or `copy`, for the diagnostic log (LF-22).
@@ -250,11 +258,12 @@ fn reveal_log(name: &str) {
     }
 }
 
-/// The window a stage run presents: `main` (the panel), or `settings` with
-/// `SUSHI_STAGE_WINDOW=settings`.
+/// The window a stage run presents: `main` (the panel), or `settings` or `report` with
+/// `SUSHI_STAGE_WINDOW=<label>`.
 fn stage_label() -> &'static str {
     match std::env::var("SUSHI_STAGE_WINDOW").as_deref() {
         Ok(settings_window::LABEL) => settings_window::LABEL,
+        Ok(report_window::LABEL) => report_window::LABEL,
         _ => "main",
     }
 }
@@ -262,8 +271,12 @@ fn stage_label() -> &'static str {
 // Stage mode renders the real window off-screen for screenshots: no hotkey, no tray,
 // no activation, and never the real profile.
 fn stage_present(app: &AppHandle) {
-    let settings = stage_label() == settings_window::LABEL;
-    let window = if settings {
+    let label = stage_label();
+    let settings = label == settings_window::LABEL;
+    let window = if label == report_window::LABEL {
+        // The panel stays, hidden: the report asks its page what the panel shows (RP-6).
+        report_window::stage(app)
+    } else if settings {
         // `SUSHI_STAGE_PANE`: the pane the window opens on, as the menu would ask for it.
         let pane = std::env::var("SUSHI_STAGE_PANE")
             .ok()
@@ -289,8 +302,8 @@ fn stage_present(app: &AppHandle) {
     let image = std::env::var("SUSHI_STAGE_BACKDROP")
         .ok()
         .and_then(|path| CString::new(path).ok());
-    // The panel's own window setup; the settings window keeps the one it was made with.
-    if !settings {
+    // The panel's own window setup; a normal window keeps the one it was made with.
+    if label == "main" {
         unsafe { sushi_prepare_window(native) };
     }
     let mut backdrop = 0;
@@ -385,8 +398,10 @@ fn main() {
                     // As at launch: hotkey.json is read, seeded when missing, and its effect
                     // decided; nothing is registered in a stage run (hotkey.rs, `engage`).
                     hotkey::apply(app.handle());
+                }
+                if stage_label() != "main" {
                     // The stage script's lines (`stage-report` events) go to stdout, where
-                    // tests/stage/settings.sh reads them.
+                    // tests/stage/settings.sh and report.sh read them.
                     app.listen_any("stage-report", |event| {
                         let line = serde_json::from_str::<String>(event.payload())
                             .unwrap_or_else(|_| event.payload().to_string());
@@ -414,11 +429,11 @@ fn main() {
                     "sushi-settings" => settings_window::open(app, None),
                     "sushi-about" => settings_window::open(app, Some(preferences::PaneId::About)),
                     "sushi-diagnostics" => reveal_log(diagnostics::LOG),
-                    // The flow lives in the panel; the page opens it on this event (RP-1).
-                    "sushi-report" => open_report(app, "menu"),
+                    // The flow has a window of its own (RP-1).
+                    "sushi-report" => report_window::open(app),
                     "sushi-report-finish" => {
                         report::record(app, false);
-                        show_launcher(app, false, "menu");
+                        report_window::open(app);
                     }
                     "sushi-quit" => app.exit(0),
                     id => {
@@ -458,6 +473,7 @@ fn main() {
                 _ => (),
             },
             settings_window::LABEL => settings_window::on_event(window, event),
+            report_window::LABEL => report_window::on_event(window, event),
             _ => (),
         })
         .invoke_handler(tauri::generate_handler![
@@ -480,6 +496,7 @@ fn main() {
             report::report_record,
             report::report_end,
             report::report_draft,
+            report::report_panel,
             report::report_save,
             preferences::prefs_load,
             preferences::prefs_keyboard_save,

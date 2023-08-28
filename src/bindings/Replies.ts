@@ -53,6 +53,7 @@ export interface Replies {
   report_record: null
   report_end: null
   report_draft: ReportDraft
+  report_panel: null
   report_save: null
   prefs_load: Prefs
   prefs_keyboard_save: Saved<KeyboardPane>

@@ -8,7 +8,6 @@ import { Library, type Entry, type Kind } from './library'
 import { instructionFirst, phrase, rank } from './fuzzy'
 import { el, icon, keys } from './icons'
 import { call, on, type Diagnostics, type Edit, type Rule, type Term } from './ipc'
-import { Report } from './report'
 
 
 // Dictation tools post-process text themselves; flip to re-enable dictionary replacement on paste.
@@ -420,71 +419,20 @@ function openLibrary() {
   opened(library)
 }
 
-function opened(panel: Palette | Library | Report) {
+function opened(panel: Palette | Library) {
   unchanged = false
   workspace.inert = true
   windowRoot.classList.toggle('library-open', panel === library)
   windowRoot.classList.toggle('actions-open', panel === actions)
-  windowRoot.classList.toggle('report-open', panel === report)
   if (panel === library) library.open()
-  else if (panel === report) void report.open()
   else actions.open()
 }
 function closed() {
-  if (actions.isOpen || library.isOpen || report.isOpen) return
+  if (actions.isOpen || library.isOpen) return
   reading++
   workspace.inert = false
-  windowRoot.classList.remove('library-open', 'actions-open', 'report-open')
+  windowRoot.classList.remove('library-open', 'actions-open')
   editor.focus()
-}
-
-// ——— Report a problem (docs/specs/report.md) ———
-
-/** Which view was open when the flow started: the snapshot names it (RP-6). */
-let reportedView: 'editor' | 'actions' | 'library' = 'editor'
-/** Where the flow started. From Settings ▸ About, leaving it hides the panel, so the keyboard
-    goes back to Settings; from the menu the panel stays (RP-1). */
-let reportOrigin: 'menu' | 'settings' = 'menu'
-/** How the flow was left, for the hide that follows from Settings (LF-22). */
-let reportLeft: 'esc' | 'copy' = 'esc'
-const report = new Report(windowRoot, {
-  start: () => call('report_start'),
-  questions: (description, consent) => call('report_questions', { description, consent }),
-  record: on => call('report_record', { on }).then(() => refreshDiagnostics()),
-  end: () => call('report_end').then(() => refreshDiagnostics()),
-  draft: (description, answers) => call('report_draft', {
-    description, answers, panel: { view: reportedView, versions: chain.versions.length, editing: !!busy },
-  }),
-  copy: async text => {
-    await (desktop ? call('copy_text', { text }) : navigator.clipboard.writeText(text))
-    // Copying finishes a flow started from Settings: the user goes back to where they came from.
-    if (reportOrigin === 'settings') { reportLeft = 'copy'; report.close() }
-  },
-  save: async (text, recording) => { await call('report_save', { text, recording }) },
-  onClose: () => {
-    closed()
-    void refreshDiagnostics()
-    if (reportOrigin === 'settings') {
-      const reason = reportLeft
-      reportOrigin = 'menu'
-      reportLeft = 'esc'
-      void hide(false, reason)
-    }
-  },
-  onRecording: () => { closed(); void refreshDiagnostics() },
-})
-
-function openReport(origin: 'menu' | 'settings' = 'menu') {
-  if (report.isOpen) return report.focus()
-  // The view the flow started from: reopening it during a recording keeps that one (RP-6).
-  if (!report.active) {
-    reportedView = actions.isOpen ? 'actions' : library.isOpen ? 'library' : 'editor'
-    reportOrigin = origin
-  }
-  actions.close()
-  library.close()
-  if (report.recording) { windowRoot.classList.add('report-open'); workspace.inert = true; return report.show() }
-  opened(report)
 }
 
 // ——— Diagnostics (docs/specs/local-files.md, LF-21 to LF-23) ———
@@ -503,21 +451,13 @@ function showStatus() {
     const finish = el('button', '', 'Finish recording')
     finish.type = 'button'
     finish.addEventListener('mousedown', event => event.preventDefault())
-    finish.addEventListener('click', () => { void call('report_record', { on: false }).then(() => { report.recorded(); openRecorded() }) })
+    // The report's window comes forward with the report (RP-5).
+    finish.addEventListener('click', () => { void call('report_record', { on: false }).then(() => refreshDiagnostics()) })
     parts.push('Recording for a problem report · ', finish)
   }
   if (diagnostics.file) parts.push(parts.length ? ' · ' : '', 'Diagnostics on · diagnostics.json turns it off')
   statusSlot.replaceChildren(...parts)
   statusSlot.hidden = !parts.length
-}
-
-/** The report after a recording; a palette opened while it ran gives way, as in openReport. */
-function openRecorded() {
-  actions.close()
-  library.close()
-  windowRoot.classList.remove('library-open', 'actions-open')
-  windowRoot.classList.add('report-open')
-  workspace.inert = true
 }
 
 /** The last combination with ⌘ or ⌃, never typed text: a modifier set and a key name (LF-22). */
@@ -565,7 +505,7 @@ document.addEventListener('keydown', event => {
     if (!event.repeat) void action()
   }
   if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    return stop(() => report.isOpen ? report.close() : actions.isOpen ? actions.close() : library.isOpen ? library.close() : busy ? cancel() : hide())
+    return stop(() => actions.isOpen ? actions.close() : library.isOpen ? library.close() : busy ? cancel() : hide())
   }
   // Tab moves between the prompt and a button in the hint line, and back: WebKit's own Tab order skips buttons.
   const hinted = event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey && !workspace.inert
@@ -578,7 +518,6 @@ document.addEventListener('keydown', event => {
   // ⌘, opens the settings window, from any view of the panel (SUSI-12).
   if (!event.shiftKey && event.code === 'Comma' && desktop) return stop(() => call('prefs_open', { pane: null }).catch(fail))
   const code = event.code
-  if (report.isOpen) return code === 'Enter' || code === 'NumpadEnter' ? stop(() => report.submit()) : undefined
   if (!event.shiftKey && code === 'KeyK') return stop(() => actions.isOpen ? actions.close() : openActions())
   if (!event.shiftKey && code === 'KeyL') return stop(() => library.isOpen ? library.close() : openLibrary())
   if (code === 'Enter' || code === 'NumpadEnter') return stop(() => workspace.inert || copy(event.shiftKey))
@@ -602,8 +541,7 @@ for (const node of document.querySelectorAll<HTMLElement>('[data-icon]')) node.r
 // ——— Window lifecycle ———
 
 function refocus() {
-  if (report.isOpen) report.focus()
-  else if (actions.isOpen) actions.focus()
+  if (actions.isOpen) actions.focus()
   else if (library.isOpen) library.focus()
   else if (!busy) editor.focus()
 }
@@ -634,11 +572,12 @@ if (desktop) {
     void loadSettings()
     void refreshDiagnostics()
   })
-  void on('report-open', payload => openReport(payload?.origin ?? 'menu'))
-  void on('report-recording', recording => {
-    void refreshDiagnostics()
-    if (!recording && report.recording) { report.recorded(); openRecorded() }
+  // The report is built in its own window and asks what the panel shows (RP-6): never the text.
+  void on('report-panel', () => {
+    const view = actions.isOpen ? 'actions' : library.isOpen ? 'library' : 'editor'
+    void call('report_panel', { panel: { view, versions: chain.versions.length, editing: !!busy } }).catch(() => undefined)
   })
+  void on('report-recording', () => void refreshDiagnostics())
   void refreshDiagnostics()
   call('startup_notes').then(message => { if (message) fail(message) }).catch(fail)
   void on('startup-notes', fail)

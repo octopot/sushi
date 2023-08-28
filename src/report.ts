@@ -1,6 +1,7 @@
-// Report a problem in the panel (docs/specs/report.md): describe, answer up to three questions,
-// optionally record while repeating the steps, then read, edit and copy or save one text. The page
-// holds the flow; the native side builds the snapshot and never sends anything (RP-1, RP-8).
+// Report a problem (docs/specs/report.md): describe, answer up to three questions, optionally
+// record while repeating the steps, then read, edit and copy or save one text. The flow lives in
+// a window of its own (src/report-window.ts); the native side builds the snapshot and never sends
+// anything (RP-1, RP-8).
 import { el, keys } from './icons'
 
 export interface ReportHost {
@@ -14,15 +15,13 @@ export interface ReportHost {
   draft(description: string, answers: { question: string; answer: string }[]): Promise<{ text: string; recording?: number }>
   copy(text: string): Promise<void>
   save(text: string, recording: boolean): Promise<void>
-  /** The flow ended; the host gives the editor its focus back. */
+  /** The flow ended: the host closes its window. */
   onClose(): void
-  /** A recording started: the host hides the flow so the user can repeat the steps. */
-  onRecording(): void
 }
 
 type Step = 'describe' | 'consent' | 'questions' | 'record' | 'report'
 
-/** The flow, as one full-window view over the editor, like the Library. */
+/** The flow, as the whole content of its window. */
 export class Report {
   readonly root: HTMLElement
   private readonly host: ReportHost
@@ -34,7 +33,7 @@ export class Report {
   private provider: string | undefined
   private fixed: string[] = []
   private answers: { question: string; answer: string }[] = []
-  /** The recording runs while the flow waits behind the editor. */
+  /** The recording runs while the user repeats the steps in the panel. */
   recording = false
   /** Bumped by every new step, so a late answer of an earlier one is ignored. */
   private ticket = 0
@@ -50,14 +49,18 @@ export class Report {
     this.status = el('div', 'report-status')
     this.status.setAttribute('role', 'status')
     this.footer = el('div', 'report-footer')
-    this.root = el('div', 'report', el('div', 'report-title', 'Report a problem'), this.body, this.status, this.footer)
+    const title = el('div', 'report-title', 'Report a problem')
+    this.root = el('div', 'report', title, this.body, this.status, this.footer)
+    // The window has no title bar of its own: its title, its edges and the gaps between its parts
+    // move it. Tauri starts a drag only from the element that carries the mark.
+    for (const handle of [this.root, title, this.body, this.status, this.footer]) handle.setAttribute('data-tauri-drag-region', '')
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-label', 'Report a problem')
     this.root.hidden = true
     parent.append(this.root)
   }
 
-  /** ⌘↵: the step's main button. The panel calls it wherever the focus is: in the app's WebKit
+  /** ⌘↵: the step's main button. The window calls it wherever the focus is: in the app's WebKit
    *  a click on a button or a checkbox takes the focus from the field and gives it to nothing. */
   submit() { this.primary?.() }
 
@@ -86,22 +89,20 @@ export class Report {
     if (this.status.textContent === 'One moment…') this.status.textContent = ''
   }
 
-  /** Shows the flow where it is, after a recording or when the panel comes back. */
+  /** Shows the flow where it is, when its window is asked for again. */
   show() {
     this.root.hidden = false
-    // While it records, the only way on is to finish: skipping would leave it running under a
-    // report the user then edits.
-    if (this.recording) return this.running()
-    if (this.step === 'record') return void this.finish()
     this.focus()
   }
 
+  /** While it records, the only way on is to finish: skipping would leave it running under a
+   *  report the user then edits. */
   private running() {
     const finish = () => void this.host.record(false).then(() => this.recorded())
     this.render('record', [
       el('h2', '', 'Recording…'),
-      el('p', '', 'Repeat the steps that lead to the problem, then finish the recording to see your report.'),
-    ], [this.button('Finish recording', finish, true, ['⌘', '↵'])], finish)
+      el('p', '', 'Repeat the steps that lead to the problem in Sushi; this window stays open. Then finish the recording, here, at the top of the panel or in the menu bar menu, to see your report.'),
+    ], [this.button('Cancel', () => this.close(), false, ['esc']), this.button('Finish recording', finish, true, ['⌘', '↵'])], finish)
   }
 
   focus() { (this.root.querySelector<HTMLElement>('textarea, input, button.primary') ?? this.root).focus() }
@@ -118,11 +119,10 @@ export class Report {
     this.host.onClose()
   }
 
-  /** The recording finished, from the panel or the menu bar menu: on to the report. */
+  /** The recording finished, here, in the panel or in the menu bar menu: on to the report. */
   recorded() {
     if (!this.recording) return
     this.recording = false
-    this.root.hidden = false
     // A report the user already sees, and may have edited, is never built again.
     if (this.step !== 'report') void this.finish()
   }
@@ -203,14 +203,12 @@ export class Report {
   private offer() {
     const start = () => {
       this.recording = true
-      this.step = 'record'
-      this.root.hidden = true
       void this.host.record(true)
-      this.host.onRecording()
+      this.running()
     }
     this.render('record', [
       el('h2', '', 'Reproduce it now?'),
-      el('p', '', 'Sushi records when the panel shows and hides, the keys you press with ⌘ or ⌃, and which app takes the keyboard. It never records your text. Repeat the steps, then choose Finish recording at the top of the panel or in the menu bar menu.'),
+      el('p', '', 'Sushi records when the panel shows and hides, the keys you press with ⌘ or ⌃, and which app takes the keyboard. It never records your text. Repeat the steps in Sushi, then choose Finish recording in this window, at the top of the panel or in the menu bar menu.'),
     ], [this.button('Skip', () => void this.finish()), this.button('Start recording', start, true, ['⌘', '↵'])], start)
   }
 

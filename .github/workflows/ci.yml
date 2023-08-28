@@ -12,6 +12,7 @@ on:
       - '.github/actions/**'
       - 'index.html'
       - 'settings.html'
+      - 'report.html'
       - 'vite.config.ts'
       - 'src/**'
       # the frontend imports and the app embeds the shipped examples
@@ -40,6 +41,7 @@ on:
       - '.github/actions/**'
       - 'index.html'
       - 'settings.html'
+      - 'report.html'
       - 'vite.config.ts'
       - 'src/**'
       # the frontend imports and the app embeds the shipped examples

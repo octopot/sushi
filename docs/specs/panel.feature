@@ -157,9 +157,9 @@ Feature: The panel on screen
     When I press Caps Lock and click the terminal
     Then the panel hides with focus in the terminal
     When I open Settings from **Settings…** in the menu bar menu, open About and click **Report a problem…**
-    Then the panel shows at *What went wrong?* over Settings
+    Then the report's window opens in front of Settings at *What went wrong?*
     When I press Esc
-    Then the keyboard is back in Settings
+    Then the report's window closes and the keyboard is back in Settings
     When I put Settings behind another app and choose **About Sushi** in the menu bar menu
     Then the same window comes forward at About, never a second one
     When I press ⌘W

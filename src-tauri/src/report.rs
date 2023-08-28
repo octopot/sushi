@@ -11,8 +11,11 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    sync::Mutex,
+    time::Duration,
 };
 use tauri::{AppHandle, Emitter, Manager};
+use tokio::sync::oneshot;
 
 pub const FORMAT: u32 = 1;
 /// Used without a model, and when the user declines to send the description to a hosted one (RP-3).
@@ -27,7 +30,7 @@ pub const FIXED: [&str; 3] = [
 #[cfg_attr(test, derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct Panel {
-    /// `editor`, `actions`, `library` or `report`.
+    /// `editor`, `actions` or `library`; `unknown` when the panel's page did not answer.
     pub view: String,
     pub versions: u32,
     pub editing: bool,
@@ -118,7 +121,7 @@ pub fn snapshot(facts: &Facts, panel: &Panel) -> String {
     let data = &facts.data;
     let mut lines = Vec::new();
     let view = match panel.view.as_str() {
-        v @ ("editor" | "actions" | "library" | "report") => v,
+        v @ ("editor" | "actions" | "library") => v,
         _ => "unknown",
     };
     lines.push(format!(
@@ -288,9 +291,18 @@ async fn gather(app: &AppHandle) -> Result<Facts, String> {
     })
     .map_err(|e| e.to_string())?;
     let (input_source, dark) = receive.await.unwrap_or_default();
+    // A stage run never asks the login keychain, not even whether an item exists: its report
+    // looks into a keychain file that is not there.
+    let keychain = if crate::staged() {
+        Keychain {
+            file: Some(data.join("stage.keychain-db")),
+        }
+    } else {
+        Keychain::default()
+    };
     Ok(Facts {
         data,
-        keychain: Keychain::default(),
+        keychain,
         hotkey: crate::hotkey::summary(app),
         input_source,
         dark,
@@ -461,10 +473,15 @@ pub async fn report_questions(
     }
 }
 
+/// Starts or finishes the recording. Finished from the top of the panel, the report's window
+/// comes forward with the report (RP-5).
 #[tauri::command]
 pub fn report_record(app: AppHandle, on: bool) {
     if !crate::staged() {
         record(&app, on);
+        if !on {
+            crate::report_window::open(&app);
+        }
     }
 }
 
@@ -477,13 +494,43 @@ pub fn report_end(app: AppHandle) {
     }
 }
 
+/// The panel's page answers `report-panel` with its state for the snapshot: the report is
+/// built in another window, and only that page knows the view and the chain.
+static PANEL: Mutex<Option<oneshot::Sender<Panel>>> = Mutex::new(None);
+
+/// The panel's answer to `report-panel` (RP-6): never the prompt's text.
+#[tauri::command]
+pub fn report_panel(panel: Panel) {
+    if let Some(asked) = PANEL.lock().ok().and_then(|mut asked| asked.take()) {
+        let _ = asked.send(panel);
+    }
+}
+
+/// What the panel shows now. A page that does not answer in time, because it is still loading,
+/// gives `unknown`: the report is built anyway.
+async fn panel(app: &AppHandle) -> Panel {
+    let (ask, answer) = oneshot::channel();
+    if let Ok(mut asked) = PANEL.lock() {
+        *asked = Some(ask);
+    }
+    let _ = app.emit_to("main", "report-panel", ());
+    match tokio::time::timeout(Duration::from_millis(500), answer).await {
+        Ok(Ok(panel)) => panel,
+        _ => Panel {
+            view: "unknown".into(),
+            versions: 0,
+            editing: false,
+        },
+    }
+}
+
 #[tauri::command]
 pub async fn report_draft(
     app: AppHandle,
     description: String,
     answers: Vec<Answer>,
-    panel: Panel,
 ) -> Result<ReportDraft, String> {
+    let panel = panel(&app).await;
     let recording = recording(diagnostics::recorded());
     let text = draft(&app, &description, &answers, &panel, recording.as_deref()).await?;
     Ok(ReportDraft {
