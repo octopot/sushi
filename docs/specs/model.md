@@ -1,6 +1,6 @@
 # The model behind an edit
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 An action (⌘K) sends the target text and an instruction to a model and puts the reply into the chain as a new version ([VH-10](version-history.md#what-changes-the-chain)). This document fixes which model that is, what Sushi sends to it, how a hosted provider is connected, and what the user sees when an edit fails. By default the model is local: `qwen3.5:4b-mlx` through Ollama on the Mac, and nothing of the prompt leaves it. A hosted provider gets the instruction and the text only after the user connects it in Settings ▸ Model and keeps it chosen.
 

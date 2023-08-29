@@ -1,6 +1,6 @@
 # Sushi documentation
 
-An English site for Sushi v0.3.0: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
+An English site for Sushi v0.3.1: a product landing page with the real panel running in the browser, a quick start, guides and the changelog. Nextra 4 on Next.js, the same stack and layout as the indexit and maintainer sites.
 
 ## Run locally
 
@@ -38,7 +38,8 @@ For a production server: `npm run build`, then `npm start`.
 | `content/quick-start.mdx` | Install, first prompt, first edit, sending it |
 | `content/guide/` | Editing and versions, actions, voice, `/goal`, the settings window, library and files, the model and hosted providers, keys, troubleshooting, reporting a problem |
 | `content/changelog/index.mdx` | Release overview |
-| `content/changelog/v0.3.0.md` | The latest release notes, also the GitHub release body; its pictures are in `public/changelog/v0.3.0/` |
+| `content/changelog/v0.3.1.md` | The latest release notes, also the GitHub release body |
+| `content/changelog/v0.3.0.md` | Release notes of v0.3.0: the settings window, hosted models, reporting a problem; its pictures are in `public/changelog/v0.3.0/` |
 | `content/changelog/v0.2.1.md` | Release notes of v0.2.1: the panel over full-screen apps, what an edit did |
 | `content/changelog/v0.2.0.md` | Release notes of v0.2.0: the rename from Susi and the upgrade steps |
 | `content/changelog/v0.1.1.md` | Release notes of Susi v0.1.1 |
@@ -97,7 +98,7 @@ grep -rn 'X\.Y\.W' content release.mjs README.md  # only old notes, cards and "s
 TARGET=static SITE_URL=https://sushi.octolab.org/ npm run build
 ```
 
-Lead installation with Homebrew. The manual download is not notarized in v0.3.0, and the quick start says how to open it; change that paragraph once a notarized build ships.
+Lead installation with Homebrew. The manual download is not notarized in v0.3.1, and the quick start says how to open it; change that paragraph once a notarized build ships.
 
 `package.json` pins Zod to `4.1.12` under `nextra-theme-docs` and overrides `@xmldom/xmldom` for `speech-rule-engine`, as in the indexit docs; see its README for the reasons and when to drop them.
 

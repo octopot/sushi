@@ -1,6 +1,6 @@
 # Local files
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 Everything Sushi knows besides the current draft lives in plain files on the Mac: the key that shows it, the model, the actions, the dictation dictionary, saved prompts and templates. The [settings window](settings.md) edits the settings files and writes every change back to them; the user may also edit them in any text editor, and Sushi reads them again the next time it needs them. Prompts and templates are edited only as files. This document fixes where the files live, their formats, how they are validated and what Sushi does on first run. The formats are also given as [CUE definitions](files.cue), and the [examples](examples/) are the files Sushi ships and seeds.
 
@@ -129,7 +129,7 @@ Replace the example paths with the files in your settings folder or library. The
 
 ## Not supported or switched off
 
-These are deliberate limits of v0.3.0, not defects. Changing any of them is a change of this specification.
+These are deliberate limits of v0.3.1, not defects. Changing any of them is a change of this specification.
 
 - **Dictionary replacement is switched off.** When on, Sushi would replace whole-word, case-insensitive matches of each `from` with its `to` in text pasted or dropped into the editor, longest phrase first; typed text and model replies would never change. It is off because dictation tools post-process their text themselves. The switch is the constant `APPLY_DICTIONARY` in `src/main.ts`, and the browser test *dictionary terms replace pasted dictation* is skipped until it is turned back on. Today the dictionary is only shown in the Library.
 - **Prompts and templates are files only.** Sushi does not save the current prompt to the Library, and neither the panel nor the settings window creates or edits prompt or template files; LF-24 lists what Sushi writes.

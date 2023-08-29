@@ -5,12 +5,12 @@ The specifications fix how Sushi behaves where a casual reading of the code or t
 | Specification | Covers | Status |
 | --- | --- | --- |
 | [Prompt versions and copying](version-history.md) | The chain of versions, diff and text positions, what ⌘↵ and ⇧⌘↵ copy, review mode, the draft across restarts | v0.3.0, as implemented |
-| [Local files](local-files.md) | `rules.json`, `dictionary.json`, `hotkey.json`, `model.json`, `diagnostics.json` and its log, `library-path.txt` and the Library directory, prompts, templates, first-run seeding, what Sushi writes | v0.3.0, as implemented |
-| [The model behind an edit](model.md) | Ollama or a hosted provider (OpenRouter, OpenAI, Claude), connecting one from Settings, the keychain, what an edit sends, failures and Edit with Ollama | v0.3.0, as implemented |
-| [The panel on screen](panel.md) | Where the panel shows, who has the keyboard, where focus goes when it hides, the panel with the settings window, the menu bar menu, and how the acceptance scenarios are written and run | v0.3.0, as implemented |
-| [The settings window](settings.md) | Opening and closing it, reading and saving the settings files, drafts, conflicts and broken files, each pane, recording the key, the schema check | v0.3.0, as implemented |
-| [Build info](build-info.md) | The block that names the build, About in Settings and `sushi version` | v0.3.0, as implemented |
-| [Reporting a problem](report.md) | Report a problem: the questions, the recording, the snapshot and what it leaves out, the report's format | v0.3.0, as implemented |
+| [Local files](local-files.md) | `rules.json`, `dictionary.json`, `hotkey.json`, `model.json`, `diagnostics.json` and its log, `library-path.txt` and the Library directory, prompts, templates, first-run seeding, what Sushi writes | v0.3.1, as implemented |
+| [The model behind an edit](model.md) | Ollama or a hosted provider (OpenRouter, OpenAI, Claude), connecting one from Settings, the keychain, what an edit sends, failures and Edit with Ollama | v0.3.1, as implemented |
+| [The panel on screen](panel.md) | Where the panel shows, who has the keyboard, where focus goes when it hides, the panel with the settings window, the menu bar menu, and how the acceptance scenarios are written and run | v0.3.1, as implemented |
+| [The settings window](settings.md) | Opening and closing it, reading and saving the settings files, drafts, conflicts and broken files, each pane, recording the key, the schema check | v0.3.1, as implemented |
+| [Build info](build-info.md) | The block that names the build, About in Settings and `sushi version` | v0.3.1, as implemented |
+| [Reporting a problem](report.md) | Report a problem: the questions, the recording, the snapshot and what it leaves out, the report's format | v0.3.1, as implemented |
 | [Acceptance scenarios](panel.md#regression-scenarios) | What only a real macOS session can check, as Gherkin beside each specification: [`panel.feature`](panel.feature), [`settings.feature`](settings.feature), [`model.feature`](model.feature), [`report.feature`](report.feature), [`build-info.feature`](build-info.feature) | checked by `make scenarios` |
 | [Runs](runs.md) | Every run of the scenarios: the build, who ran it, what passed and what did not | a row per run |
 

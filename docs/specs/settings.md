@@ -1,6 +1,6 @@
 # The settings window
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification); the parts that go through the window server are checked by hand, with the [regression scenarios](panel.md#regression-scenarios) of the panel.
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification); the parts that go through the window server are checked by hand, with the [regression scenarios](panel.md#regression-scenarios) of the panel.
 
 Everything Sushi knows lives in plain files ([local files](local-files.md)), and they stay the source of truth. The settings window is an interface over the same files: it shows what each file holds and what is in effect, and writes a change back to the file the moment it is made. A file edited by hand keeps working and shows in the window the next time the window gets focus. This document fixes how the window opens and closes, how it reads and writes the files, what each pane offers, and how the window and the panel share the keyboard. The formats themselves stay in [local-files.md](local-files.md); the model, its providers and the connect flows in [model.md](model.md).
 
@@ -148,7 +148,7 @@ Everything Sushi knows lives in plain files ([local files](local-files.md)), and
 
 ## Not supported or switched off
 
-These are deliberate limits of v0.3.0, not defects. Changing any of them is a change of this specification.
+These are deliberate limits of v0.3.1, not defects. Changing any of them is a change of this specification.
 
 - **The keys inside the panel** cannot be changed; Keyboard only lists them.
 - **No search field** in the window, no themes, no setting for the size of the panel, and no opening at login.

@@ -1,6 +1,6 @@
 # The panel on screen
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today; the system parts of them are checked by hand, with the [regression scenarios](#regression-scenarios) below.
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today; the system parts of them are checked by hand, with the [regression scenarios](#regression-scenarios) below.
 
 Sushi's window is an overlay, like Spotlight's: it comes up over whatever the user is doing and goes away without moving them anywhere. This document fixes where the panel shows, who has the keyboard while it is open, where focus goes when it hides, how it shares the keyboard with the [settings window](settings.md), and what the menu bar menu holds. The key that shows it is fixed in [LF-18 and LF-19](local-files.md#hotkeyjson--the-key-that-shows-sushi); what is copied on the way out, in [VH-5 to VH-7](version-history.md#copying).
 

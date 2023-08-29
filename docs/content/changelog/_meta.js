@@ -1,5 +1,6 @@
 export default {
   index: { title: 'All releases', theme: { toc: false, breadcrumb: false } },
+  'v0.3.1': 'v0.3.1 — Out of your way.',
   'v0.3.0': 'v0.3.0 — Your model, your settings.',
   'v0.2.1': 'v0.2.1 — Stays where you work.',
   'v0.2.0': 'v0.2.0 — A new name, a key of its own.',

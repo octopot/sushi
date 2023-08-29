@@ -1,6 +1,6 @@
 # Reporting a problem
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 When Sushi misbehaves, the user starts **Report a problem** from the menu bar menu or from Settings ▸ About, and a window of its own opens. There they say what happened in their own words, and gets one text that support can act on: their description, the answers to a few questions, which build runs and the state of Sushi, with everything personal left out. The user reads it, edits it and sends it themselves. Sushi never sends it, and *nothing leaves your Mac without your say* stays true.
 

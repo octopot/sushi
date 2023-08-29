@@ -1,6 +1,6 @@
 # Build info
 
-**Status:** describes Sushi v0.3.0 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
+**Status:** describes Sushi v0.3.1 as implemented. Rules marked with an ID hold today and are checked by the tests listed under [Verification](#verification).
 
 A report about Sushi has to say which build it came from. The version in `Info.plist` is not enough: a hand-built copy, a snapshot from a manual `cd` run and the release carry the same number. This document fixes one block of text that names the build, where it comes from, and the two places that give it: Settings ▸ About and the `sushi version` command. The diagnostic log ([LF-22](local-files.md#the-diagnostic-log)) and a problem report ([RP-6](report.md#the-snapshot)) start with the same block.
 
