@@ -30,8 +30,8 @@ PR-11 to PR-17, PR-19, PR-20, PR-22 to PR-25 passed; #14 and #15 are closed.
   reporter verified in their own patch. #11 closes on this run and PR-10; if
   the panel still hides, the diagnostic log says which window took the keyboard.
 - [ ] **What the run changed, in the installed app**: PR-28 (**Cancel** while
-  the browser waits, #7), PR-24's ⌘↵ after a click (#13), the line under the
-  key field of PR-22, and PR-21 with a dead proxy (#7). The tests cover each;
+  the browser waits, #7), the line under the key field of PR-22, and PR-21
+  with a dead proxy (#7). The tests cover each;
   nobody has seen them in the app.
 - [ ] **Not run yet**: PR-26 (**Choose folder…** as a sheet, the path that
   wraps after a slash) and PR-27 (VoiceOver), which #17 waits for.
@@ -44,10 +44,11 @@ PR-11 to PR-17, PR-19, PR-20, PR-22 to PR-25 passed; #14 and #15 are closed.
   the commits of this repository carry dates of their own (#12). Fixed on main:
   the date is the time the tag was made (BI-3). Proven when the next release
   says the day of its tag; `release.mjs package` fails `cd` otherwise.
-- [ ] **Recording a problem is hard to drive** (#13): the owner found
-  repeating the steps under a recording awkward and asked why the panel
-  cannot be moved from the middle of the screen. Decide what to change; it
-  becomes an issue then.
+- [ ] **The report in its own window** (#13): PR-24 by hand. The owner found
+  a report hard to write in the panel, which hides at every look elsewhere, so
+  the flow moved to a normal window. `tests/stage/report.sh` walks the real
+  window to the report's text; nobody has used it among other apps, with the
+  panel over it, or seen it in Mission Control.
 - [ ] **Scenarios an agent can run** (#18): every scenario in
   `docs/specs/*.feature` is tagged `@hands`. Each one the app lets an agent
   drive moves to `@agent`, and the checklist of a release shrinks by it.
