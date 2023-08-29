@@ -6,11 +6,11 @@ number: 2
 url: https://github.com/octopot/sushi/milestone/2
 title: "M2: See what happens, pick your model"
 state: OPEN
-openIssueCount: 5
-closedIssueCount: 3
+openIssueCount: 4
+closedIssueCount: 4
 dueOn: 2026-11-29T00:00:00Z
 createdAt: 2026-11-23T10:49:16Z
-updatedAt: 2026-11-24T13:45:19Z
+updatedAt: 2026-11-24T15:05:38Z
 closedAt: null
 ---
 
@@ -45,7 +45,7 @@ By default nothing leaves your Mac: a hosted provider gets the instruction and t
 - [ ] [[SUSI-6]] — rewrite: connect OpenRouter in Settings, without copying a key
 - [ ] [[SUSI-7]] — panel: hides right after ⌘A selects all text, then flickers on Caps Lock
 - [ ] [[SUSI-8]] — app: embed build info and show which version and build is running
-- [ ] [[SUSI-9]] — app: report a problem from the menu as a text the user can edit and send
+- [x] [[SUSI-9]] — app: report a problem from the menu as a text the user can edit and send
 - [x] [[SUSI-10]] — rewrite: connect OpenAI and edit through its API
 - [x] [[SUSI-11]] — rewrite: connect Claude through the Anthropic API
 - [ ] [[SUSI-12]] — app: a settings window over the files, a simpler menu and the key that shows Sushi

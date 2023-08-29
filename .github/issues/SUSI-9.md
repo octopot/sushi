@@ -14,13 +14,13 @@ assignees:
 milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-23T09:17:05Z
-updatedAt: 2026-11-24T14:47:04Z
+updatedAt: 2026-11-24T15:05:38Z
 lastEditedAt: 2026-11-24T14:47:01Z
-closedAt: null
+closedAt: 2026-11-24T15:05:38Z
 ---
 
 # app: report a problem from the menu as a text the user can edit and send
@@ -130,4 +130,10 @@ Checked by `tests/report.test.mjs` and by `tests/stage/report.sh`, which walks t
 
 <!-- 2026-11-24T15:00Z https://github.com/octopot/sushi/issues/13#issuecomment-7129470617
 The owner's decision after seeing the menu of #17: **Report a problem…** is one row, and the route that saved a report without the panel is removed. The criterion *Reachable when the panel fails* became *One way in*. When the panel does not show or does not stay open, as in #11, the user sends the build info and the diagnostic log from Settings ▸ About; the report with its questions and snapshot needs the panel.
+-->
+
+<!-- 2026-11-24T15:05Z https://github.com/octopot/sushi/issues/13#issuecomment-7135443380
+The owner tried the window in the installed build: it opens from the menu, stays open among other apps and shows in Mission Control. Two more things from that look, in v0.3.1: **Save…** has ⌘S, and **Copy** and **Save…** close the window while the report stays as it is until **Done** or Esc, so ⌘V lands in the app the user came from. `tests/report.test.mjs` and `tests/stage/report.sh` (11 checks in the real window) cover both.
+
+Every criterion holds. PR-24 by its steps stays in `.github/self-control.md` as a check after the release.
 -->

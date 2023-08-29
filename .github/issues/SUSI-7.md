@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-23T08:40:41Z
-updatedAt: 2026-11-24T13:45:03Z
-lastEditedAt: 2026-11-24T13:45:03Z
+updatedAt: 2026-11-24T15:05:28Z
+lastEditedAt: 2026-11-24T15:05:25Z
 closedAt: null
 ---
 
@@ -54,7 +54,7 @@ On one user's Mac so far, ⌘A in the panel closes it, every time. After that, a
 - [x] `diagnostics.json` in the settings folder turns the mode on, and the mode is off without it. Sushi writes the file only from **Log panel activity** in Settings ▸ About ([[SUSI-12]]); a hand edit keeps working. Sushi reads it on every show (LF-2) and when the settings window loads, and rejects unknown fields. An invalid file is reported as `diagnostics.json: …` (LF-21).
 - [x] While the mode is on, the panel says so on every show without displacing errors or edit hints, for example `Diagnostics on · <file> turns it off`. The menu bar menu says so too.
 - [x] The file and the log are specified in `docs/specs/local-files.md`, with a schema in `docs/specs/files.cue`, a `cue vet` line and an unseeded example. The list of files Sushi writes gains the log. Rust tests cover reading the file, and a browser scenario covers the notice.
-- [ ] The cause is named in this issue, and the fix is a rule in `docs/specs/panel.md` with a regression scenario that states its precondition.
+- [x] The cause is named in this issue, and the fix is a rule in `docs/specs/panel.md` with a regression scenario that states its precondition.
 
 ## Out of scope
 
@@ -143,4 +143,10 @@ PR-10 in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixe
 Failed: after Caps Lock hid the panel with its sheet, the next Caps Lock made the panel flicker, show and hide at once; only **Show Sushi** from the menu brought it back. The likely cause, not yet seen in a log: the sheet got the keyboard from the panel when it began, but a panel under a sheet does not take the keyboard again, and a sheet is an ordinary window that has the keyboard only in the active app. The show asked for it, the sheet lost it in the same turn, and the watcher of the panel's sheets read that as a click elsewhere.
 
 Changed for v0.3.1 (PN-8): a show with a sheet attached brings the panel forward, makes Sushi the active app and gives the keyboard to the sheet; what the windows report until Sushi is active is not a loss. Hiding gives the app underneath its place back. Not confirmed: this needs PR-10 again in the installed build, with *Log panel activity* on. PR-9 on the affected Mac is still to come.
+-->
+
+<!-- 2026-11-24T15:05Z https://github.com/octopot/sushi/issues/11#issuecomment-7135442099
+PR-10 again, by the owner on the build with the change of PN-8 (`8b6d940` and the working tree): Caps Lock shows the panel with its sheet, hides both, shows both again without a flicker, and again. Together with the first run, PR-10 passes as a whole. The cause named in the previous comment held: a show with a sheet attached has to make Sushi the active app.
+
+Left: PR-9 on the Mac where the panel hid, with Writing Tools.
 -->
