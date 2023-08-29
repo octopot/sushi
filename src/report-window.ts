@@ -8,6 +8,8 @@ import { call, on } from './ipc'
 import { Report } from './report'
 
 const desktop = isTauri()
+// Closing asks Rust, which hides the window and gives the keyboard back to where the user came
+// from; the flow stays as it is, here in the page.
 const hideWindow = () => { if (desktop) void getCurrentWindow().close().catch(() => undefined) }
 
 const report = new Report(document.getElementById('report')!, {
@@ -16,8 +18,16 @@ const report = new Report(document.getElementById('report')!, {
   record: async on => { await call('report_record', { on }) },
   end: async () => { await call('report_end') },
   draft: (description, answers) => call('report_draft', { description, answers }),
-  copy: async text => { await (desktop ? call('copy_text', { text }) : navigator.clipboard.writeText(text)) },
-  save: async (text, recording) => { await call('report_save', { text, recording }) },
+  // After a copy the window closes, so ⌘V lands in the app the user came from.
+  copy: async text => {
+    await (desktop ? call('copy_text', { text }) : navigator.clipboard.writeText(text))
+    hideWindow()
+  },
+  // After Save… Finder shows the folder and has the keyboard: the window only steps out of the way.
+  save: async (text, recording) => {
+    await call('report_save', { text, recording })
+    if (desktop) void getCurrentWindow().hide().catch(() => undefined)
+  },
   // Leaving the flow closes its window; the next Report a problem… starts a new one.
   onClose: hideWindow,
 })
@@ -34,6 +44,7 @@ document.addEventListener('keydown', event => {
   // ⌘↵ is the step's main button wherever the focus is: a click on a button or a checkbox
   // takes it from the field and gives it to nothing in the app's WebKit (RP-8).
   if (event.code === 'Enter' || event.code === 'NumpadEnter') return stop(() => report.submit())
+  if (!event.shiftKey && event.code === 'KeyS') return stop(() => report.save())
   // ⌘W hides the window and keeps the flow, as its close button does.
   if (!event.shiftKey && event.code === 'KeyW') return stop(hideWindow)
 }, true)

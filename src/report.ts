@@ -13,7 +13,9 @@ export interface ReportHost {
   /** The flow ended: a recording stops and is forgotten. */
   end(): Promise<void>
   draft(description: string, answers: { question: string; answer: string }[]): Promise<{ text: string; recording?: number }>
+  /** Copies the text; the host then closes the window, and the flow stays where it is. */
   copy(text: string): Promise<void>
+  /** Saves the report and shows it in Finder; the host then hides the window, the flow stays. */
   save(text: string, recording: boolean): Promise<void>
   /** The flow ended: the host closes its window. */
   onClose(): void
@@ -38,6 +40,8 @@ export class Report {
   /** Bumped by every new step, so a late answer of an earlier one is ignored. */
   private ticket = 0
   private primary: (() => void) | undefined
+  /** ⌘S, at the report only. */
+  private saving: (() => void) | undefined
   /** Bumped by every new flow, so a late start of an earlier one is ignored. */
   private flows = 0
   /** Sushi has said which provider the description would go to. */
@@ -63,6 +67,9 @@ export class Report {
   /** ⌘↵: the step's main button. The window calls it wherever the focus is: in the app's WebKit
    *  a click on a button or a checkbox takes the focus from the field and gives it to nothing. */
   submit() { this.primary?.() }
+
+  /** ⌘S: Save… at the report; nothing at the other steps. */
+  save() { this.saving?.() }
 
   get isOpen() { return !this.root.hidden }
   /** The flow is under way, open or waiting for a recording. */
@@ -134,6 +141,7 @@ export class Report {
     this.footer.replaceChildren(...buttons)
     this.status.textContent = status
     this.primary = primary
+    this.saving = undefined
     this.focus()
   }
 
@@ -238,10 +246,11 @@ export class Report {
     }
     this.render('report', [
       el('h2', '', 'Your report'),
-      el('p', 'muted', 'Read it, change or remove anything, then copy or save it. Sushi never sends it.'),
+      el('p', 'muted', 'Read it, change or remove anything, then copy or save it. Sushi never sends it. The report stays here until you choose Done.'),
       area, attachment,
-    ], [this.button('Done', () => this.close(), false, ['esc']), this.button('Save…', () => void save()), this.button('Copy', () => void copy(), true, ['⌘', '↵'])],
+    ], [this.button('Done', () => this.close(), false, ['esc']), this.button('Save…', () => void save(), false, ['⌘', 'S']), this.button('Copy', () => void copy(), true, ['⌘', '↵'])],
     () => void copy())
+    this.saving = () => void save()
   }
 }
 

@@ -28,7 +28,7 @@ test('Report a problem', async t => {
     t.after(() => assert.deepEqual(errors, [], 'no page errors'))
     await page.addInitScript(() => {
       const state = window.fixture = {
-        callbacks: [], listeners: {}, copies: [], closes: 0, questions: [], recordings: [], drafts: [], saves: [], starts: 0, ends: 0,
+        callbacks: [], listeners: {}, copies: [], closes: 0, hides: 0, questions: [], recordings: [], drafts: [], saves: [], starts: 0, ends: 0,
         reportStart: { fixed: ['What were you doing?', 'What did you expect?', 'Does it repeat?'] },
       }
       window.isTauri = true
@@ -53,6 +53,8 @@ test('Report a problem', async t => {
             case 'copy_text': state.copies.push(args.text); return
             // The window closes itself when the flow is left, and on ⌘W.
             case 'plugin:window|close': state.closes++; return
+            // After Save… the window hides without asking for the keyboard back: Finder has it.
+            case 'plugin:window|hide': state.hides++; return
             case 'plugin:event|listen': state.listeners[args.event] = state.callbacks[args.handler - 1]; return 1
             default: throw new Error('Unexpected IPC call: ' + command)
           }
@@ -116,17 +118,26 @@ test('Report a problem', async t => {
     await page.keyboard.press('Meta+Enter')
     await page.locator('.report-status', { hasText: 'Sushi sends nothing' }).waitFor()
     assert.equal(await page.evaluate(() => window.fixture.copies.at(-1)), 'Edited by the user.')
-    assert.equal(await page.evaluate(() => window.fixture.closes), 0, 'a copy keeps the window: the report may still be saved')
+    // A copy closes the window, so ⌘V goes to the app underneath; the report stays as it is.
+    await page.waitForFunction(() => window.fixture.closes === 1)
+    assert.equal(await page.evaluate(() => window.fixture.ends), 0, 'the flow is not left')
+    await emit(page, 'report-open')
+    assert.equal(await report.inputValue(), 'Edited by the user.', 'asked for again, the report is as it was')
+    assert.equal(await page.evaluate(() => window.fixture.starts), 1)
     await page.getByRole('checkbox').uncheck()
     await page.getByRole('button', { name: 'Save…' }).click()
-    await page.waitForFunction(() => window.fixture.saves.length === 1)
+    await page.waitForFunction(() => window.fixture.saves.length === 1 && window.fixture.hides === 1)
     assert.deepEqual(await page.evaluate(() => window.fixture.saves[0]), { text: 'Edited by the user.', recording: false })
-    // In the app's WebKit a click on a button or a checkbox takes the focus from the field and
-    // gives it to nothing: ⌘↵ still copies.
+    assert.equal(await page.evaluate(() => window.fixture.closes), 1, 'Finder has the keyboard: the window only hides')
+    // ⌘S saves too. In the app's WebKit the click on the checkbox took the focus from the field
+    // and gave it to nothing: the keys still work.
     await page.evaluate(() => document.activeElement?.blur())
+    await page.keyboard.press('Meta+s')
+    await page.waitForFunction(() => window.fixture.saves.length === 2 && window.fixture.hides === 2)
     const copied = await page.evaluate(() => window.fixture.copies.length)
     await page.keyboard.press('Meta+Enter')
     await page.waitForFunction(n => window.fixture.copies.length === n + 1, copied)
+    await page.waitForFunction(() => window.fixture.closes === 2)
     // A late finish from the menu leaves the report as the user edited it.
     await emit(page, 'report-recording', false)
     await page.waitForTimeout(100)
@@ -134,7 +145,7 @@ test('Report a problem', async t => {
     assert.equal((await page.evaluate(() => window.fixture.drafts)).length, 1)
     // Esc leaves the flow: the recording belongs to no report any more, and the window closes.
     await page.keyboard.press('Escape')
-    await page.waitForFunction(() => window.fixture.closes === 1 && window.fixture.ends === 1)
+    await page.waitForFunction(() => window.fixture.closes === 3 && window.fixture.ends === 1)
     assert.deepEqual(outside, [], 'the flow makes no network request')
     // The next Report a problem… starts from an empty description.
     await emit(page, 'report-open')

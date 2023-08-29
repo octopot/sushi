@@ -35,12 +35,14 @@ Feature: Reporting a problem
     Then the top of the panel says `Recording for a problem report · Finish recording`
     When I press ⌘K and Esc in the panel, hide it, then choose **Finish recording** in the menu bar menu
     Then the report's window comes forward with the report: my description, my answer and the recording listed with its size
-    When I click **Save…**
-    Then Finder shows a new folder in `~/Library/Logs/me.octopot.sushi/Reports/` with `report.txt` and `report-recording.log`
+    When I press ⌘S
+    Then the window hides, and Finder shows a new folder in `~/Library/Logs/me.octopot.sushi/Reports/` with `report.txt` and `report-recording.log`
     And the recording lists the shows, the hides and ⌘K, and none of my text
-    When I go back to the report's window, click the checkbox of the recording and press ⌘↵
-    Then the window says *Copied.*, though the click took the focus from the report's text
-    When I paste into a text file
-    Then the pasted text is the report as the window shows it
-    When I press Esc
-    Then the window closes, and the next **Report a problem…** starts from an empty description
+    When I choose **Report a problem…** in the menu bar menu
+    Then the window comes back with the report as it was
+    When I click the checkbox of the recording and press ⌘↵, in a window opened over a text editor
+    Then the report's window closes, though the click took the focus from the report's text, and the text editor has the keyboard
+    When I press ⌘V
+    Then the pasted text is the report as the window showed it
+    When I choose **Report a problem…** again and press Esc
+    Then the report was still there, the window closes, and the next **Report a problem…** starts from an empty description

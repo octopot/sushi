@@ -1,1 +1,1 @@
-{"identifier":"report","windows":["report"],"permissions":["core:default","core:window:allow-start-dragging","core:window:allow-close"]}
+{"identifier":"report","windows":["report"],"permissions":["core:default","core:window:allow-start-dragging","core:window:allow-close","core:window:allow-hide"]}

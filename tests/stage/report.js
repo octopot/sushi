@@ -58,7 +58,8 @@
     if (FRAME === 'report') { await report('READY report'); return }
     await click('Copy')
     await until('the status after a copy', () => document.querySelector('.report-status').textContent.startsWith('Copied.'))
-    await check('Copy answers and keeps the window on the report', !!document.querySelector('.report textarea[aria-label="Report"]'))
+    await check('Copy answers and the report stays for the next time', !!document.querySelector('.report textarea[aria-label="Report"]'))
+    await check('Save… carries its key', button('Save…')?.textContent.includes('⌘S'))
   } catch (error) {
     await check('the run finished', false, String(error))
   }
