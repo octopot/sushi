@@ -8,44 +8,39 @@ is proven or moved into an issue; a release adds the checks it leaves open
 
 ## Watch
 
-### After v0.3.0
+### After v0.3.1
 
-On 2026-11-24 `cd` published v0.3.0; the tap commit `Brew cask update for
-sushi version v0.3.0` is verified as the Releaser App and the cask's `sha256`
+On 2026-11-24 `cd` published v0.3.1; the tap commit `Brew cask update for
+sushi version v0.3.1` is verified as the Releaser App and the cask's `sha256`
 matches `checksums.txt`. This Mac upgraded through the cask from a running
-Sushi: 0.3.0 of the tag's commit, not quarantined, the signature intact, the
-settings files unchanged, and the provider key in the keychain still read
-through `security` without a prompt.
+Sushi: 0.3.1 of the tag's commit, not quarantined, the signature intact, the
+settings files unchanged. Two things the release was to prove hold: the build
+date is the time the tag was made (`2026-11-24T15:29:56Z`, #12 closed), and
+after Homebrew opened Sushi again no window of it was on screen.
 
-The owner ran the scenarios by hand the same day, on the v0.3.0 code with the
-fixes then on main; the row is in [docs/specs/runs.md](../docs/specs/runs.md).
-PR-10 to PR-17, PR-19, PR-20, PR-22 to PR-25 passed; #13, #14 and #15 are
-closed.
+The owner ran the scenarios by hand on the code of this release; the rows are
+in [docs/specs/runs.md](../docs/specs/runs.md). PR-10 to PR-17, PR-19, PR-20
+and PR-22 to PR-25 passed; #13, #14 and #15 are closed.
 
 - [ ] **PR-9 on the Mac where the panel hid** (#11): the Summary of Writing
-  Tools over the panel, with Caps Lock on. PR-10 passes here with a test
-  sheet, the second run after a change of PN-8. #11 closes on PR-9; if the
-  panel still hides, the diagnostic log says which window took the keyboard.
+  Tools over the panel, with Caps Lock on, on v0.3.1 from the cask. PR-10
+  passes here with a test sheet. #11 closes on PR-9; if the panel still
+  hides, the diagnostic log says which window took the keyboard.
 - [ ] **What the run changed, in the installed app**: PR-28 (**Cancel** while
   the browser waits, #7), the line under the key field of PR-22, and PR-21
-  with a dead proxy (#7). The tests cover each;
-  nobody has seen them in the app.
+  with a dead proxy (#7). The tests cover each; nobody has seen them in the
+  app.
 - [ ] **Not run yet**: PR-26 (**Choose folder…** as a sheet, the path that
   wraps after a slash) and PR-27 (VoiceOver), which #17 waits for.
-- [ ] **The first hosted edit after the upgrade to v0.3.1** must not ask for
-  the keychain password (#7): after v0.3.0 the key was read through `security`
-  without a prompt, but the edit itself was not run before the key was
-  replaced by a new sign-in.
-- [ ] **The build date of v0.3.0 is wrong**: `sushi version` and **Copy build
-  info** say `2023-06-17`, because `cd` dated the build by the commit time and
-  the commits of this repository carry dates of their own (#12). Fixed on main:
-  the date is the time the tag was made (BI-3). Proven when the next release
-  says the day of its tag; `release.mjs package` fails `cd` otherwise.
+- [ ] **The first hosted edit after the upgrade** must not ask for the
+  keychain password (#7): `security` read the key without a prompt after the
+  upgrades to v0.3.0 and v0.3.1, and Sushi reads it through the same tool; no
+  edit was run right after either.
 - [ ] **The report in its own window, by its steps**: PR-24. The owner saw
-  the window open, stay among other apps and show in Mission Control, and
-  #13 is closed. ⌘S, and the window closing after **Copy** and **Save…**
-  with the report kept, came after that look: the tests and
-  `tests/stage/report.sh` cover them, nobody has pressed them in the app.
+  the window open, stay among other apps and show in Mission Control. ⌘S,
+  and the window closing after **Copy** and **Save…** with the report kept,
+  came after that look: the tests and `tests/stage/report.sh` cover them,
+  nobody has pressed them in the app.
 - [ ] **Scenarios an agent can run** (#18): every scenario in
   `docs/specs/*.feature` is tagged `@hands`. Each one the app lets an agent
   drive moves to `@agent`, and the checklist of a release shrinks by it.

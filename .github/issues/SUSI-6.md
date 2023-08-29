@@ -18,8 +18,8 @@ state: OPEN
 stateReason: null
 duplicateOf: null
 createdAt: 2026-11-19T15:33:01Z
-updatedAt: 2026-11-24T13:45:01Z
-lastEditedAt: 2026-11-24T13:45:01Z
+updatedAt: 2026-11-24T15:37:43Z
+lastEditedAt: 2026-11-24T15:37:37Z
 closedAt: null
 ---
 
@@ -63,7 +63,7 @@ Without network →  "OpenRouter is not reachable. Edit with Ollama"
 - [x] **Connect.** **Connect…** on OpenRouter in Settings ▸ Model first says in one sheet what goes to OpenRouter (the instruction and the selected text, or the whole prompt when nothing is selected), who pays and which model answers, then signs in through the browser with PKCE. The user copies no key and edits no file. The default model is named in the specification.
 - [x] **Which model answers.** The **Model** menu shows the active provider and model with a check mark, and switching between Ollama and a connected provider takes one click. The hint after an edit names the model that answered.
 - [ ] **Cancel and disconnect.** A denial in the browser, no answer within 5 minutes or a failed exchange keeps the previous choice and says why; **Cancel** on Sushi's sheet changes nothing, and while the browser has not answered, **Cancel** next to *Connecting…* in Settings ▸ Model ends the wait the same way, for a tab the user closed. **Disconnect…** in Settings ▸ Model asks first, then forgets the key and says where it can be deleted on OpenRouter; disconnecting the active provider makes Ollama active, disconnecting another one keeps the current choice.
-- [ ] **The key.** The key lives in the macOS Keychain, never reaches the page, the hint or an error message. After `brew upgrade` the key is read without a Keychain prompt; if the ad-hoc signed build cannot give that, the issue names another store. A key already in `model.json` from v0.2.1 keeps working: it moves to the Keychain and leaves the file only after it is stored there, while `reasoning` and `tier` stay as they were.
+- [x] **The key.** The key lives in the macOS Keychain, never reaches the page, the hint or an error message. After `brew upgrade` the key is read without a Keychain prompt; if the ad-hoc signed build cannot give that, the issue names another store. A key already in `model.json` from v0.2.1 keeps working: it moves to the Keychain and leaves the file only after it is stored there, while `reasoning` and `tier` stay as they were.
 - [x] **What leaves the Mac.** An edit through OpenRouter sends the instruction and the target text with Sushi's system instruction, with `provider.data_collection: "deny"`. Nothing else of the prompt leaves the Mac.
 - [x] **Failures.** A failed OpenRouter edit (no network, a revoked key, no credits, rate limit, a server error) stops with a plain message and **Edit with Ollama**, which runs the same edit on the same text locally. A revoked key also offers **Connect again**.
 - [x] **Shared flow.** Connecting, the Model menu, the Keychain entry and the failure messages are built once for any provider, so [[SUSI-10]] and [[SUSI-11]] add a provider without a new flow; the specification names what a provider supplies.
@@ -85,4 +85,10 @@ Checked by hand with a real account in the owner's run by hand on 2026-11-24, on
 Two things the run found. With no session at openrouter.ai, signing in on the page Sushi opened ended in OpenRouter's own error, *Unauthorized request*; signing in first and connecting again worked. And after the browser tab was closed, Settings showed *Connecting…* with no way out until the five minutes passed. From v0.3.1 **Cancel** next to *Connecting…* ends the wait at once and changes nothing (MD-14, ST-22), and the troubleshooting page says what to do about the error.
 
 Left by hand: **Cancel** in the installed app, a hosted edit with the provider not reachable (PR-21, started with a dead proxy instead of turning the network off), and the first hosted edit after `brew upgrade` to v0.3.1 without a keychain prompt.
+-->
+
+<!-- 2026-11-24T15:37Z https://github.com/octopot/sushi/issues/7#issuecomment-7136346117
+After `brew upgrade` to v0.3.1 on the Mac that holds the key, `security` read the item of OpenRouter without a keychain prompt, as it did after v0.3.0. Sushi reads the key through the same tool (MD-11), so the upgrade does not ask for the password. A hosted edit right after an upgrade has still not been run by a person; it stays in `.github/self-control.md`.
+
+Left: **Cancel** while the browser waits, in the installed app (PR-28), and an edit with the provider not reachable (PR-21).
 -->

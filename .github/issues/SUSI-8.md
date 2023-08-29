@@ -14,13 +14,13 @@ assignees:
 milestone: "[[SUSI-M2]]"
 parent: null
 issueFields: {}
-state: OPEN
-stateReason: null
+state: CLOSED
+stateReason: COMPLETED
 duplicateOf: null
 createdAt: 2026-11-23T08:57:03Z
-updatedAt: 2026-11-24T13:45:06Z
-lastEditedAt: 2026-11-24T13:45:06Z
-closedAt: null
+updatedAt: 2026-11-24T15:37:53Z
+lastEditedAt: 2026-11-24T15:37:40Z
+closedAt: 2026-11-24T15:37:53Z
 ---
 
 # app: embed build info and show which version and build is running
@@ -54,7 +54,7 @@ sushi:
 ## Acceptance criteria
 
 - [x] `build.rs` reads the commit and the dirty mark from git and passes them with `cargo:rustc-env`. It reruns when `.git/HEAD`, the current ref, `.git/index`, `SOURCE_DATE_EPOCH` or `SUSHI_BUILD_*` change, so a new commit or an edit never ships the old hash. `SUSHI_BUILD_COMMIT` and `SUSHI_BUILD_DATE` override them, as ldflags do for Go. Dirty means tracked files differ from HEAD, and untracked files don't count. Without git the build still succeeds and says `unknown`, and a plain `cargo build` or `npm run app` gives a block too.
-- [ ] The build date is `SUSHI_BUILD_DATE` when set, else `SOURCE_DATE_EPOCH`, otherwise the time of the build, in UTC. `cd` sets `SOURCE_DATE_EPOCH` to the time the release tag was made, not to the time of its commit: a commit carries whatever date its author gave it.
+- [x] The build date is `SUSHI_BUILD_DATE` when set, else `SOURCE_DATE_EPOCH`, otherwise the time of the build, in UTC. `cd` sets `SOURCE_DATE_EPOCH` to the time the release tag was made, not to the time of its commit: a commit carries whatever date its author gave it.
 - [x] The fields come from what Tauri and Cargo already embed, plus `build.rs`, plus the running Mac:
   - the Rust version from `build.rs`;
   - the Tauri version from `tauri::VERSION`, the platform the binary is built for, and the compiled-in Cargo features, `-` while Sushi declares none;
@@ -90,4 +90,8 @@ The body is reworded to what was built: the menu has no version row; **About Sus
 
 <!-- 2026-11-24T13:45Z https://github.com/octopot/sushi/issues/12#issuecomment-7133267709
 Checked by hand in the owner's run by hand on 2026-11-24, on the v0.3.0 code with the fixes then on main (build `05a23ce-dirty`), macOS 27.2: **Copy build info** and `sushi version` give the same text, and `sushi version` with Sushi running does not show the panel. Left: the build date, which v0.3.1 proves when its tag dates the build.
+-->
+
+<!-- 2026-11-24T15:37Z https://github.com/octopot/sushi/issues/12#issuecomment-7136347313
+v0.3.1 proves the date: the tag was made at 2026-11-24T15:29:56Z, and the app installed from the cask says `build date  : 2026-11-24T15:29:56Z` with the tag's commit as its hash, not dirty. Every criterion holds.
 -->
